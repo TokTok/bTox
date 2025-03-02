@@ -1,5 +1,6 @@
 import 'package:btox/db/database.dart';
 import 'package:btox/l10n/generated/app_localizations.dart';
+import 'package:btox/models/content.dart';
 import 'package:btox/models/crypto.dart';
 import 'package:btox/models/id.dart';
 import 'package:btox/models/messaging.dart';
@@ -65,7 +66,7 @@ void main() {
         merged: null,
         author: contact.publicKey,
         timestamp: DateTime(2025, 1, 1, 0, 1, 12),
-        content: 'Happy New Year!',
+        content: TextContent(text: 'Happy New Year!'),
       ),
     ));
     messages.add(_fakeInsertMessage(
@@ -76,7 +77,7 @@ void main() {
         merged: null,
         author: profile.publicKey,
         timestamp: DateTime(2025, 1, 1, 0, 2, 23),
-        content: 'Thank you! Happy New Year to you too!',
+        content: TextContent(text: 'Thank you! Happy New Year to you too!'),
       ),
     ));
 
@@ -110,7 +111,7 @@ void main() {
         merged: null,
         author: profile.publicKey,
         timestamp: DateTime(2025, 1, 1, 0, 1, 12),
-        content: 'Here is a long message.\n' * 10,
+        content: TextContent(text: 'Here is a long message.\n' * 10),
       ),
     ));
 
@@ -143,7 +144,7 @@ void main() {
         merged: null,
         author: contact.publicKey,
         timestamp: DateTime(2025, 1, 1, 0, 1, 12),
-        content: 'Happy New Year!',
+        content: TextContent(text: 'Happy New Year!'),
       ),
     ));
 
@@ -248,7 +249,7 @@ void main() {
           merged: null,
           author: profile.publicKey,
           timestamp: DateTime(2025, 1, 1, 0, 1, 12),
-          content: '😀',
+          content: TextContent(text: '😀'),
         ),
       ),
     ];
@@ -284,7 +285,7 @@ void main() {
         merged: null,
         author: contact.publicKey,
         timestamp: DateTime(2025, 1, 1, 0, 1, 12),
-        content: 'Happy New Year!',
+        content: TextContent(text: 'Happy New Year!'),
       ),
     ));
 

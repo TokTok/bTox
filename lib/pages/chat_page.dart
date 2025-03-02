@@ -1,5 +1,6 @@
 import 'package:btox/db/database.dart';
 import 'package:btox/l10n/generated/app_localizations.dart';
+import 'package:btox/models/content.dart';
 import 'package:btox/providers/keyboard_height.dart';
 import 'package:btox/widgets/chat_item.dart';
 import 'package:btox/widgets/circle_identicon.dart';
@@ -12,7 +13,7 @@ final class ChatPage extends HookConsumerWidget {
   final Profile profile;
   final Stream<Contact> contact;
   final Stream<List<Message>> messages;
-  final void Function(Message? parent, String message)? onSendMessage;
+  final void Function(Message? parent, Content content)? onSendMessage;
   final bool recentEmojis;
 
   const ChatPage({
@@ -89,7 +90,7 @@ final class ChatPage extends HookConsumerWidget {
                     ),
                     child: MessageInput(
                       hintText: AppLocalizations.of(context)!.messageInput,
-                      replyingTo: replyingTo.value?.content ?? '',
+                      replyingTo: replyingTo.value?.content,
                       recentEmojis: recentEmojis,
                       onSend: (message) {
                         onSendMessage?.call(messages.lastOrNull, message);

@@ -1,5 +1,5 @@
 import 'package:btox/logger.dart';
-import 'package:btox/models/attachment.dart';
+import 'package:btox/models/content.dart';
 import 'package:btox/platform/any_platform.dart';
 import 'package:btox/providers/geolocation.dart';
 import 'package:btox/widgets/attachment_button.dart';
@@ -10,7 +10,7 @@ import 'package:image_picker/image_picker.dart';
 const _logger = Logger(['AttachmentSelector']);
 
 final class AttachmentSelector extends StatelessWidget {
-  final void Function(List<Attachment>) onSelected;
+  final void Function(List<Content>) onSelected;
 
   const AttachmentSelector({
     super.key,
@@ -34,7 +34,7 @@ final class AttachmentSelector extends StatelessWidget {
                       source: ImageSource.camera,
                     );
                     if (image != null) {
-                      onSelected([await _loadFile(image)]);
+                      onSelected([await _loadImage(image)]);
                     }
                   },
                 ),
@@ -48,7 +48,7 @@ final class AttachmentSelector extends StatelessWidget {
                   );
                   if (result != null) {
                     onSelected(await Future.wait(
-                        result.files.map((file) => _loadFile(file.xFile))));
+                        result.files.map((file) => _loadImage(file.xFile))));
                   }
                 },
               ),
@@ -72,7 +72,7 @@ final class AttachmentSelector extends StatelessWidget {
                   try {
                     final location = await geolocation();
                     onSelected([
-                      LocationAttachment(
+                      LocationContent(
                         latitude: location.latitude,
                         longitude: location.longitude,
                       ),
@@ -90,10 +90,16 @@ final class AttachmentSelector extends StatelessWidget {
   }
 }
 
-Future<Attachment> _loadFile(XFile file) async {
-  return FileAttachment(
-    path: file.path,
-    name: file.name,
-    bytes: await file.readAsBytes(),
+Future<Content> _loadImage(XFile file) async {
+  final bytes = await file.readAsBytes();
+  return MediaContent(
+    url: 'path: ${file.path} name: ${file.name} bytes: ${bytes.length}',
+  );
+}
+
+Future<Content> _loadFile(XFile file) async {
+  final bytes = await file.readAsBytes();
+  return FileContent(
+    url: 'path: ${file.path} name: ${file.name} bytes: ${bytes.length}',
   );
 }

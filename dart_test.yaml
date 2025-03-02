@@ -1,5 +1,5 @@
 tags:
   identicon:
     timeout: none
-  persistence:
+  models:
     timeout: none

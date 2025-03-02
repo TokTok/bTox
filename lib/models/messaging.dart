@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:btox/db/database.dart';
+import 'package:btox/models/content.dart';
 import 'package:btox/models/crypto.dart';
 import 'package:btox/models/id.dart';
 import 'package:btox/models/persistence.dart';
@@ -9,7 +10,7 @@ import 'package:crypto/crypto.dart';
 
 // [parent, merged, timestamp, author, content]
 Uint8List encodeMessage(Message? parent, Message? merged, DateTime timestamp,
-    PublicKey author, String content) {
+    PublicKey author, Content content) {
   return MessagePacket(
     parent: parent?.sha,
     merged: merged?.sha,
@@ -25,7 +26,7 @@ MessagesCompanion newMessage({
   required Message? merged,
   required PublicKey author,
   required DateTime timestamp,
-  required String content,
+  required Content content,
 }) {
   return MessagesCompanion.insert(
     contactId: contactId,

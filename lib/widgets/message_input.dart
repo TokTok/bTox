@@ -1,5 +1,6 @@
 import 'package:btox/l10n/generated/app_localizations.dart';
 import 'package:btox/logger.dart';
+import 'package:btox/models/content.dart';
 import 'package:btox/widgets/attachment_selector.dart';
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import 'package:flutter/material.dart';
@@ -20,16 +21,16 @@ enum _EditMode {
 
 final class MessageInput extends HookWidget {
   final String hintText;
-  final String replyingTo;
+  final Content? replyingTo;
   final Color buttonColor;
   final bool recentEmojis;
-  final void Function(String) onSend;
+  final void Function(Content) onSend;
   final void Function() onTapCloseReply;
 
   const MessageInput({
     super.key,
     required this.hintText,
-    this.replyingTo = '',
+    this.replyingTo,
     this.buttonColor = Colors.blue,
     required this.recentEmojis,
     required this.onSend,
@@ -57,7 +58,7 @@ final class MessageInput extends HookWidget {
     void send([String? message]) {
       message ??= messageInputController.text;
       if (message.isNotEmpty) {
-        onSend(message);
+        onSend(TextContent(text: message));
         messageInputController.text = '';
         messageInputFocus.requestFocus();
         editMode.value = _EditMode.text;
@@ -67,7 +68,7 @@ final class MessageInput extends HookWidget {
     return Column(
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
-        if (replyingTo.isNotEmpty) ...[
+        if (replyingTo != null) ...[
           Container(
             color: Theme.of(context).primaryColor,
             padding: const EdgeInsets.symmetric(
@@ -81,7 +82,7 @@ final class MessageInput extends HookWidget {
                   child: Padding(
                     padding: const EdgeInsets.only(left: 8),
                     child: Text(
-                      AppLocalizations.of(context)!.re(replyingTo),
+                      AppLocalizations.of(context)!.re(replyingTo.toString()),
                       overflow: TextOverflow.ellipsis,
                       maxLines: 3,
                     ),
@@ -210,11 +211,19 @@ final class MessageInput extends HookWidget {
         ),
         if (editMode.value == _EditMode.attachment)
           AttachmentSelector(
-            onSelected: (message) {
-              send(message.toString());
+            onSelected: (attachments) {
+              onSend(_contentAttachments(attachments));
+              messageInputController.text = '';
+              messageInputFocus.requestFocus();
+              editMode.value = _EditMode.text;
             },
           ),
       ],
     );
   }
+}
+
+Content _contentAttachments(List<Content> attachments) {
+  // TODO: Implement merging attachments.
+  return attachments.single;
 }

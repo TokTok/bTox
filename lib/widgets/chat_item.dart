@@ -1,8 +1,8 @@
 import 'dart:math';
 
 import 'package:btox/db/database.dart';
+import 'package:btox/widgets/chat_content.dart';
 import 'package:btox/widgets/chat_context_menu.dart';
-import 'package:btox/widgets/chat_text.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -84,7 +84,8 @@ final class ChatItem extends HookWidget {
                   },
                   onForward: () {},
                   onCopy: () {
-                    Clipboard.setData(ClipboardData(text: message.content));
+                    Clipboard.setData(
+                        ClipboardData(text: message.content.toString()));
                   },
                   onSelect: () {},
                   onInfo: () {},
@@ -95,14 +96,15 @@ final class ChatItem extends HookWidget {
                 padding: isSender
                     ? EdgeInsets.only(right: dragValue)
                     : EdgeInsets.only(left: dragValue),
-                child: ChatText(
-                  text: message.content,
+                child: ChatContent(
+                  content: message.content,
                   extraWidth: _kMaxBubbleDrag,
                   color: _bubbleColor(isSender, Theme.of(context)),
                   direction: isSender
-                      ? ChatItemDirection.sent
-                      : ChatItemDirection.received,
-                  state: isSender ? ChatItemState.seen : ChatItemState.none,
+                      ? ChatContentDirection.sent
+                      : ChatContentDirection.received,
+                  state:
+                      isSender ? ChatContentState.seen : ChatContentState.none,
                   textStyle: Theme.of(context).textTheme.bodyLarge!,
                 ),
               ),

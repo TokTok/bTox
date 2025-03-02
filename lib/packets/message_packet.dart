@@ -1,6 +1,6 @@
-import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:btox/models/content.dart';
 import 'package:btox/models/crypto.dart';
 import 'package:btox/packets/messagepack.dart';
 import 'package:btox/packets/packet.dart';
@@ -11,7 +11,7 @@ final class MessagePacket extends Packet {
   final Sha256? merged;
   final DateTime timestamp;
   final PublicKey author;
-  final String content;
+  final Content content;
 
   const MessagePacket({
     required this.parent,
@@ -34,7 +34,7 @@ final class MessagePacket extends Packet {
     final DateTime timestamp =
         DateTime.fromMillisecondsSinceEpoch(unpacker.unpackInt()!);
     final PublicKey author = PublicKey.unpack(unpacker);
-    final String content = utf8.decode(unpacker.unpackBinary()!);
+    final Content content = Content.unpack(unpacker);
 
     return MessagePacket(
       parent: parent,
@@ -53,7 +53,7 @@ final class MessagePacket extends Packet {
       ..packBinary(merged?.bytes)
       ..packInt(timestamp.millisecondsSinceEpoch)
       ..packBinary(author.bytes)
-      ..packBinary(utf8.encode(content));
+      ..pack(content);
   }
 }
 

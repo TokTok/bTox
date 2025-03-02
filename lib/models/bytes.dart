@@ -10,10 +10,19 @@ bool memEquals(Uint8List bytes1, Uint8List bytes2) {
     return false;
   }
 
+  // Ensure that the byte lists are aligned to 4-byte words. By default, we
+  // don't make copies for performance reasons, but if we have to, here we do.
+  if (bytes1.offsetInBytes % 4 != 0) {
+    bytes1 = Uint8List.fromList(bytes1);
+  }
+  if (bytes2.offsetInBytes % 4 != 0) {
+    bytes2 = Uint8List.fromList(bytes2);
+  }
+
   // Treat the original byte lists as lists of 4-byte words.
   final numWords = bytes1.lengthInBytes ~/ 4;
-  final words1 = bytes1.buffer.asUint32List(0, numWords);
-  final words2 = bytes2.buffer.asUint32List(0, numWords);
+  final words1 = bytes1.buffer.asUint32List(bytes1.offsetInBytes, numWords);
+  final words2 = bytes2.buffer.asUint32List(bytes2.offsetInBytes, numWords);
 
   for (var i = 0; i < words1.length; i += 1) {
     if (words1[i] != words2[i]) {

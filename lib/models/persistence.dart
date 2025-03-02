@@ -1,5 +1,6 @@
 // ignore_for_file: recursive_getters
 
+import 'package:btox/models/content.dart';
 import 'package:btox/models/crypto.dart';
 import 'package:btox/models/id.dart';
 import 'package:btox/models/profile_settings.dart';
@@ -37,7 +38,7 @@ abstract class Messages extends Table {
       .nullable()();
 
   DateTimeColumn get timestamp => dateTime()();
-  TextColumn get content => text()();
+  TextColumn get content => text().map(const ContentConverter())();
 }
 
 abstract class Profiles extends Table {

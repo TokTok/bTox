@@ -10,3 +10,8 @@ exclude:
   - "windows/**/*.cc"
   - "windows/**/*.cpp"
   - "windows/**/*.h"
+
+restylers:
+  - name: dart-format
+    image: "public.ecr.aws/restyled-io/restyler-dart-format:v2.3"
+  - name: "*"

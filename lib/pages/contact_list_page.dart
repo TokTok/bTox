@@ -2,6 +2,7 @@ import 'package:btox/api/toxcore/tox.dart';
 import 'package:btox/db/database.dart';
 import 'package:btox/l10n/generated/app_localizations.dart';
 import 'package:btox/logger.dart';
+import 'package:btox/models/content.dart';
 import 'package:btox/models/crypto.dart';
 import 'package:btox/models/messaging.dart';
 import 'package:btox/pages/add_contact_page.dart';
@@ -81,14 +82,14 @@ final class ContactListPage extends ConsumerWidget {
                         profile: profile,
                         contact: database.watchContact(contact.id),
                         messages: database.watchMessagesFor(contact.id),
-                        onSendMessage: (Message? parent, String message) {
+                        onSendMessage: (Message? parent, Content content) {
                           database.addMessage(newMessage(
                             contactId: contact.id,
                             parent: parent,
                             merged: null,
                             author: profile.publicKey,
                             timestamp: clock.now().toUtc(),
-                            content: message,
+                            content: content,
                           ));
                         },
                       ),

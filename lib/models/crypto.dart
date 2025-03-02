@@ -96,8 +96,12 @@ final class Sha256 extends _CryptoBytes with Packet {
     return Sha256(Uint8List.fromList(digest.bytes));
   }
 
-  factory Sha256.fromString(String value) {
+  factory Sha256.fromJson(String value) {
     return Sha256(Uint8List.fromList(hex.decode(value)));
+  }
+
+  factory Sha256.unpack(Unpacker unpacker) {
+    return Sha256(unpacker.unpackBinary()!);
   }
 
   @override
@@ -114,7 +118,7 @@ final class Sha256Converter extends TypeConverter<Sha256, String>
   const Sha256Converter();
 
   @override
-  Sha256 fromJson(String json) => Sha256.fromString(json);
+  Sha256 fromJson(String json) => Sha256.fromJson(json);
   @override
   Sha256 fromSql(String fromDb) => fromJson(fromDb);
   @override
