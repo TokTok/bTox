@@ -1,0 +1,6 @@
+{
+  "prTitle": "perf(ImgBot): Optimize images",
+  "ignoredFiles": [
+    "test/*"
+  ],
+}

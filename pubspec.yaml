@@ -45,6 +45,7 @@ dependencies:
   flutter_background_service: ^5.1.0
   flutter_context_menu: ^0.2.0
   flutter_hooks: ^0.20.5
+  flutter_map: ^8.1.0
   flutter_riverpod: ^2.6.1
   freezed_annotation: ^2.4.4
   geolocator: ^13.0.2
@@ -54,6 +55,7 @@ dependencies:
   intl: ^0.19.0
   json_annotation: ^4.9.0
   keyboard_height_plugin: ^0.1.5
+  latlong2: ^0.9.1
   path_provider: ^2.1.5
   path: ^1.9.0
   riverpod_annotation: ^2.6.1
