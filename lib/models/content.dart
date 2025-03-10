@@ -2,9 +2,10 @@
 
 import 'dart:convert';
 
-import 'package:btox/api/toxcore/tox_events.dart';
 import 'package:btox/logger.dart';
 import 'package:btox/models/crypto.dart';
+import 'package:btox/packets/messagepack/message_data.dart';
+import 'package:btox/packets/messagepack/message_data_json_converter.dart';
 import 'package:btox/packets/messagepack/packer.dart';
 import 'package:btox/packets/messagepack/unpacker.dart';
 import 'package:btox/packets/packet.dart';
@@ -37,12 +38,12 @@ sealed class Content extends Packet {
         return UnknownContent.unpack(unpacker);
       case ContentType.text:
         return TextContent.unpack(unpacker);
-      case ContentType.reaction:
-        return ReactionContent.unpack(unpacker);
       case ContentType.edit:
         return EditContent.unpack(unpacker);
       case ContentType.delete:
         return DeleteContent.unpack(unpacker);
+      case ContentType.reaction:
+        return ReactionContent.unpack(unpacker);
       case ContentType.media:
         return MediaContent.unpack(unpacker);
       case ContentType.file:
@@ -73,18 +74,20 @@ final class ContentConverter extends TypeConverter<Content, String>
 
   @override
   Content fromJson(Map<String, dynamic> json) {
-    switch (ContentType.values.firstWhere((e) => e.name == json['_type'],
-        orElse: () => ContentType.unknown)) {
+    switch (ContentType.values.firstWhere(
+      (e) => e.name == json['_type'],
+      orElse: () => ContentType.unknown,
+    )) {
       case ContentType.unknown:
         return UnknownContent.fromJson(json);
       case ContentType.text:
         return TextContent.fromJson(json);
-      case ContentType.reaction:
-        return ReactionContent.fromJson(json);
       case ContentType.edit:
         return EditContent.fromJson(json);
       case ContentType.delete:
         return DeleteContent.fromJson(json);
+      case ContentType.reaction:
+        return ReactionContent.fromJson(json);
       case ContentType.media:
         return MediaContent.fromJson(json);
       case ContentType.file:
@@ -120,9 +123,9 @@ final class ContentConverter extends TypeConverter<Content, String>
 enum ContentType {
   unknown,
   text,
-  reaction,
   edit,
   delete,
+  reaction,
   media,
   file,
   location,
@@ -332,14 +335,17 @@ sealed class TextContent extends Content with _$TextContent {
 
 @freezed
 sealed class UnknownContent extends Content with _$UnknownContent {
-  @Uint8ListConverter()
-  const factory UnknownContent({required Uint8List data}) = _UnknownContent;
+  @JsonSerializable(
+    explicitToJson: true,
+    converters: [MessageDataJsonConverter()],
+  )
+  const factory UnknownContent({required MessageData data}) = _UnknownContent;
 
   factory UnknownContent.fromJson(Map<String, dynamic> json) =>
       _$UnknownContentFromJson(json);
 
   factory UnknownContent.unpack(Unpacker unpacker) {
-    return UnknownContent(data: unpacker.unpackBinary()!);
+    return UnknownContent(data: unpacker.unpack());
   }
 
   const UnknownContent._();
@@ -349,6 +355,6 @@ sealed class UnknownContent extends Content with _$UnknownContent {
 
   @override
   void packContent(Packer packer) {
-    packer.packBinary(data);
+    packer.packMessageData(data);
   }
 }
