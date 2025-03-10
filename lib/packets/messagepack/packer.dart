@@ -4,6 +4,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:btox/packets/messagepack/message_data.dart';
 import 'package:btox/packets/messagepack/tags.dart';
 import 'package:btox/packets/packet.dart';
 
@@ -274,6 +275,10 @@ final class Packer {
     } else {
       throw ArgumentError('Max map length is 0xFFFFFFFF');
     }
+  }
+
+  void packMessageData(MessageData data) {
+    data.pack(this);
   }
 
   void pack(Packet packet) {

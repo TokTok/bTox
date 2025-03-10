@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:btox/ffi/toxcore.dart';
 import 'package:btox/models/crypto.dart';
+import 'package:btox/packets/converters.dart';
 import 'package:btox/packets/messagepack.dart';
 import 'package:btox/packets/packet.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
@@ -93,7 +94,7 @@ sealed class Event extends Packet {
         return ToxEventGroupModeration.unpack(unpacker);
       case Tox_Event_Type.TOX_EVENT_GROUP_SELF_JOIN:
         return ToxEventGroupSelfJoin.unpack(unpacker);
-      case Tox_Event_Type.TOX_EVENT_DHT_GET_NODES_RESPONSE:
+      case Tox_Event_Type.TOX_EVENT_DHT_NODES_RESPONSE:
         return ToxEventDhtNodesResponse.unpack(unpacker);
       case Tox_Event_Type.TOX_EVENT_INVALID:
         throw Exception('Invalid event type');
@@ -1502,20 +1503,6 @@ class ToxEventSelfConnectionStatus extends Event
   @override
   void pack(Packer packer) {
     packer.packInt(connectionStatus.value);
-  }
-}
-
-class Uint8ListConverter extends JsonConverter<Uint8List, String> {
-  const Uint8ListConverter();
-
-  @override
-  Uint8List fromJson(String json) {
-    return Uint8List.fromList(json.codeUnits);
-  }
-
-  @override
-  String toJson(Uint8List object) {
-    return String.fromCharCodes(object);
   }
 }
 

@@ -1,12 +1,16 @@
 import 'package:drift/drift.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
-class Uint8ListConverter implements JsonConverter<Uint8List, List<int>> {
+class Uint8ListConverter extends JsonConverter<Uint8List, String> {
   const Uint8ListConverter();
 
   @override
-  Uint8List fromJson(List<int> json) => Uint8List.fromList(json);
+  Uint8List fromJson(String json) {
+    return Uint8List.fromList(json.codeUnits);
+  }
 
   @override
-  List<int> toJson(Uint8List object) => object;
+  String toJson(Uint8List object) {
+    return String.fromCharCodes(object);
+  }
 }
