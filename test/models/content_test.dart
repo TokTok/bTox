@@ -1,7 +1,7 @@
 import 'package:btox/models/content.dart';
 import 'package:btox/models/crypto.dart';
+import 'package:btox/packets/messagepack/message_data.dart';
 import 'package:crypto/crypto.dart';
-import 'package:drift/drift.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -22,7 +22,7 @@ void main() {
         emoji: '👍',
       ),
       TextContent(text: 'Hello'),
-      UnknownContent(data: Uint8List.fromList([1, 2, 3, 0, 9, 8, 7])),
+      UnknownContent(data: MessageDataList([MessageDataInt(42)])),
     ];
     final l2 =
         l1.map((c) => Content.decode(c.encode())).toList(growable: false);

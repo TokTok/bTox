@@ -4,6 +4,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:btox/packets/messagepack/message_data.dart';
 import 'package:btox/packets/messagepack/tags.dart';
 
 // dart2js doesn't support 64 bit ints, so we unpack using 2x 32 bit ints.
@@ -244,9 +245,12 @@ final class Unpacker {
     return data.asUnmodifiableView();
   }
 
-  Object? _unpack() {
+  MessageData unpack() {
     final b = _d.getUint8(_offset);
-    if (b <= 0x7f ||
+    if (b == kTagNil) {
+      unpackNull();
+      return const MessageDataNull();
+    } else if (b <= 0x7f ||
         b >= 0xe0 ||
         b == kTagUint8 ||
         b == kTagUint16 ||
@@ -256,23 +260,23 @@ final class Unpacker {
         b == kTagInt16 ||
         b == kTagInt32 ||
         b == kTagInt64) {
-      return unpackInt();
-    } else if (b == kTagNil || b == kTagFalse || b == kTagTrue) {
-      return unpackBool(); //null included
+      return MessageDataInt(unpackInt()!);
+    } else if (b == kTagFalse || b == kTagTrue) {
+      return MessageDataBool(unpackBool()!);
     } else if (b == kTagFloat32 || b == kTagFloat64) {
-      return unpackDouble();
+      return MessageDataDouble(unpackDouble()!);
     } else if ((b & 0xE0) == 0xA0 ||
         b == kTagNil ||
         b == kTagStr8 ||
         b == kTagStr16 ||
         b == kTagStr32) {
-      return unpackString();
+      return MessageDataString(unpackString()!);
     } else if (b == kTagBin8 || b == kTagBin16 || b == kTagBin32) {
-      return unpackBinary();
+      return MessageDataBinary(unpackBinary()!);
     } else if ((b & 0xF0) == 0x90 || b == kTagArray16 || b == kTagArray32) {
-      return unpackList();
+      return MessageDataList(unpackList());
     } else if ((b & 0xF0) == 0x80 || b == kTagMap16 || b == kTagMap32) {
-      return unpackMap();
+      return MessageDataMap(unpackMap());
     } else {
       throw _formatException('Unknown', b);
     }
@@ -280,22 +284,22 @@ final class Unpacker {
 
   /// Automatically unpacks `bytes` to [List] where items has corresponding data types.
   ///
-  /// Return types declared as [Object] instead of `dynamic` for safety reasons.
-  /// You need explicitly cast to proper types. And in case with [Object]
-  /// compiler checks will force you to do it whereas with `dynamic` it will not.
-  List<Object?> unpackList() {
+  /// Return types declared as [MessageData] instead of `dynamic` for safety reasons.
+  /// This limits the number of valid types that can be cast to, and since [MessageData]
+  /// is a sealed type, a switch over it can be checked for completeness at compile time.
+  List<MessageData> unpackList() {
     final length = unpackListLength();
-    return List.generate(length, (_) => _unpack());
+    return List.generate(length, (_) => unpack());
   }
 
   /// Automatically unpacks `bytes` to [Map] where key and values has corresponding data types.
   ///
-  /// Return types declared as [Object] instead of `dynamic` for safety reasons.
-  /// You need explicitly cast to proper types. And in case with [Object]
-  /// compiler checks will force you to do it whereas with `dynamic` it will not.
-  Map<Object?, Object?> unpackMap() {
+  /// Return types declared as [MessageData] instead of `dynamic` for safety reasons.
+  /// This limits the number of valid types that can be cast to, and since [MessageData]
+  /// is a sealed type, a switch over it can be checked for completeness at compile time.
+  Map<MessageData, MessageData> unpackMap() {
     final length = unpackMapLength();
-    return {for (var i = 0; i < length; i++) _unpack(): _unpack()};
+    return {for (var i = 0; i < length; i++) unpack(): unpack()};
   }
 
   Exception _formatException(String type, int b) => FormatException(
