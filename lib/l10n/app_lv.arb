@@ -1,1 +1,170 @@
-{}
+{
+  "newProfile": "Jauns profils",
+  "@newProfile": {
+    "description": "The title text for the create profile dialog"
+  },
+  "defaultContactName": "Nezināma persona",
+  "@defaultContactName": {
+    "description": "The default name for a contact when the name is not yet known"
+  },
+  "deleteProfileMessage": "Vai tiešām vēlaties dzēst savu \"{name}\" profilu? Šo darbību nevar atsaukt. Tiks izdzēstas visas jūsu kontaktpersonas un ziņojumi. Pārliecinieties, ka jums ir rezerves kopija.",
+  "@deleteProfileMessage": {
+    "description": "The message to confirm the deletion of a profile",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Alice"
+      }
+    }
+  },
+  "profileDeleted": "Profils \"{name}\" dzēsts",
+  "@profileDeleted": {
+    "description": "The text when a profile has been deleted",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Alice"
+      }
+    }
+  },
+  "profileTextFieldUserStatusMessage": "Statusa ziņojums",
+  "@profileTextFieldUserStatusMessage": {
+    "description": "The text for the status message field"
+  },
+  "title": "bTox (mēs joprojām strādājam pie tā)",
+  "@title": {
+    "description": "The title of the application"
+  },
+  "message": "Ziņojums",
+  "@message": {
+    "description": "The text for the message field"
+  },
+  "toxId": "Tox-ID",
+  "@toxId": {
+    "description": "The text for the Tox ID field"
+  },
+  "messageInput": "Tox ziņojums",
+  "@messageInput": {
+    "description": "The placeholder text for the message input field"
+  },
+  "menuProfile": "Profils",
+  "@menuProfile": {
+    "description": "The text for the profile menu item"
+  },
+  "menuQuit": "Iziet",
+  "@menuQuit": {
+    "description": "The text for the quit menu item"
+  },
+  "addContactMessageLengthError": "Maksimums {max} rakstzīmes ({length} ir pārāk garš)",
+  "@addContactMessageLengthError": {
+    "description": "The error message when the friend request message is too long",
+    "placeholders": {
+      "max": {
+        "type": "int",
+        "example": "256"
+      },
+      "length": {
+        "type": "int",
+        "example": "300"
+      }
+    }
+  },
+  "toxIdLengthError": "Jābūt {length} heksadecimālajām rakstzīmēm",
+  "@toxIdLengthError": {
+    "description": "The error message when the Tox ID is not the right length or format",
+    "placeholders": {
+      "length": {
+        "type": "int",
+        "example": "76"
+      }
+    }
+  },
+  "menuSettings": "Iestatījumi",
+  "@menuSettings": {
+    "description": "The text for the settings menu item"
+  },
+  "statusMessageLengthError": "Statusa ziņojums nedrīkst pārsniegt {max} rakstzīmes",
+  "@statusMessageLengthError": {
+    "description": "The error message when the status message is longer than the supported maximum",
+    "placeholders": {
+      "max": {
+        "type": "int",
+        "example": "128"
+      }
+    }
+  },
+  "profileTextFieldNick": "Segvārds",
+  "@profileTextFieldNick": {
+    "description": "The text for the nickname field"
+  },
+  "applyChanges": "Lietot izmaiņas",
+  "@applyChanges": {
+    "description": "The text for the button to apply changes"
+  },
+  "applied": "Pielietotas",
+  "@applied": {
+    "description": "The text when changes have been applied"
+  },
+  "create": "Izveidot",
+  "@create": {
+    "description": "The text for the button create a new profile"
+  },
+  "deleteProfile": "Dzēst profilu",
+  "@deleteProfile": {
+    "description": "The text for the delete profile menu item"
+  },
+  "cancel": "Atcelt",
+  "@cancel": {
+    "description": "The text for the cancel button"
+  },
+  "logout": "Atteikties",
+  "@logout": {
+    "description": "The text for the logout menu item"
+  },
+  "messageEmptyError": "Ziņojuma lauks nedrīkst būt tukšs",
+  "@messageEmptyError": {
+    "description": "The error message when the message is empty"
+  },
+  "defaultAddContactMessage": "Sveiki, es esmu {nick}, nāc tērzēt ar mani bTox!",
+  "@defaultAddContactMessage": {
+    "description": "The default message to send when adding a contact",
+    "placeholders": {
+      "nick": {
+        "type": "String",
+        "example": "Alice"
+      }
+    }
+  },
+  "re": "Atbilde: {message}",
+  "@re": {
+    "description": "The prefix for a reply message",
+    "placeholders": {
+      "message": {
+        "type": "String",
+        "example": "Hello"
+      }
+    }
+  },
+  "addContact": "Pievienot kontaktpersonu",
+  "@addContact": {
+    "description": "The text for the button to add a contact"
+  },
+  "add": "Pievienot",
+  "@add": {
+    "description": "The text for the button to add a contact"
+  },
+  "nickLengthError": "Segvārdam ir jābūt no 1 līdz {max} rakstzīmēm",
+  "@nickLengthError": {
+    "description": "The error message when the nickname is too short or too long",
+    "placeholders": {
+      "max": {
+        "type": "int",
+        "example": "32"
+      }
+    }
+  },
+  "delete": "Dzēst",
+  "@delete": {
+    "description": "The text for the delete button"
+  }
+}
