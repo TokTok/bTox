@@ -15,7 +15,7 @@
   "@message": {
     "description": "The text for the message field"
   },
-  "messageInput": "செய்தி",
+  "messageInput": "டாக்சு செய்தி",
   "@messageInput": {
     "description": "The placeholder text for the message input field"
   },
@@ -156,5 +156,15 @@
   "profileTextFieldNick": "புனைப்பெயர்",
   "@profileTextFieldNick": {
     "description": "The text for the nickname field"
+  },
+  "re": "பதில்: {message}",
+  "@re": {
+    "description": "The prefix for a reply message",
+    "placeholders": {
+      "message": {
+        "type": "String",
+        "example": "Hello"
+      }
+    }
   }
 }
