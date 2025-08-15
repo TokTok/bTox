@@ -1,3 +1,101 @@
 {
-    "@@locale": "vec"
+    "@@locale": "vec",
+    "defaultContactName": "Mìa conjonesto",
+    "@defaultContactName": {
+        "description": "The default name for a contact when the name is not yet known"
+    },
+    "title": "bTox (tìtol mìa ofisial)",
+    "@title": {
+        "description": "The title of the application"
+    },
+    "addContact": "Zontar contato",
+    "@addContact": {
+        "description": "The text for the button to add a contact"
+    },
+    "message": "Mesajo",
+    "@message": {
+        "description": "The text for the message field"
+    },
+    "messageInput": "Tox mesajo",
+    "@messageInput": {
+        "description": "The placeholder text for the message input field"
+    },
+    "re": "Re:{message}",
+    "@re": {
+        "description": "The prefix for a reply message",
+        "placeholders": {
+            "message": {
+                "type": "String",
+                "example": "Hello"
+            }
+        }
+    },
+    "toxId": "Tox ID",
+    "@toxId": {
+        "description": "The text for the Tox ID field"
+    },
+    "defaultAddContactMessage": "Paron, A son {nick}, ndemo ciacołar nte'l bTox!",
+    "@defaultAddContactMessage": {
+        "description": "The default message to send when adding a contact",
+        "placeholders": {
+            "nick": {
+                "type": "String",
+                "example": "Alice"
+            }
+        }
+    },
+    "addContactMessageLengthError": "Maximum {max} caracteri ({length} l'è stra grando)",
+    "@addContactMessageLengthError": {
+        "description": "The error message when the friend request message is too long",
+        "placeholders": {
+            "max": {
+                "type": "int",
+                "example": "256"
+            },
+            "length": {
+                "type": "int",
+                "example": "300"
+            }
+        }
+    },
+    "add": "Zontar",
+    "@add": {
+        "description": "The text for the button to add a contact"
+    },
+    "toxIdLengthError": "Bezonja da èsar {length} hexadecimal caracteri",
+    "@toxIdLengthError": {
+        "description": "The error message when the Tox ID is not the right length or format",
+        "placeholders": {
+            "length": {
+                "type": "int",
+                "example": "76"
+            }
+        }
+    },
+    "messageEmptyError": "El mesajo no pol mìa da èsar łevro",
+    "@messageEmptyError": {
+        "description": "The error message when the message is empty"
+    },
+    "menuProfile": "Profiło",
+    "@menuProfile": {
+        "description": "The text for the profile menu item"
+    },
+    "menuQuit": "Insir",
+    "@menuQuit": {
+        "description": "The text for the quit menu item"
+    },
+    "menuSettings": "Inpostasion",
+    "@menuSettings": {
+        "description": "The text for the settings menu item"
+    },
+    "nickLengthError": "Nickname bezonja da gaver 1 e {max} caracteri",
+    "@nickLengthError": {
+        "description": "The error message when the nickname is too short or too long",
+        "placeholders": {
+            "max": {
+                "type": "int",
+                "example": "32"
+            }
+        }
+    }
 }
