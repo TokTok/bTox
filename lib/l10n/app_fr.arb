@@ -1,1 +1,36 @@
-{}
+{
+    "defaultContactName": "Inconnu",
+    "@defaultContactName": {
+        "description": "The default name for a contact when the name is not yet known"
+    },
+    "title": "bTox",
+    "@title": {
+        "description": "The title of the application"
+    },
+    "addContact": "Ajouter un contact",
+    "@addContact": {
+        "description": "The text for the button to add a contact"
+    },
+    "message": "Message",
+    "@message": {
+        "description": "The text for the message field"
+    },
+    "messageInput": "Message Tox",
+    "@messageInput": {
+        "description": "The placeholder text for the message input field"
+    },
+    "re": "Re : {message}",
+    "@re": {
+        "description": "The prefix for a reply message",
+        "placeholders": {
+            "message": {
+                "type": "String",
+                "example": "Hello"
+            }
+        }
+    },
+    "toxId": "ID Tox",
+    "@toxId": {
+        "description": "The text for the Tox ID field"
+    }
+}
