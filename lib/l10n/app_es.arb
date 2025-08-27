@@ -1,1 +1,64 @@
-{}
+{
+    "defaultContactName": "Desconocido",
+    "@defaultContactName": {
+        "description": "The default name for a contact when the name is not yet known"
+    },
+    "title": "bTox",
+    "@title": {
+        "description": "The title of the application"
+    },
+    "addContact": "Agregar contacto",
+    "@addContact": {
+        "description": "The text for the button to add a contact"
+    },
+    "message": "Mensaje",
+    "@message": {
+        "description": "The text for the message field"
+    },
+    "messageInput": "Mensaje Tox",
+    "@messageInput": {
+        "description": "The placeholder text for the message input field"
+    },
+    "re": "Re: {message}",
+    "@re": {
+        "description": "The prefix for a reply message",
+        "placeholders": {
+            "message": {
+                "type": "String",
+                "example": "Hello"
+            }
+        }
+    },
+    "toxId": "ID Tox",
+    "@toxId": {
+        "description": "The text for the Tox ID field"
+    },
+    "defaultAddContactMessage": "Hola, yo soy {nick}, ven a charlar conmigo en bTox!",
+    "@defaultAddContactMessage": {
+        "description": "The default message to send when adding a contact",
+        "placeholders": {
+            "nick": {
+                "type": "String",
+                "example": "Alice"
+            }
+        }
+    },
+    "addContactMessageLengthError": "Máximo {max} caracteres ({length} es demasiado largo)",
+    "@addContactMessageLengthError": {
+        "description": "The error message when the friend request message is too long",
+        "placeholders": {
+            "max": {
+                "type": "int",
+                "example": "256"
+            },
+            "length": {
+                "type": "int",
+                "example": "300"
+            }
+        }
+    },
+    "add": "Añadir",
+    "@add": {
+        "description": "The text for the button to add a contact"
+    }
+}
