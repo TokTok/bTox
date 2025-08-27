@@ -1,161 +1,171 @@
 {
-  "@@locale": "de",
-  "add": "Hinzufügen",
-  "@add": {
-    "description": "The text for the button to add a contact"
-  },
-  "menuProfile": "Profil",
-  "@menuProfile": {
-    "description": "The text for the profile menu item"
-  },
-  "title": "bTox (wir arbeiten noch dran)",
-  "@title": {
-    "description": "The title of the application"
-  },
-  "message": "Nachricht",
-  "@message": {
-    "description": "The text for the message field"
-  },
-  "toxId": "Tox-ID",
-  "@toxId": {
-    "description": "The text for the Tox ID field"
-  },
-  "statusMessageLengthError": "Statusnachricht darf nicht länger als {max} Zeichen sein",
-  "@statusMessageLengthError": {
-    "description": "The error message when the status message is longer than the supported maximum",
-    "placeholders": {
-      "max": {
-        "type": "int",
-        "example": "128"
-      }
+    "@@locale": "de",
+    "add": "Hinzufügen",
+    "@add": {
+        "description": "The text for the button to add a contact"
+    },
+    "menuProfile": "Profil",
+    "@menuProfile": {
+        "description": "The text for the profile menu item"
+    },
+    "title": "bTox (wir arbeiten noch dran)",
+    "@title": {
+        "description": "The title of the application"
+    },
+    "message": "Nachricht",
+    "@message": {
+        "description": "The text for the message field"
+    },
+    "toxId": "Tox-ID",
+    "@toxId": {
+        "description": "The text for the Tox ID field"
+    },
+    "statusMessageLengthError": "Statusnachricht darf nicht länger als {max} Zeichen sein",
+    "@statusMessageLengthError": {
+        "description": "The error message when the status message is longer than the supported maximum",
+        "placeholders": {
+            "max": {
+                "type": "int",
+                "example": "128"
+            }
+        }
+    },
+    "profileTextFieldUserStatusMessage": "Statusnachricht",
+    "@profileTextFieldUserStatusMessage": {
+        "description": "The text for the status message field"
+    },
+    "defaultContactName": "Eine Person",
+    "@defaultContactName": {
+        "description": "The default name for a contact when the name is not yet known"
+    },
+    "addContact": "Kontakt hinzufügen",
+    "@addContact": {
+        "description": "The text for the button to add a contact"
+    },
+    "messageInput": "Tox-Nachricht",
+    "@messageInput": {
+        "description": "The placeholder text for the message input field"
+    },
+    "defaultAddContactMessage": "Hey, ich bin {nick}, komm mit mir auf bTox chatten!",
+    "@defaultAddContactMessage": {
+        "description": "The default message to send when adding a contact",
+        "placeholders": {
+            "nick": {
+                "type": "String",
+                "example": "Alice"
+            }
+        }
+    },
+    "addContactMessageLengthError": "Maximum {max} Zeichen ({length} ist zu lang)",
+    "@addContactMessageLengthError": {
+        "description": "The error message when the friend request message is too long",
+        "placeholders": {
+            "max": {
+                "type": "int",
+                "example": "256"
+            },
+            "length": {
+                "type": "int",
+                "example": "300"
+            }
+        }
+    },
+    "toxIdLengthError": "Muss {length} hexadezimale Zeichen sein",
+    "@toxIdLengthError": {
+        "description": "The error message when the Tox ID is not the right length or format",
+        "placeholders": {
+            "length": {
+                "type": "int",
+                "example": "76"
+            }
+        }
+    },
+    "messageEmptyError": "Die Nachricht darf nicht leer sein",
+    "@messageEmptyError": {
+        "description": "The error message when the message is empty"
+    },
+    "menuQuit": "Beenden",
+    "@menuQuit": {
+        "description": "The text for the quit menu item"
+    },
+    "menuSettings": "Einstellungen",
+    "@menuSettings": {
+        "description": "The text for the settings menu item"
+    },
+    "nickLengthError": "Spitzname muss zwischen 1 und {max} Zeichen lang sein",
+    "@nickLengthError": {
+        "description": "The error message when the nickname is too short or too long",
+        "placeholders": {
+            "max": {
+                "type": "int",
+                "example": "32"
+            }
+        }
+    },
+    "profileTextFieldNick": "Spitzname",
+    "@profileTextFieldNick": {
+        "description": "The text for the nickname field"
+    },
+    "applyChanges": "Änderungen übernehmen",
+    "@applyChanges": {
+        "description": "The text for the button to apply changes"
+    },
+    "applied": "Angewendet",
+    "@applied": {
+        "description": "The text when changes have been applied"
+    },
+    "newProfile": "Neues Profil",
+    "@newProfile": {
+        "description": "The title text for the create profile dialog"
+    },
+    "create": "Erstellen",
+    "@create": {
+        "description": "The text for the button create a new profile"
+    },
+    "logout": "Abmelden",
+    "@logout": {
+        "description": "The text for the logout menu item"
+    },
+    "deleteProfile": "Profil löschen",
+    "@deleteProfile": {
+        "description": "The text for the delete profile menu item"
+    },
+    "cancel": "Abbrechen",
+    "@cancel": {
+        "description": "The text for the cancel button"
+    },
+    "delete": "Löschen",
+    "@delete": {
+        "description": "The text for the delete button"
+    },
+    "profileDeleted": "Profil „{name}“ gelöscht",
+    "@profileDeleted": {
+        "description": "The text when a profile has been deleted",
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Alice"
+            }
+        }
+    },
+    "deleteProfileMessage": "Möchten Sie Ihr Profil „{name}“ wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden. Dabei werden alle Ihre Kontakte und Nachrichten gelöscht. Stellen Sie sicher, dass Sie ein Backup haben.",
+    "@deleteProfileMessage": {
+        "description": "The message to confirm the deletion of a profile",
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Alice"
+            }
+        }
+    },
+    "re": "Re: {message}",
+    "@re": {
+        "description": "The prefix for a reply message",
+        "placeholders": {
+            "message": {
+                "type": "String",
+                "example": "Hello"
+            }
+        }
     }
-  },
-  "profileTextFieldUserStatusMessage": "Statusnachricht",
-  "@profileTextFieldUserStatusMessage": {
-    "description": "The text for the status message field"
-  },
-  "defaultContactName": "Eine Person",
-  "@defaultContactName": {
-    "description": "The default name for a contact when the name is not yet known"
-  },
-  "addContact": "Kontakt hinzufügen",
-  "@addContact": {
-    "description": "The text for the button to add a contact"
-  },
-  "messageInput": "Nachricht",
-  "@messageInput": {
-    "description": "The placeholder text for the message input field"
-  },
-  "defaultAddContactMessage": "Hey, ich bin {nick}, komm mit mir auf bTox chatten!",
-  "@defaultAddContactMessage": {
-    "description": "The default message to send when adding a contact",
-    "placeholders": {
-      "nick": {
-        "type": "String",
-        "example": "Alice"
-      }
-    }
-  },
-  "addContactMessageLengthError": "Maximum {max} Zeichen ({length} ist zu lang)",
-  "@addContactMessageLengthError": {
-    "description": "The error message when the friend request message is too long",
-    "placeholders": {
-      "max": {
-        "type": "int",
-        "example": "256"
-      },
-      "length": {
-        "type": "int",
-        "example": "300"
-      }
-    }
-  },
-  "toxIdLengthError": "Muss {length} hexadezimale Zeichen sein",
-  "@toxIdLengthError": {
-    "description": "The error message when the Tox ID is not the right length or format",
-    "placeholders": {
-      "length": {
-        "type": "int",
-        "example": "76"
-      }
-    }
-  },
-  "messageEmptyError": "Die Nachricht darf nicht leer sein",
-  "@messageEmptyError": {
-    "description": "The error message when the message is empty"
-  },
-  "menuQuit": "Beenden",
-  "@menuQuit": {
-    "description": "The text for the quit menu item"
-  },
-  "menuSettings": "Einstellungen",
-  "@menuSettings": {
-    "description": "The text for the settings menu item"
-  },
-  "nickLengthError": "Spitzname muss zwischen 1 und {max} Zeichen lang sein",
-  "@nickLengthError": {
-    "description": "The error message when the nickname is too short or too long",
-    "placeholders": {
-      "max": {
-        "type": "int",
-        "example": "32"
-      }
-    }
-  },
-  "profileTextFieldNick": "Spitzname",
-  "@profileTextFieldNick": {
-    "description": "The text for the nickname field"
-  },
-  "applyChanges": "Änderungen übernehmen",
-  "@applyChanges": {
-    "description": "The text for the button to apply changes"
-  },
-  "applied": "Angewendet",
-  "@applied": {
-    "description": "The text when changes have been applied"
-  },
-  "newProfile": "Neues Profil",
-  "@newProfile": {
-    "description": "The title text for the create profile dialog"
-  },
-  "create": "Erstellen",
-  "@create": {
-    "description": "The text for the button create a new profile"
-  },
-  "logout": "Abmelden",
-  "@logout": {
-    "description": "The text for the logout menu item"
-  },
-  "deleteProfile": "Profil löschen",
-  "@deleteProfile": {
-    "description": "The text for the delete profile menu item"
-  },
-  "cancel": "Abbrechen",
-  "@cancel": {
-    "description": "The text for the cancel button"
-  },
-  "delete": "Löschen",
-  "@delete": {
-    "description": "The text for the delete button"
-  },
-  "profileDeleted": "Profil „{name}“ gelöscht",
-  "@profileDeleted": {
-    "description": "The text when a profile has been deleted",
-    "placeholders": {
-      "name": {
-        "type": "String",
-        "example": "Alice"
-      }
-    }
-  },
-  "deleteProfileMessage": "Möchten Sie Ihr Profil „{name}“ wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden. Dabei werden alle Ihre Kontakte und Nachrichten gelöscht. Stellen Sie sicher, dass Sie ein Backup haben.",
-  "@deleteProfileMessage": {
-    "description": "The message to confirm the deletion of a profile",
-    "placeholders": {
-      "name": {
-        "type": "String",
-        "example": "Alice"
-      }
-    }
-  }
 }
