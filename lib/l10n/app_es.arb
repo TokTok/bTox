@@ -60,5 +60,111 @@
     "add": "Añadir",
     "@add": {
         "description": "The text for the button to add a contact"
+    },
+    "toxIdLengthError": "Debe ser {length} caracteres hexadecimales",
+    "@toxIdLengthError": {
+        "description": "The error message when the Tox ID is not the right length or format",
+        "placeholders": {
+            "length": {
+                "type": "int",
+                "example": "76"
+            }
+        }
+    },
+    "messageEmptyError": "El mensaje no puede estar vacío",
+    "@messageEmptyError": {
+        "description": "The error message when the message is empty"
+    },
+    "menuProfile": "Perfil",
+    "@menuProfile": {
+        "description": "The text for the profile menu item"
+    },
+    "menuQuit": "Salir",
+    "@menuQuit": {
+        "description": "The text for the quit menu item"
+    },
+    "menuSettings": "Ajustes",
+    "@menuSettings": {
+        "description": "The text for the settings menu item"
+    },
+    "nickLengthError": "El apodo debe ser entre 1 y {max} caracteres",
+    "@nickLengthError": {
+        "description": "The error message when the nickname is too short or too long",
+        "placeholders": {
+            "max": {
+                "type": "int",
+                "example": "32"
+            }
+        }
+    },
+    "statusMessageLengthError": "El mensaje de estado no puede exceder {max} caracteres",
+    "@statusMessageLengthError": {
+        "description": "The error message when the status message is longer than the supported maximum",
+        "placeholders": {
+            "max": {
+                "type": "int",
+                "example": "128"
+            }
+        }
+    },
+    "profileTextFieldNick": "Apodo",
+    "@profileTextFieldNick": {
+        "description": "The text for the nickname field"
+    },
+    "profileTextFieldUserStatusMessage": "Mensaje de estado",
+    "@profileTextFieldUserStatusMessage": {
+        "description": "The text for the status message field"
+    },
+    "applyChanges": "Aplica cambios",
+    "@applyChanges": {
+        "description": "The text for the button to apply changes"
+    },
+    "applied": "Aplicado",
+    "@applied": {
+        "description": "The text when changes have been applied"
+    },
+    "newProfile": "Nuevo perfil",
+    "@newProfile": {
+        "description": "The title text for the create profile dialog"
+    },
+    "create": "Crear",
+    "@create": {
+        "description": "The text for the button create a new profile"
+    },
+    "logout": "Cerrar sesión",
+    "@logout": {
+        "description": "The text for the logout menu item"
+    },
+    "deleteProfile": "Borrar perfil",
+    "@deleteProfile": {
+        "description": "The text for the delete profile menu item"
+    },
+    "deleteProfileMessage": "¿Estás seguro de querer borrar tu perfil \"{name}\"? Esta acción no se puede deshacer. Eliminará todos tus contactos y mensajes. Asegúrate de tener una copia de seguridad.",
+    "@deleteProfileMessage": {
+        "description": "The message to confirm the deletion of a profile",
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Alice"
+            }
+        }
+    },
+    "cancel": "Cancelar",
+    "@cancel": {
+        "description": "The text for the cancel button"
+    },
+    "delete": "Borrar",
+    "@delete": {
+        "description": "The text for the delete button"
+    },
+    "profileDeleted": "Perfil \"{name}\" borrado",
+    "@profileDeleted": {
+        "description": "The text when a profile has been deleted",
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Alice"
+            }
+        }
     }
 }
