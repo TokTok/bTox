@@ -32,5 +32,37 @@
     "toxId": "ID Tox",
     "@toxId": {
         "description": "The text for the Tox ID field"
+    },
+    "defaultAddContactMessage": "Salut, je suis {nick}, viens discuter avec moi sur bTox !",
+    "@defaultAddContactMessage": {
+        "description": "The default message to send when adding a contact",
+        "placeholders": {
+            "nick": {
+                "type": "String",
+                "example": "Alice"
+            }
+        }
+    },
+    "add": "Ajouter",
+    "@add": {
+        "description": "The text for the button to add a contact"
+    },
+    "toxIdLengthError": "Doit être {length} caractères hexadécimaux",
+    "@toxIdLengthError": {
+        "description": "The error message when the Tox ID is not the right length or format",
+        "placeholders": {
+            "length": {
+                "type": "int",
+                "example": "76"
+            }
+        }
+    },
+    "messageEmptyError": "Le message ne peut pas être vide",
+    "@messageEmptyError": {
+        "description": "The error message when the message is empty"
+    },
+    "menuProfile": "Profil",
+    "@menuProfile": {
+        "description": "The text for the profile menu item"
     }
 }
