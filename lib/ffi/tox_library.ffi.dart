@@ -3,7 +3,6 @@ import 'dart:ffi';
 import 'package:btox/ffi/generated/toxcore.ffi.dart';
 import 'package:btox/platform/any_platform.dart';
 import 'package:ffi/ffi.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 export 'dart:ffi';

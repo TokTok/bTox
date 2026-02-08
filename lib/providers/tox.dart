@@ -7,7 +7,6 @@ import 'package:btox/ffi/toxcore.dart' as ffi;
 import 'package:btox/logger.dart';
 import 'package:btox/models/crypto.dart';
 import 'package:btox/providers/bootstrap_nodes.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'tox.g.dart';

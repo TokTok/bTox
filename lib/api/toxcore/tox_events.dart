@@ -113,7 +113,7 @@ sealed class Event extends Packet {
 }
 
 @freezed
-class ToxEventConferenceConnected extends Event
+abstract class ToxEventConferenceConnected extends Event
     with _$ToxEventConferenceConnected {
   const ToxEventConferenceConnected._();
   @JsonSerializable(
@@ -140,7 +140,8 @@ class ToxEventConferenceConnected extends Event
 }
 
 @freezed
-class ToxEventConferenceInvite extends Event with _$ToxEventConferenceInvite {
+abstract class ToxEventConferenceInvite extends Event
+    with _$ToxEventConferenceInvite {
   const ToxEventConferenceInvite._();
   @JsonSerializable(
     explicitToJson: true,
@@ -176,7 +177,8 @@ class ToxEventConferenceInvite extends Event with _$ToxEventConferenceInvite {
 }
 
 @freezed
-class ToxEventConferenceMessage extends Event with _$ToxEventConferenceMessage {
+abstract class ToxEventConferenceMessage extends Event
+    with _$ToxEventConferenceMessage {
   const ToxEventConferenceMessage._();
   @JsonSerializable(
     explicitToJson: true,
@@ -215,7 +217,7 @@ class ToxEventConferenceMessage extends Event with _$ToxEventConferenceMessage {
 }
 
 @freezed
-class ToxEventConferencePeerListChanged extends Event
+abstract class ToxEventConferencePeerListChanged extends Event
     with _$ToxEventConferencePeerListChanged {
   const ToxEventConferencePeerListChanged._();
   @JsonSerializable(
@@ -243,7 +245,7 @@ class ToxEventConferencePeerListChanged extends Event
 }
 
 @freezed
-class ToxEventConferencePeerName extends Event
+abstract class ToxEventConferencePeerName extends Event
     with _$ToxEventConferencePeerName {
   const ToxEventConferencePeerName._();
   @JsonSerializable(
@@ -280,7 +282,8 @@ class ToxEventConferencePeerName extends Event
 }
 
 @freezed
-class ToxEventConferenceTitle extends Event with _$ToxEventConferenceTitle {
+abstract class ToxEventConferenceTitle extends Event
+    with _$ToxEventConferenceTitle {
   const ToxEventConferenceTitle._();
   @JsonSerializable(
     explicitToJson: true,
@@ -316,7 +319,8 @@ class ToxEventConferenceTitle extends Event with _$ToxEventConferenceTitle {
 }
 
 @freezed
-class ToxEventDhtNodesResponse extends Event with _$ToxEventDhtNodesResponse {
+abstract class ToxEventDhtNodesResponse extends Event
+    with _$ToxEventDhtNodesResponse {
   const ToxEventDhtNodesResponse._();
   @JsonSerializable(
     explicitToJson: true,
@@ -352,7 +356,8 @@ class ToxEventDhtNodesResponse extends Event with _$ToxEventDhtNodesResponse {
 }
 
 @freezed
-class ToxEventFileChunkRequest extends Event with _$ToxEventFileChunkRequest {
+abstract class ToxEventFileChunkRequest extends Event
+    with _$ToxEventFileChunkRequest {
   const ToxEventFileChunkRequest._();
   @JsonSerializable(
     explicitToJson: true,
@@ -390,7 +395,7 @@ class ToxEventFileChunkRequest extends Event with _$ToxEventFileChunkRequest {
 }
 
 @freezed
-class ToxEventFileRecv extends Event with _$ToxEventFileRecv {
+abstract class ToxEventFileRecv extends Event with _$ToxEventFileRecv {
   const ToxEventFileRecv._();
   @JsonSerializable(
     explicitToJson: true,
@@ -432,7 +437,8 @@ class ToxEventFileRecv extends Event with _$ToxEventFileRecv {
 }
 
 @freezed
-class ToxEventFileRecvChunk extends Event with _$ToxEventFileRecvChunk {
+abstract class ToxEventFileRecvChunk extends Event
+    with _$ToxEventFileRecvChunk {
   const ToxEventFileRecvChunk._();
   @JsonSerializable(
     explicitToJson: true,
@@ -471,7 +477,8 @@ class ToxEventFileRecvChunk extends Event with _$ToxEventFileRecvChunk {
 }
 
 @freezed
-class ToxEventFileRecvControl extends Event with _$ToxEventFileRecvControl {
+abstract class ToxEventFileRecvControl extends Event
+    with _$ToxEventFileRecvControl {
   const ToxEventFileRecvControl._();
   @JsonSerializable(
     explicitToJson: true,
@@ -506,7 +513,7 @@ class ToxEventFileRecvControl extends Event with _$ToxEventFileRecvControl {
 }
 
 @freezed
-class ToxEventFriendConnectionStatus extends Event
+abstract class ToxEventFriendConnectionStatus extends Event
     with _$ToxEventFriendConnectionStatus {
   const ToxEventFriendConnectionStatus._();
   @JsonSerializable(
@@ -539,7 +546,7 @@ class ToxEventFriendConnectionStatus extends Event
 }
 
 @freezed
-class ToxEventFriendLosslessPacket extends Event
+abstract class ToxEventFriendLosslessPacket extends Event
     with _$ToxEventFriendLosslessPacket {
   const ToxEventFriendLosslessPacket._();
   @JsonSerializable(
@@ -576,7 +583,8 @@ class ToxEventFriendLosslessPacket extends Event
 }
 
 @freezed
-class ToxEventFriendLossyPacket extends Event with _$ToxEventFriendLossyPacket {
+abstract class ToxEventFriendLossyPacket extends Event
+    with _$ToxEventFriendLossyPacket {
   const ToxEventFriendLossyPacket._();
   @JsonSerializable(
     explicitToJson: true,
@@ -612,7 +620,8 @@ class ToxEventFriendLossyPacket extends Event with _$ToxEventFriendLossyPacket {
 }
 
 @freezed
-class ToxEventFriendMessage extends Event with _$ToxEventFriendMessage {
+abstract class ToxEventFriendMessage extends Event
+    with _$ToxEventFriendMessage {
   const ToxEventFriendMessage._();
   @JsonSerializable(
     explicitToJson: true,
@@ -651,7 +660,7 @@ class ToxEventFriendMessage extends Event with _$ToxEventFriendMessage {
 }
 
 @freezed
-class ToxEventFriendName extends Event with _$ToxEventFriendName {
+abstract class ToxEventFriendName extends Event with _$ToxEventFriendName {
   const ToxEventFriendName._();
   @JsonSerializable(
     explicitToJson: true,
@@ -684,7 +693,8 @@ class ToxEventFriendName extends Event with _$ToxEventFriendName {
 }
 
 @freezed
-class ToxEventFriendReadReceipt extends Event with _$ToxEventFriendReadReceipt {
+abstract class ToxEventFriendReadReceipt extends Event
+    with _$ToxEventFriendReadReceipt {
   const ToxEventFriendReadReceipt._();
   @JsonSerializable(
     explicitToJson: true,
@@ -716,7 +726,8 @@ class ToxEventFriendReadReceipt extends Event with _$ToxEventFriendReadReceipt {
 }
 
 @freezed
-class ToxEventFriendRequest extends Event with _$ToxEventFriendRequest {
+abstract class ToxEventFriendRequest extends Event
+    with _$ToxEventFriendRequest {
   const ToxEventFriendRequest._();
   @JsonSerializable(
     explicitToJson: true,
@@ -749,7 +760,7 @@ class ToxEventFriendRequest extends Event with _$ToxEventFriendRequest {
 }
 
 @freezed
-class ToxEventFriendStatus extends Event with _$ToxEventFriendStatus {
+abstract class ToxEventFriendStatus extends Event with _$ToxEventFriendStatus {
   const ToxEventFriendStatus._();
   @JsonSerializable(
     explicitToJson: true,
@@ -781,7 +792,7 @@ class ToxEventFriendStatus extends Event with _$ToxEventFriendStatus {
 }
 
 @freezed
-class ToxEventFriendStatusMessage extends Event
+abstract class ToxEventFriendStatusMessage extends Event
     with _$ToxEventFriendStatusMessage {
   const ToxEventFriendStatusMessage._();
   @JsonSerializable(
@@ -815,7 +826,7 @@ class ToxEventFriendStatusMessage extends Event
 }
 
 @freezed
-class ToxEventFriendTyping extends Event with _$ToxEventFriendTyping {
+abstract class ToxEventFriendTyping extends Event with _$ToxEventFriendTyping {
   const ToxEventFriendTyping._();
   @JsonSerializable(
     explicitToJson: true,
@@ -847,7 +858,8 @@ class ToxEventFriendTyping extends Event with _$ToxEventFriendTyping {
 }
 
 @freezed
-class ToxEventGroupCustomPacket extends Event with _$ToxEventGroupCustomPacket {
+abstract class ToxEventGroupCustomPacket extends Event
+    with _$ToxEventGroupCustomPacket {
   const ToxEventGroupCustomPacket._();
   @JsonSerializable(
     explicitToJson: true,
@@ -883,7 +895,7 @@ class ToxEventGroupCustomPacket extends Event with _$ToxEventGroupCustomPacket {
 }
 
 @freezed
-class ToxEventGroupCustomPrivatePacket extends Event
+abstract class ToxEventGroupCustomPrivatePacket extends Event
     with _$ToxEventGroupCustomPrivatePacket {
   const ToxEventGroupCustomPrivatePacket._();
   @JsonSerializable(
@@ -921,7 +933,7 @@ class ToxEventGroupCustomPrivatePacket extends Event
 }
 
 @freezed
-class ToxEventGroupInvite extends Event with _$ToxEventGroupInvite {
+abstract class ToxEventGroupInvite extends Event with _$ToxEventGroupInvite {
   const ToxEventGroupInvite._();
   @JsonSerializable(
     explicitToJson: true,
@@ -957,7 +969,8 @@ class ToxEventGroupInvite extends Event with _$ToxEventGroupInvite {
 }
 
 @freezed
-class ToxEventGroupJoinFail extends Event with _$ToxEventGroupJoinFail {
+abstract class ToxEventGroupJoinFail extends Event
+    with _$ToxEventGroupJoinFail {
   const ToxEventGroupJoinFail._();
   @JsonSerializable(
     explicitToJson: true,
@@ -989,7 +1002,7 @@ class ToxEventGroupJoinFail extends Event with _$ToxEventGroupJoinFail {
 }
 
 @freezed
-class ToxEventGroupMessage extends Event with _$ToxEventGroupMessage {
+abstract class ToxEventGroupMessage extends Event with _$ToxEventGroupMessage {
   const ToxEventGroupMessage._();
   @JsonSerializable(
     explicitToJson: true,
@@ -1031,7 +1044,8 @@ class ToxEventGroupMessage extends Event with _$ToxEventGroupMessage {
 }
 
 @freezed
-class ToxEventGroupModeration extends Event with _$ToxEventGroupModeration {
+abstract class ToxEventGroupModeration extends Event
+    with _$ToxEventGroupModeration {
   const ToxEventGroupModeration._();
   @JsonSerializable(
     explicitToJson: true,
@@ -1069,7 +1083,8 @@ class ToxEventGroupModeration extends Event with _$ToxEventGroupModeration {
 }
 
 @freezed
-class ToxEventGroupPassword extends Event with _$ToxEventGroupPassword {
+abstract class ToxEventGroupPassword extends Event
+    with _$ToxEventGroupPassword {
   const ToxEventGroupPassword._();
   @JsonSerializable(
     explicitToJson: true,
@@ -1102,7 +1117,8 @@ class ToxEventGroupPassword extends Event with _$ToxEventGroupPassword {
 }
 
 @freezed
-class ToxEventGroupPeerExit extends Event with _$ToxEventGroupPeerExit {
+abstract class ToxEventGroupPeerExit extends Event
+    with _$ToxEventGroupPeerExit {
   const ToxEventGroupPeerExit._();
   @JsonSerializable(
     explicitToJson: true,
@@ -1144,7 +1160,8 @@ class ToxEventGroupPeerExit extends Event with _$ToxEventGroupPeerExit {
 }
 
 @freezed
-class ToxEventGroupPeerJoin extends Event with _$ToxEventGroupPeerJoin {
+abstract class ToxEventGroupPeerJoin extends Event
+    with _$ToxEventGroupPeerJoin {
   const ToxEventGroupPeerJoin._();
   @JsonSerializable(
     explicitToJson: true,
@@ -1176,7 +1193,8 @@ class ToxEventGroupPeerJoin extends Event with _$ToxEventGroupPeerJoin {
 }
 
 @freezed
-class ToxEventGroupPeerLimit extends Event with _$ToxEventGroupPeerLimit {
+abstract class ToxEventGroupPeerLimit extends Event
+    with _$ToxEventGroupPeerLimit {
   const ToxEventGroupPeerLimit._();
   @JsonSerializable(
     explicitToJson: true,
@@ -1208,7 +1226,8 @@ class ToxEventGroupPeerLimit extends Event with _$ToxEventGroupPeerLimit {
 }
 
 @freezed
-class ToxEventGroupPeerName extends Event with _$ToxEventGroupPeerName {
+abstract class ToxEventGroupPeerName extends Event
+    with _$ToxEventGroupPeerName {
   const ToxEventGroupPeerName._();
   @JsonSerializable(
     explicitToJson: true,
@@ -1244,7 +1263,8 @@ class ToxEventGroupPeerName extends Event with _$ToxEventGroupPeerName {
 }
 
 @freezed
-class ToxEventGroupPeerStatus extends Event with _$ToxEventGroupPeerStatus {
+abstract class ToxEventGroupPeerStatus extends Event
+    with _$ToxEventGroupPeerStatus {
   const ToxEventGroupPeerStatus._();
   @JsonSerializable(
     explicitToJson: true,
@@ -1279,7 +1299,8 @@ class ToxEventGroupPeerStatus extends Event with _$ToxEventGroupPeerStatus {
 }
 
 @freezed
-class ToxEventGroupPrivacyState extends Event with _$ToxEventGroupPrivacyState {
+abstract class ToxEventGroupPrivacyState extends Event
+    with _$ToxEventGroupPrivacyState {
   const ToxEventGroupPrivacyState._();
   @JsonSerializable(
     explicitToJson: true,
@@ -1311,7 +1332,7 @@ class ToxEventGroupPrivacyState extends Event with _$ToxEventGroupPrivacyState {
 }
 
 @freezed
-class ToxEventGroupPrivateMessage extends Event
+abstract class ToxEventGroupPrivateMessage extends Event
     with _$ToxEventGroupPrivateMessage {
   const ToxEventGroupPrivateMessage._();
   @JsonSerializable(
@@ -1354,7 +1375,8 @@ class ToxEventGroupPrivateMessage extends Event
 }
 
 @freezed
-class ToxEventGroupSelfJoin extends Event with _$ToxEventGroupSelfJoin {
+abstract class ToxEventGroupSelfJoin extends Event
+    with _$ToxEventGroupSelfJoin {
   const ToxEventGroupSelfJoin._();
   @JsonSerializable(
     explicitToJson: true,
@@ -1380,7 +1402,7 @@ class ToxEventGroupSelfJoin extends Event with _$ToxEventGroupSelfJoin {
 }
 
 @freezed
-class ToxEventGroupTopic extends Event with _$ToxEventGroupTopic {
+abstract class ToxEventGroupTopic extends Event with _$ToxEventGroupTopic {
   const ToxEventGroupTopic._();
   @JsonSerializable(
     explicitToJson: true,
@@ -1416,7 +1438,8 @@ class ToxEventGroupTopic extends Event with _$ToxEventGroupTopic {
 }
 
 @freezed
-class ToxEventGroupTopicLock extends Event with _$ToxEventGroupTopicLock {
+abstract class ToxEventGroupTopicLock extends Event
+    with _$ToxEventGroupTopicLock {
   const ToxEventGroupTopicLock._();
   @JsonSerializable(
     explicitToJson: true,
@@ -1448,7 +1471,8 @@ class ToxEventGroupTopicLock extends Event with _$ToxEventGroupTopicLock {
 }
 
 @freezed
-class ToxEventGroupVoiceState extends Event with _$ToxEventGroupVoiceState {
+abstract class ToxEventGroupVoiceState extends Event
+    with _$ToxEventGroupVoiceState {
   const ToxEventGroupVoiceState._();
   @JsonSerializable(
     explicitToJson: true,
@@ -1480,7 +1504,7 @@ class ToxEventGroupVoiceState extends Event with _$ToxEventGroupVoiceState {
 }
 
 @freezed
-class ToxEventSelfConnectionStatus extends Event
+abstract class ToxEventSelfConnectionStatus extends Event
     with _$ToxEventSelfConnectionStatus {
   const ToxEventSelfConnectionStatus._();
   @JsonSerializable(

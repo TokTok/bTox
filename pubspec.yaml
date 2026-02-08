@@ -18,7 +18,7 @@ publish_to: "none" # Remove this line if you wish to publish to pub.dev
 version: 0.0.1
 
 environment:
-  sdk: ">=3.5.0 <4.0.0"
+  sdk: ">=3.10.0 <4.0.0"
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -41,24 +41,24 @@ dependencies:
   emoji_picker_flutter: ^4.3.0
   emoji_regex: ^0.0.5
   ffi: ^2.1.3
-  file_picker: ^9.0.0
+  file_picker: ^10.3.10
   flutter_background_service: ^5.1.0
-  flutter_context_menu: ^0.2.0
-  flutter_hooks: ^0.20.5
+  flutter_context_menu: ^0.4.1
+  flutter_hooks: ^0.21.3+1
   flutter_map: ^8.1.0
-  flutter_riverpod: ^2.6.1
-  freezed_annotation: ^2.4.4
-  geolocator: ^13.0.2
-  hooks_riverpod: ^2.6.1
+  flutter_riverpod: ^3.1.0
+  freezed_annotation: ^3.1.0
+  geolocator: ^14.0.2
+  hooks_riverpod: ^3.1.0
   http: ^1.3.0
   image_picker: ^1.1.2
-  intl: ^0.19.0
+  intl: ^0.20.2
   json_annotation: ^4.9.0
-  keyboard_height_plugin: ^0.1.5
+  keyboard_height_plugin: ^0.2.0
   latlong2: ^0.9.1
   path_provider: ^2.1.5
   path: ^1.9.0
-  riverpod_annotation: ^2.6.1
+  riverpod_annotation: ^4.0.0
   sodium_libs: ^3.4.3+1
   sodium: ^3.4.4
   sqlcipher_flutter_libs: ^0.6.4
@@ -69,17 +69,17 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
 
-  analyzer: ^7.1.0
-  build_runner: ^2.1.7
-  custom_lint: ^0.7.0
-  drift_dev: ^2.21.2
-  ffigen: ^15.0.0
+  analyzer: ^8.4.0
+  build_runner: ^2.11.0
+  custom_lint: ^0.8.0
+  drift_dev: ^2.31.0
+  ffigen: ^20.1.1
   flutter_launcher_icons: ^0.14.1
-  flutter_lints: ^5.0.0
-  freezed: ^2.5.7
-  json_serializable: ^6.8.0
-  riverpod_generator: ^2.6.2
-  riverpod_lint: ^2.6.2
+  flutter_lints: ^6.0.0
+  freezed: ^3.2.0
+  json_serializable: ^6.11.0
+  riverpod_generator: ^4.0.0
+  riverpod_lint: ^3.1.0
 
 # dart run flutter_launcher_icons
 flutter_launcher_icons:

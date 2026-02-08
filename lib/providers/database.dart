@@ -2,7 +2,6 @@ import 'package:btox/db/database.dart';
 import 'package:btox/db/shared.dart';
 import 'package:btox/logger.dart';
 import 'package:btox/providers/secure_storage.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'database.g.dart';

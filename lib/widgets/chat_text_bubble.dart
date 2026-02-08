@@ -29,7 +29,7 @@ final class ChatTextBubble extends StatelessWidget {
                 : EdgeInsets.symmetric(vertical: 6, horizontal: 12),
             child: child,
           ),
-          if (stateIcon != null) stateIcon!,
+          ?stateIcon,
         ],
       ),
     );

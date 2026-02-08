@@ -85,7 +85,7 @@ final class ChatPage extends HookConsumerWidget {
                       right: 8,
                       bottom: ref.watch(keyboardHeightProvider).when(
                           data: (height) => height == 0 ? 24 : 4,
-                          error: (_, __) => 12,
+                          error: (_, _) => 12,
                           loading: () => 12),
                     ),
                     child: MessageInput(

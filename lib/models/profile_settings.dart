@@ -7,7 +7,7 @@ part 'profile_settings.g.dart';
 part 'profile_settings.freezed.dart';
 
 @freezed
-class ProfileSettings with _$ProfileSettings {
+abstract class ProfileSettings with _$ProfileSettings {
   const factory ProfileSettings({
     required String nickname,
     required String statusMessage,
