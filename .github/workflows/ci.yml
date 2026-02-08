@@ -26,5 +26,6 @@ jobs:
     uses: TokTok/ci-tools/.github/workflows/flutter.yml@master
     with:
       project-name: btox
+      flutter-version: "3.38.9"
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

@@ -5,7 +5,7 @@ part 'bootstrap_nodes.freezed.dart';
 part 'bootstrap_nodes.g.dart';
 
 @freezed
-class BootstrapNode with _$BootstrapNode {
+abstract class BootstrapNode with _$BootstrapNode {
   // ignore: invalid_annotation_target
   @JsonSerializable(
     explicitToJson: true,
@@ -32,7 +32,7 @@ class BootstrapNode with _$BootstrapNode {
 }
 
 @freezed
-class BootstrapNodeList with _$BootstrapNodeList {
+abstract class BootstrapNodeList with _$BootstrapNodeList {
   // ignore: invalid_annotation_target
   @JsonSerializable(
     explicitToJson: true,

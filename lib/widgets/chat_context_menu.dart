@@ -22,7 +22,7 @@ final class ChatContextMenu {
       onDelete: onDelete,
     );
 
-    return menu.show<void>(context);
+    return menu.show(context);
   }
 
   static ContextMenu _build(
@@ -36,34 +36,34 @@ final class ChatContextMenu {
   }) {
     final entries = [
       MenuItem(
-        label: 'Reply',
-        icon: Icons.reply_outlined,
-        onSelected: onReply,
+        label: const Text('Reply'),
+        icon: const Icon(Icons.reply_outlined),
+        onSelected: (_) => onReply(),
       ),
       MenuItem(
-        label: 'Forward',
-        icon: Icons.forward_outlined,
-        onSelected: onForward,
+        label: const Text('Forward'),
+        icon: const Icon(Icons.forward_outlined),
+        onSelected: (_) => onForward(),
       ),
       MenuItem(
-        label: 'Copy',
-        icon: Icons.copy,
-        onSelected: onCopy,
+        label: const Text('Copy'),
+        icon: const Icon(Icons.copy),
+        onSelected: (_) => onCopy(),
       ),
       MenuItem(
-        label: 'Select',
-        icon: Icons.check_circle_outline,
-        onSelected: onSelect,
+        label: const Text('Select'),
+        icon: const Icon(Icons.check_circle_outline),
+        onSelected: (_) => onSelect(),
       ),
       MenuItem(
-        label: 'Info',
-        icon: Icons.info_outline,
-        onSelected: onInfo,
+        label: const Text('Info'),
+        icon: const Icon(Icons.info_outline),
+        onSelected: (_) => onInfo(),
       ),
       MenuItem(
-        label: 'Delete',
-        icon: Icons.delete_outline,
-        onSelected: onDelete,
+        label: const Text('Delete'),
+        icon: const Icon(Icons.delete_outline),
+        onSelected: (_) => onDelete(),
       ),
     ];
 

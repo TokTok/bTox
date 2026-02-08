@@ -25,7 +25,7 @@ final class ChatTextEmoji extends StatelessWidget {
             style: textStyle.copyWith(fontSize: 48),
           ),
         ),
-        if (stateIcon != null) stateIcon!,
+        ?stateIcon,
       ],
     );
   }

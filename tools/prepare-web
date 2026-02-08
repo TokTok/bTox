@@ -3,11 +3,11 @@
 set -eux -o pipefail
 
 # SQLite wasm/js.
-SQLITE_VERSION=2.6.1
+SQLITE_VERSION=2.9.4
 curl -L "https://github.com/simolus3/sqlite3.dart/releases/download/sqlite3-$SQLITE_VERSION/sqlite3.wasm" -o web/sqlite3.wasm
 
 # Drift worker.
-DRIFT_VERSION=2.23.1
+DRIFT_VERSION=2.31.0
 curl -L "https://github.com/simolus3/drift/releases/download/drift-$DRIFT_VERSION/drift_worker.js" -o web/drift_worker.js
 
 # Sodium libs.

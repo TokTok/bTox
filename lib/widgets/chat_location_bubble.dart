@@ -62,7 +62,7 @@ final class ChatLocationBubble extends ConsumerWidget {
               ],
             ),
           ),
-          if (stateIcon != null) stateIcon!,
+          ?stateIcon,
         ],
       ),
     );
