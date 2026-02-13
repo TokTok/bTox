@@ -7,6 +7,9 @@ import 'package:btox/models/messaging.dart';
 import 'package:btox/models/persistence.dart';
 import 'package:btox/models/profile_settings.dart';
 import 'package:btox/pages/chat_page.dart';
+import 'package:btox/providers/contacts.dart';
+import 'package:btox/providers/messages.dart';
+import 'package:btox/providers/profiles.dart';
 import 'package:btox/widgets/chat_text_bubble.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -45,13 +48,16 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
+        overrides: [
+          activeProfileProvider.overrideWithValue(profile),
+          contactProvider(contact.id)
+              .overrideWith((ref) => Stream.value(contact)),
+          messagesForContactProvider(contact.id)
+              .overrideWith((ref) => Stream.value(messages)),
+        ],
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
-          home: ChatPage(
-            profile: profile,
-            contact: Stream.value(contact),
-            messages: Stream.value(messages),
-          ),
+          home: ChatPage(contactId: contact.id),
         ),
       ),
     );
@@ -96,13 +102,16 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
+        overrides: [
+          activeProfileProvider.overrideWithValue(profile),
+          contactProvider(contact.id)
+              .overrideWith((ref) => Stream.value(contact)),
+          messagesForContactProvider(contact.id)
+              .overrideWith((ref) => Stream.value(messages)),
+        ],
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
-          home: ChatPage(
-            profile: profile,
-            contact: Stream.value(contact),
-            messages: Stream.value(messages),
-          ),
+          home: ChatPage(contactId: contact.id),
         ),
       ),
     );
@@ -136,13 +145,16 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
+        overrides: [
+          activeProfileProvider.overrideWithValue(profile),
+          contactProvider(contact.id)
+              .overrideWith((ref) => Stream.value(contact)),
+          messagesForContactProvider(contact.id)
+              .overrideWith((ref) => Stream.value(messages)),
+        ],
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
-          home: ChatPage(
-            profile: profile,
-            contact: Stream.value(contact),
-            messages: Stream.value(messages),
-          ),
+          home: ChatPage(contactId: contact.id),
         ),
       ),
     );
@@ -174,13 +186,16 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
+        overrides: [
+          activeProfileProvider.overrideWithValue(profile),
+          contactProvider(contact.id)
+              .overrideWith((ref) => Stream.value(contact)),
+          messagesForContactProvider(contact.id)
+              .overrideWith((ref) => Stream.value(messages)),
+        ],
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
-          home: ChatPage(
-            profile: profile,
-            contact: Stream.value(contact),
-            messages: Stream.value(messages),
-          ),
+          home: ChatPage(contactId: contact.id),
         ),
       ),
     );
@@ -207,14 +222,16 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
+        overrides: [
+          activeProfileProvider.overrideWithValue(profile),
+          contactProvider(contact.id)
+              .overrideWith((ref) => Stream.value(contact)),
+          messagesForContactProvider(contact.id)
+              .overrideWith((ref) => Stream.value(messages)),
+        ],
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
-          home: ChatPage(
-            profile: profile,
-            contact: Stream.value(contact),
-            messages: Stream.value(messages),
-            recentEmojis: false,
-          ),
+          home: ChatPage(contactId: contact.id, recentEmojis: false),
         ),
       ),
     );
@@ -247,14 +264,16 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
+          overrides: [
+            activeProfileProvider.overrideWithValue(profile),
+            contactProvider(contact.id)
+                .overrideWith((ref) => Stream.value(contact)),
+            messagesForContactProvider(contact.id)
+                .overrideWith((ref) => Stream.value(messages)),
+          ],
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
-            home: ChatPage(
-              profile: profile,
-              contact: Stream.value(contact),
-              messages: Stream.value(messages),
-              recentEmojis: false,
-            ),
+            home: ChatPage(contactId: contact.id, recentEmojis: false),
           ),
         ),
       );
@@ -295,14 +314,16 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
+        overrides: [
+          activeProfileProvider.overrideWithValue(profile),
+          contactProvider(contact.id)
+              .overrideWith((ref) => Stream.value(contact)),
+          messagesForContactProvider(contact.id)
+              .overrideWith((ref) => Stream.value(messages)),
+        ],
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
-          home: ChatPage(
-            profile: profile,
-            contact: Stream.value(contact),
-            messages: Stream.value(messages),
-            recentEmojis: false,
-          ),
+          home: ChatPage(contactId: contact.id, recentEmojis: false),
         ),
       ),
     );
@@ -336,13 +357,16 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
+        overrides: [
+          activeProfileProvider.overrideWithValue(profile),
+          contactProvider(contact.id)
+              .overrideWith((ref) => Stream.value(contact)),
+          messagesForContactProvider(contact.id)
+              .overrideWith((ref) => Stream.value(messages)),
+        ],
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
-          home: ChatPage(
-            profile: profile,
-            contact: Stream.value(contact),
-            messages: Stream.value(messages),
-          ),
+          home: ChatPage(contactId: contact.id),
         ),
       ),
     );

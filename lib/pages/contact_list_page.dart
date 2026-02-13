@@ -1,35 +1,34 @@
-import 'package:btox/api/toxcore/tox.dart';
 import 'package:btox/db/database.dart';
 import 'package:btox/l10n/generated/app_localizations.dart';
 import 'package:btox/logger.dart';
-import 'package:btox/models/content.dart';
 import 'package:btox/models/crypto.dart';
-import 'package:btox/models/messaging.dart';
 import 'package:btox/pages/add_contact_page.dart';
 import 'package:btox/pages/chat_page.dart';
+import 'package:btox/providers/contacts.dart';
+import 'package:btox/providers/database.dart';
+import 'package:btox/providers/profiles.dart';
+import 'package:btox/providers/tox.dart';
 import 'package:btox/widgets/connection_status_icon.dart';
 import 'package:btox/widgets/contact_list_item.dart';
 import 'package:btox/widgets/main_menu.dart';
-import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 const _logger = Logger(['ContactListPage']);
 
 final class ContactListPage extends ConsumerWidget {
-  final ToxConstants constants;
-  final Database database;
-  final Profile profile;
-
-  const ContactListPage({
-    super.key,
-    required this.constants,
-    required this.database,
-    required this.profile,
-  });
+  const ContactListPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final profile = ref.watch(activeProfileProvider);
+    final constants = ref.watch(toxConstantsProvider).asData?.value;
+    final database = ref.watch(databaseProvider).asData?.value;
+
+    if (profile == null || constants == null || database == null) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
     return Scaffold(
       drawer: MainMenu(
         constants: constants,
@@ -65,46 +64,31 @@ final class ContactListPage extends ConsumerWidget {
           ],
         ),
       ),
-      body: StreamBuilder<List<Contact>>(
-        stream: database.watchContactsFor(profile.id),
-        builder: ((context, snapshot) {
-          final contacts = snapshot.data ?? [];
-
-          return ListView.builder(
-            itemCount: contacts.length,
-            itemBuilder: (context, index) {
-              return ContactListItem(
-                contact: contacts[index],
-                onTap: (Contact contact) {
-                  _logger.d('Opening chat with contact: ${contact.id}');
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ChatPage(
-                        profile: profile,
-                        contact: database.watchContact(contact.id),
-                        messages: database.watchMessagesFor(contact.id),
-                        onSendMessage: (Message? parent, Content content) {
-                          database.addMessage(
-                            newMessage(
-                              contactId: contact.id,
-                              parent: parent,
-                              merged: null,
-                              author: profile.publicKey,
-                              timestamp: clock.now().toUtc(),
-                              content: content,
-                            ),
-                          );
-                        },
-                      ),
-                    ),
+      body: ref
+          .watch(contactsForProfileProvider(profile.id))
+          .when(
+            data: (contacts) {
+              return ListView.builder(
+                itemCount: contacts.length,
+                itemBuilder: (context, index) {
+                  return ContactListItem(
+                    contact: contacts[index],
+                    onTap: (contact) {
+                      _logger.d('Opening chat with contact: ${contact.id}');
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ChatPage(contactId: contact.id),
+                        ),
+                      );
+                    },
                   );
                 },
               );
             },
-          );
-        }),
-      ),
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (error, _) => Center(child: Text('Error: $error')),
+          ),
       floatingActionButton: FloatingActionButton(
         key: const Key('addContactButton'),
         onPressed: () => Navigator.push(

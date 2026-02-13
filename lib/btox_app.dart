@@ -1,27 +1,11 @@
-import 'package:btox/api/toxcore/tox.dart';
-import 'package:btox/db/database.dart';
 import 'package:btox/l10n/generated/app_localizations.dart';
 import 'package:btox/pages/contact_list_page.dart';
 import 'package:btox/pages/create_profile_page.dart';
 import 'package:btox/pages/select_profile_page.dart';
-import 'package:btox/providers/database.dart';
-import 'package:btox/providers/sodium.dart';
-import 'package:btox/providers/tox.dart';
+import 'package:btox/providers/profiles.dart';
+import 'package:btox/services/tox_message_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:sodium/sodium.dart';
-
-part 'btox_app.g.dart';
-
-@riverpod
-Future<(Database, Sodium, ToxConstants)> appInit(Ref ref) async {
-  return (
-    await ref.watch(databaseProvider.future),
-    await ref.watch(sodiumProvider.future),
-    await ref.watch(toxConstantsProvider.future),
-  );
-}
 
 final class BtoxApp extends ConsumerWidget {
   const BtoxApp({super.key});
@@ -38,46 +22,28 @@ final class BtoxApp extends ConsumerWidget {
   }
 
   Widget _appContent(WidgetRef ref) {
+    // Initialize the background message handler.
+    ref.watch(toxMessageServiceProvider);
+
     return ref
-        .watch(appInitProvider)
+        .watch(profilesProvider)
         .when(
           loading: () =>
               const Scaffold(body: Center(child: CircularProgressIndicator())),
           error: (error, _) =>
               Scaffold(body: Center(child: Text('Error: $error'))),
-          data: (init) {
-            final (database, sodium, constants) = init;
-            return StreamBuilder<List<Profile>>(
-              stream: database.watchProfiles(),
-              builder: (context, snapshot) {
-                final profiles = snapshot.data ?? const [];
-                if (profiles.isEmpty) {
-                  return CreateProfilePage(
-                    constants: constants,
-                    sodium: sodium,
-                    database: database,
-                  );
-                }
+          data: (profiles) {
+            final activeProfile = ref.watch(activeProfileProvider);
 
-                final activeProfiles = profiles.where(
-                  (profile) => profile.active,
-                );
-                if (activeProfiles.isEmpty) {
-                  return SelectProfilePage(
-                    constants: constants,
-                    sodium: sodium,
-                    database: database,
-                    profiles: profiles,
-                  );
-                }
+            if (profiles.isEmpty) {
+              return const CreateProfilePage();
+            }
 
-                return ContactListPage(
-                  constants: constants,
-                  database: database,
-                  profile: activeProfiles.first,
-                );
-              },
-            );
+            if (activeProfile == null) {
+              return const SelectProfilePage();
+            }
+
+            return const ContactListPage();
           },
         );
   }

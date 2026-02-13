@@ -52,7 +52,7 @@ final class ChatLocationBubble extends ConsumerWidget {
                 TileLayer(
                   urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                   userAgentPackageName: 'chat.tox.btox',
-                  tileProvider: ref.read(mapTileProvider),
+                  tileProvider: ref.watch(mapTileProvider),
                 ),
                 MarkerLayer(
                   markers: [

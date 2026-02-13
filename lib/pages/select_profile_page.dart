@@ -1,28 +1,24 @@
-import 'package:btox/api/toxcore/tox.dart';
-import 'package:btox/db/database.dart';
 import 'package:btox/logger.dart';
 import 'package:btox/pages/create_profile_page.dart';
+import 'package:btox/providers/database.dart';
+import 'package:btox/providers/profiles.dart';
 import 'package:flutter/material.dart';
-import 'package:sodium/sodium.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 const _logger = Logger(['SelectProfilePage']);
 
-final class SelectProfilePage extends StatelessWidget {
-  final ToxConstants constants;
-  final Sodium sodium;
-  final Database database;
-  final List<Profile> profiles;
-
-  const SelectProfilePage({
-    super.key,
-    required this.constants,
-    required this.sodium,
-    required this.database,
-    required this.profiles,
-  });
+final class SelectProfilePage extends ConsumerWidget {
+  const SelectProfilePage({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final profiles = ref.watch(profilesProvider).asData?.value ?? const [];
+    final database = ref.watch(databaseProvider).asData?.value;
+
+    if (database == null) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
     return Scaffold(
       appBar: AppBar(title: const Text('Select Profile')),
       body: ListView.builder(
@@ -43,16 +39,7 @@ final class SelectProfilePage extends StatelessWidget {
         onPressed: () async {
           Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (context) => CreateProfilePage(
-                constants: constants,
-                sodium: sodium,
-                database: database,
-                onProfileCreated: (profileId) {
-                  Navigator.pop(context);
-                },
-              ),
-            ),
+            MaterialPageRoute(builder: (context) => const CreateProfilePage()),
           );
         },
         child: const Icon(Icons.add),

@@ -240,8 +240,11 @@ void main() {
           matchesGoldenFile('goldens/settings_delete.png'),
         );
 
+        // Explicitly unmount the app to trigger disposal of Riverpod providers
+        // and stop background event loops before closing the database.
         tox.kill();
-        await tester.pump(const Duration(seconds: 1));
+        await tester.pumpWidget(const SizedBox());
+        await tester.pumpAndSettle();
 
         await db.close();
       },

@@ -41,6 +41,9 @@ Stream<Event> toxEvents(
   SecretKey secretKey,
   ToxAddressNospam nospam,
 ) async* {
+  bool disposed = false;
+  ref.onDispose(() => disposed = true);
+
   final tox = await ref.watch(toxProvider(secretKey, nospam).future);
 
   final nodes = (await ref.watch(bootstrapNodesProvider.future)).nodes
@@ -60,7 +63,7 @@ Stream<Event> toxEvents(
     _logger.e('Failed to bootstrap');
   }
 
-  while (tox.isAlive) {
+  while (!disposed && tox.isAlive) {
     for (final event in tox.iterate()) {
       if (event is ToxEventDhtNodesResponse) {
         continue;

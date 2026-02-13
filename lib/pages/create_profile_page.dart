@@ -1,4 +1,3 @@
-import 'package:btox/api/toxcore/tox.dart';
 import 'package:btox/db/database.dart';
 import 'package:btox/l10n/generated/app_localizations.dart';
 import 'package:btox/logger.dart';
@@ -8,28 +7,30 @@ import 'package:btox/models/persistence.dart';
 import 'package:btox/models/profile_settings.dart';
 import 'package:btox/widgets/nickname_field.dart';
 import 'package:btox/widgets/status_message_field.dart';
+import 'package:btox/providers/database.dart';
+import 'package:btox/providers/sodium.dart';
+import 'package:btox/providers/tox.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:sodium/sodium.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 const _logger = Logger(['CreateProfilePage']);
 
-final class CreateProfilePage extends HookWidget {
-  final ToxConstants constants;
-  final Sodium sodium;
-  final Database database;
+final class CreateProfilePage extends HookConsumerWidget {
   final Function(Id<Profiles>)? onProfileCreated;
 
-  const CreateProfilePage({
-    super.key,
-    required this.constants,
-    required this.sodium,
-    required this.database,
-    this.onProfileCreated,
-  });
+  const CreateProfilePage({super.key, this.onProfileCreated});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final constants = ref.watch(toxConstantsProvider).asData?.value;
+    final sodium = ref.watch(sodiumProvider).asData?.value;
+    final database = ref.watch(databaseProvider).asData?.value;
+
+    if (constants == null || sodium == null || database == null) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
     final nicknameController = useTextEditingController(text: 'Yanciman');
     final statusMessageController = useTextEditingController(
       text: 'Producing works of art in Kannywood',

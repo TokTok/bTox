@@ -11,7 +11,7 @@ final class CircleIdenticon extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return CircleAvatar(
-      backgroundImage: ref.read(identiconProvider(publicKey)),
+      backgroundImage: ref.watch(identiconProvider(publicKey)),
     );
   }
 }

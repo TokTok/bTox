@@ -128,6 +128,27 @@ final class Toxcore extends api.Tox {
   }
 
   @override
+  PublicKey getFriendPublicKey(int friendNumber) {
+    return _scoped(
+      _lib.allocator.free,
+      _lib.allocator<Uint8>(_lib.ffi.tox_public_key_size()),
+      (ptr) {
+        _handleError(
+          _lib.allocator,
+          Tox_Err_Friend_Get_Public_Key.fromValue,
+          (err) =>
+              _lib.ffi.tox_friend_get_public_key(_tox, friendNumber, ptr, err),
+          'tox_friend_get_public_key',
+          [friendNumber],
+        );
+        return PublicKey(
+          ptr.asTypedList(_lib.ffi.tox_public_key_size()).clone(),
+        );
+      },
+    );
+  }
+
+  @override
   List<Event> iterate() {
     return _handleError(
       _lib.allocator,

@@ -1,26 +1,39 @@
 import 'package:btox/api/toxcore/tox.dart';
 import 'package:btox/db/database.dart';
 import 'package:btox/l10n/generated/app_localizations.dart';
-import 'package:btox/models/profile_settings.dart';
+import 'package:btox/models/id.dart';
+import 'package:btox/models/persistence.dart';
+import 'package:btox/providers/database.dart';
+import 'package:btox/providers/profiles.dart';
 import 'package:btox/widgets/nickname_field.dart';
 import 'package:btox/widgets/status_message_field.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-final class UserProfilePage extends HookWidget {
+final class UserProfilePage extends HookConsumerWidget {
   final ToxConstants constants;
-  final Profile profile;
-  final void Function(ProfileSettings) onUpdateProfile;
+  final Id<Profiles> profileId;
 
   const UserProfilePage({
     super.key,
     required this.constants,
-    required this.profile,
-    required this.onUpdateProfile,
+    required this.profileId,
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final profileAsync = ref.watch(profileProvider(profileId));
+
+    return profileAsync.when(
+      data: (profile) => _content(context, ref, profile),
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
+      error: (error, _) => Scaffold(body: Center(child: Text('Error: $error'))),
+    );
+  }
+
+  Widget _content(BuildContext context, WidgetRef ref, Profile profile) {
     final formKey = useMemoized(() => GlobalKey<FormState>());
     final nickInputController = useTextEditingController(
       text: profile.settings.nickname,
@@ -38,12 +51,16 @@ final class UserProfilePage extends HookWidget {
       if (profile.settings.nickname != nickInputController.text ||
           profile.settings.statusMessage != statusMessageInputController.text) {
         applyButtonPressed.value = true;
-        onUpdateProfile(
-          profile.settings.copyWith(
-            nickname: nickInputController.text,
-            statusMessage: statusMessageInputController.text,
-          ),
-        );
+        final database = ref.read(databaseProvider).asData?.value;
+        if (database != null) {
+          database.updateProfileSettings(
+            profile.id,
+            profile.settings.copyWith(
+              nickname: nickInputController.text,
+              statusMessage: statusMessageInputController.text,
+            ),
+          );
+        }
       }
     }
 

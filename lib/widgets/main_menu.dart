@@ -50,25 +50,9 @@ final class MainMenu extends ConsumerWidget {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => StreamBuilder<Profile>(
-                  stream: database.watchProfile(profile.id),
-                  builder: (context, snapshot) {
-                    final profile = snapshot.data;
-                    if (profile == null) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-                    return UserProfilePage(
-                      constants: constants,
-                      profile: profile,
-                      onUpdateProfile: (settings) async {
-                        await database.updateProfileSettings(
-                          profile.id,
-                          settings,
-                        );
-                        _logger.d('Updated profile settings');
-                      },
-                    );
-                  },
+                builder: (context) => UserProfilePage(
+                  constants: constants,
+                  profileId: profile.id,
                 ),
               ),
             );

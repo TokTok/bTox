@@ -156,6 +156,46 @@ void main() {
       expect(toxcore.iterationInterval, 50);
     });
 
+    test('getFriendPublicKey returns the key written by toxcore', () {
+      final toxPtr = safePtr<ffi_gen.Tox>();
+      when(mockFfi.tox_new(any, any)).thenReturn(toxPtr);
+      when(mockFfi.tox_friend_get_public_key(toxPtr, 7, any, any))
+          .thenAnswer((invocation) {
+            final keyPtr =
+                invocation.positionalArguments[2] as ffi.Pointer<ffi.Uint8>;
+            keyPtr.asTypedList(32).setAll(0, List.generate(32, (i) => i));
+            return true;
+          });
+
+      // ignore: argument_type_not_assignable
+      final toxcore = Toxcore(lib, const api_opts.ToxOptions());
+
+      expect(toxcore.getFriendPublicKey(7).bytes, List.generate(32, (i) => i));
+    });
+
+    test('getFriendPublicKey throws ApiException for unknown friends', () {
+      final toxPtr = safePtr<ffi_gen.Tox>();
+      when(mockFfi.tox_new(any, any)).thenReturn(toxPtr);
+      when(mockFfi.tox_friend_get_public_key(any, any, any, any))
+          .thenAnswer((invocation) {
+            final errPtr =
+                invocation.positionalArguments[3] as ffi.Pointer<tox_lib.CEnum>;
+            errPtr.value = ffi_gen
+                .Tox_Err_Friend_Get_Public_Key
+                .TOX_ERR_FRIEND_GET_PUBLIC_KEY_FRIEND_NOT_FOUND
+                .value;
+            return false;
+          });
+
+      // ignore: argument_type_not_assignable
+      final toxcore = Toxcore(lib, const api_opts.ToxOptions());
+
+      expect(
+        () => toxcore.getFriendPublicKey(3),
+        throwsA(isA<api.ApiException>()),
+      );
+    });
+
     test('throws ApiException on error', () {
       final toxPtr = safePtr<ffi_gen.Tox>();
       when(mockFfi.tox_new(any, any)).thenReturn(toxPtr);

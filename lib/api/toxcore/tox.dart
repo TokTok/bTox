@@ -38,6 +38,8 @@ abstract class Tox {
 
   void bootstrap(String host, int port, PublicKey publicKey);
 
+  PublicKey getFriendPublicKey(int friendNumber);
+
   List<Event> iterate();
 
   void kill();

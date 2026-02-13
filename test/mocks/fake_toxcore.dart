@@ -1,4 +1,6 @@
 // Fake implementation of the Tox class for testing purposes.
+import 'dart:typed_data';
+
 import 'package:btox/api/toxcore/tox.dart' as api;
 import 'package:btox/api/toxcore/tox_events.dart';
 import 'package:btox/ffi/toxcore.dart' as ffi;
@@ -28,6 +30,7 @@ final class FakeToxcore extends api.Tox {
   int get iterationInterval => 20;
 
   bool throwOnBootstrap = false;
+  final Set<int> missingFriendNumbers = {};
   final List<Event> _events = [];
 
   void pushEvent(Event event) {
@@ -46,6 +49,18 @@ final class FakeToxcore extends api.Tox {
     if (throwOnBootstrap) {
       throw api.ApiException(ffi.Tox_Err_Bootstrap.TOX_ERR_BOOTSTRAP_BAD_HOST);
     }
+  }
+
+  @override
+  PublicKey getFriendPublicKey(int friendNumber) {
+    if (missingFriendNumbers.contains(friendNumber)) {
+      throw api.ApiException(
+        ffi
+            .Tox_Err_Friend_Get_Public_Key
+            .TOX_ERR_FRIEND_GET_PUBLIC_KEY_FRIEND_NOT_FOUND,
+      );
+    }
+    return PublicKey(Uint8List.fromList(List.filled(32, friendNumber + 1)));
   }
 
   @override
