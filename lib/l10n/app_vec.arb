@@ -30,11 +30,11 @@
             }
         }
     },
-    "toxId": "Tox ID",
+    "toxId": "Ła Tox ID",
     "@toxId": {
         "description": "The text for the Tox ID field"
     },
-    "defaultAddContactMessage": "Paron, A son {nick}, ndemo ciacołar nte'l bTox!",
+    "defaultAddContactMessage": "Areo, A son {nick}, ndemo ciacołar nte'l bTox!",
     "@defaultAddContactMessage": {
         "description": "The default message to send when adding a contact",
         "placeholders": {
@@ -44,7 +44,7 @@
             }
         }
     },
-    "addContactMessageLengthError": "Maximum {max} caracteri ({length} l'è stra grando)",
+    "addContactMessageLengthError": "Maximum {max} caractere({length} l'è stra grando)",
     "@addContactMessageLengthError": {
         "description": "The error message when the friend request message is too long",
         "placeholders": {
@@ -62,7 +62,7 @@
     "@add": {
         "description": "The text for the button to add a contact"
     },
-    "toxIdLengthError": "Bezonja da èsar {length} hexadecimal caracteri",
+    "toxIdLengthError": "Toca da èsar {length} hexadecimal caractere",
     "@toxIdLengthError": {
         "description": "The error message when the Tox ID is not the right length or format",
         "placeholders": {
@@ -88,13 +88,83 @@
     "@menuSettings": {
         "description": "The text for the settings menu item"
     },
-    "nickLengthError": "Nickname bezonja da gaver 1 e {max} caracteri",
+    "nickLengthError": "Nickname el toca da gaver 1 e {max} caractere",
     "@nickLengthError": {
         "description": "The error message when the nickname is too short or too long",
         "placeholders": {
             "max": {
                 "type": "int",
                 "example": "32"
+            }
+        }
+    },
+    "statusMessageLengthError": "El Status mesajo no pol èsar pì {max} caractere",
+    "@statusMessageLengthError": {
+        "description": "The error message when the status message is longer than the supported maximum",
+        "placeholders": {
+            "max": {
+                "type": "int",
+                "example": "128"
+            }
+        }
+    },
+    "profileTextFieldNick": "El nickname",
+    "@profileTextFieldNick": {
+        "description": "The text for the nickname field"
+    },
+    "profileTextFieldUserStatusMessage": "Status mesajo",
+    "@profileTextFieldUserStatusMessage": {
+        "description": "The text for the status message field"
+    },
+    "applyChanges": "Łaudar łe muanse",
+    "@applyChanges": {
+        "description": "The text for the button to apply changes"
+    },
+    "applied": "Łaudà",
+    "@applied": {
+        "description": "The text when changes have been applied"
+    },
+    "newProfile": "Novo profiło",
+    "@newProfile": {
+        "description": "The title text for the create profile dialog"
+    },
+    "create": "Far sù",
+    "@create": {
+        "description": "The text for the button create a new profile"
+    },
+    "logout": "Far logout",
+    "@logout": {
+        "description": "The text for the logout menu item"
+    },
+    "deleteProfile": "Butar via el profiło",
+    "@deleteProfile": {
+        "description": "The text for the delete profile menu item"
+    },
+    "deleteProfileMessage": "Sito ti segur da butar via el to \"{name}\" profiło? 'Sto no pol èsar undone. Tuti i contati e i mesaji tui i sarà butar via. Vardè se te ghè un backup.",
+    "@deleteProfileMessage": {
+        "description": "The message to confirm the deletion of a profile",
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Alice"
+            }
+        }
+    },
+    "cancel": "Scancełar",
+    "@cancel": {
+        "description": "The text for the cancel button"
+    },
+    "delete": "Butar via",
+    "@delete": {
+        "description": "The text for the delete button"
+    },
+    "profileDeleted": "Profiło \"{name}\" el ga butà via",
+    "@profileDeleted": {
+        "description": "The text when a profile has been deleted",
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Alice"
             }
         }
     }
