@@ -84,7 +84,7 @@
     "@menuQuit": {
         "description": "The text for the quit menu item"
     },
-    "menuSettings": "Inpostasion",
+    "menuSettings": "Asestasion",
     "@menuSettings": {
         "description": "The text for the settings menu item"
     },
