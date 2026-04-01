@@ -64,5 +64,75 @@
     "menuProfile": "Profil",
     "@menuProfile": {
         "description": "The text for the profile menu item"
+    },
+    "menuQuit": "Quitter",
+    "@menuQuit": {
+        "description": "The text for the quit menu item"
+    },
+    "menuSettings": "Paramètres",
+    "@menuSettings": {
+        "description": "The text for the settings menu item"
+    },
+    "applyChanges": "Appliquer changements",
+    "@applyChanges": {
+        "description": "The text for the button to apply changes"
+    },
+    "applied": "Appliqué",
+    "@applied": {
+        "description": "The text when changes have been applied"
+    },
+    "newProfile": "Nouveau profil",
+    "@newProfile": {
+        "description": "The title text for the create profile dialog"
+    },
+    "create": "Créer",
+    "@create": {
+        "description": "The text for the button create a new profile"
+    },
+    "deleteProfile": "Supprimer profil",
+    "@deleteProfile": {
+        "description": "The text for the delete profile menu item"
+    },
+    "deleteProfileMessage": "Êtes-vous sûr(e) de vouloir supprimer votre profil \"{name}\" ? Cette action ne peut pas être annulée. Elle supprimera tous vos contacts et messages. Assurez-vous d’avoir une sauvegarde.",
+    "@deleteProfileMessage": {
+        "description": "The message to confirm the deletion of a profile",
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Alice"
+            }
+        }
+    },
+    "cancel": "Annuler",
+    "@cancel": {
+        "description": "The text for the cancel button"
+    },
+    "delete": "Supprimer",
+    "@delete": {
+        "description": "The text for the delete button"
+    },
+    "profileDeleted": "Profil \"{name}\" supprimé",
+    "@profileDeleted": {
+        "description": "The text when a profile has been deleted",
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Alice"
+            }
+        }
+    },
+    "profileTextFieldNick": "Pseudonyme",
+    "@profileTextFieldNick": {
+        "description": "The text for the nickname field"
+    },
+    "nickLengthError": "Le pseudonyme doit être entre 1 et {max} caractères",
+    "@nickLengthError": {
+        "description": "The error message when the nickname is too short or too long",
+        "placeholders": {
+            "max": {
+                "type": "int",
+                "example": "32"
+            }
+        }
     }
 }
