@@ -1,1 +1,170 @@
-{}
+{
+    "defaultContactName": "Ismeretlen",
+    "@defaultContactName": {
+        "description": "The default name for a contact when the name is not yet known"
+    },
+    "title": "bTox",
+    "@title": {
+        "description": "The title of the application"
+    },
+    "addContact": "Partner hozzáadása",
+    "@addContact": {
+        "description": "The text for the button to add a contact"
+    },
+    "message": "Üzenet",
+    "@message": {
+        "description": "The text for the message field"
+    },
+    "messageInput": "Tox üzenet",
+    "@messageInput": {
+        "description": "The placeholder text for the message input field"
+    },
+    "re": "Válasz: {message}",
+    "@re": {
+        "description": "The prefix for a reply message",
+        "placeholders": {
+            "message": {
+                "type": "String",
+                "example": "Hello"
+            }
+        }
+    },
+    "toxId": "Tox-azonosító",
+    "@toxId": {
+        "description": "The text for the Tox ID field"
+    },
+    "defaultAddContactMessage": "Helló, {nick} vagyok, gyere, beszélgessünk a bTox-on!",
+    "@defaultAddContactMessage": {
+        "description": "The default message to send when adding a contact",
+        "placeholders": {
+            "nick": {
+                "type": "String",
+                "example": "Alice"
+            }
+        }
+    },
+    "addContactMessageLengthError": "Maximum {max} karakter ({length} túl hosszú)",
+    "@addContactMessageLengthError": {
+        "description": "The error message when the friend request message is too long",
+        "placeholders": {
+            "max": {
+                "type": "int",
+                "example": "256"
+            },
+            "length": {
+                "type": "int",
+                "example": "300"
+            }
+        }
+    },
+    "add": "Hozzáadás",
+    "@add": {
+        "description": "The text for the button to add a contact"
+    },
+    "toxIdLengthError": "{length} hexadecimális karakternek kell lennie",
+    "@toxIdLengthError": {
+        "description": "The error message when the Tox ID is not the right length or format",
+        "placeholders": {
+            "length": {
+                "type": "int",
+                "example": "76"
+            }
+        }
+    },
+    "messageEmptyError": "Az üzenet nem lehet üres",
+    "@messageEmptyError": {
+        "description": "The error message when the message is empty"
+    },
+    "menuProfile": "Profil",
+    "@menuProfile": {
+        "description": "The text for the profile menu item"
+    },
+    "menuQuit": "Kilépés",
+    "@menuQuit": {
+        "description": "The text for the quit menu item"
+    },
+    "menuSettings": "Beállítások",
+    "@menuSettings": {
+        "description": "The text for the settings menu item"
+    },
+    "nickLengthError": "A becenévnek 1 és {max} karakter között kell lennie",
+    "@nickLengthError": {
+        "description": "The error message when the nickname is too short or too long",
+        "placeholders": {
+            "max": {
+                "type": "int",
+                "example": "32"
+            }
+        }
+    },
+    "statusMessageLengthError": "Az állapotüzenet nem haladhatja meg a {max} karaktert",
+    "@statusMessageLengthError": {
+        "description": "The error message when the status message is longer than the supported maximum",
+        "placeholders": {
+            "max": {
+                "type": "int",
+                "example": "128"
+            }
+        }
+    },
+    "profileTextFieldNick": "Becenév",
+    "@profileTextFieldNick": {
+        "description": "The text for the nickname field"
+    },
+    "profileTextFieldUserStatusMessage": "Állapotüzenet",
+    "@profileTextFieldUserStatusMessage": {
+        "description": "The text for the status message field"
+    },
+    "applyChanges": "Változtatások alkalmazása",
+    "@applyChanges": {
+        "description": "The text for the button to apply changes"
+    },
+    "applied": "Alkalmazva",
+    "@applied": {
+        "description": "The text when changes have been applied"
+    },
+    "newProfile": "Új profil",
+    "@newProfile": {
+        "description": "The title text for the create profile dialog"
+    },
+    "create": "Létrehozás",
+    "@create": {
+        "description": "The text for the button create a new profile"
+    },
+    "logout": "Kijelentkezés",
+    "@logout": {
+        "description": "The text for the logout menu item"
+    },
+    "deleteProfile": "Profil törlése",
+    "@deleteProfile": {
+        "description": "The text for the delete profile menu item"
+    },
+    "deleteProfileMessage": "Biztosan törölni szeretné a(z) „{name}” profilját? Ezt a műveletet nem lehet visszavonni. Az összes partnere és üzenete törölve lesz. Győződjön meg arról, hogy van biztonsági mentése.",
+    "@deleteProfileMessage": {
+        "description": "The message to confirm the deletion of a profile",
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Alice"
+            }
+        }
+    },
+    "cancel": "Mégse",
+    "@cancel": {
+        "description": "The text for the cancel button"
+    },
+    "delete": "Törlés",
+    "@delete": {
+        "description": "The text for the delete button"
+    },
+    "profileDeleted": "A(z) „{name}\" profil törölve",
+    "@profileDeleted": {
+        "description": "The text when a profile has been deleted",
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Alice"
+            }
+        }
+    }
+}
