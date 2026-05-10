@@ -134,5 +134,37 @@
                 "example": "32"
             }
         }
+    },
+    "addContactMessageLengthError": "Maximum {max} caractères ({length} est trop long)",
+    "@addContactMessageLengthError": {
+        "description": "The error message when the friend request message is too long",
+        "placeholders": {
+            "max": {
+                "type": "int",
+                "example": "256"
+            },
+            "length": {
+                "type": "int",
+                "example": "300"
+            }
+        }
+    },
+    "statusMessageLengthError": "Le message d’état ne peut pas dépasser {max} caractères",
+    "@statusMessageLengthError": {
+        "description": "The error message when the status message is longer than the supported maximum",
+        "placeholders": {
+            "max": {
+                "type": "int",
+                "example": "128"
+            }
+        }
+    },
+    "profileTextFieldUserStatusMessage": "Message d’état",
+    "@profileTextFieldUserStatusMessage": {
+        "description": "The text for the status message field"
+    },
+    "logout": "Déconnexion",
+    "@logout": {
+        "description": "The text for the logout menu item"
     }
 }
