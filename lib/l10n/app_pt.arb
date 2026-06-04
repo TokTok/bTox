@@ -1,1 +1,170 @@
-{}
+{
+    "defaultContactName": "Desconhecido",
+    "@defaultContactName": {
+        "description": "The default name for a contact when the name is not yet known"
+    },
+    "title": "bTox",
+    "@title": {
+        "description": "The title of the application"
+    },
+    "addContact": "Adicionar contacto",
+    "@addContact": {
+        "description": "The text for the button to add a contact"
+    },
+    "message": "Mensagem",
+    "@message": {
+        "description": "The text for the message field"
+    },
+    "messageInput": "Mensagem Tox",
+    "@messageInput": {
+        "description": "The placeholder text for the message input field"
+    },
+    "re": "Re: {message}",
+    "@re": {
+        "description": "The prefix for a reply message",
+        "placeholders": {
+            "message": {
+                "type": "String",
+                "example": "Hello"
+            }
+        }
+    },
+    "toxId": "ID Tox",
+    "@toxId": {
+        "description": "The text for the Tox ID field"
+    },
+    "defaultAddContactMessage": "Oi, sou o {nick}, venha conversar comigo no bTox!",
+    "@defaultAddContactMessage": {
+        "description": "The default message to send when adding a contact",
+        "placeholders": {
+            "nick": {
+                "type": "String",
+                "example": "Alice"
+            }
+        }
+    },
+    "addContactMessageLengthError": "Máximo {max} caracteres ({length} é muito longo)",
+    "@addContactMessageLengthError": {
+        "description": "The error message when the friend request message is too long",
+        "placeholders": {
+            "max": {
+                "type": "int",
+                "example": "256"
+            },
+            "length": {
+                "type": "int",
+                "example": "300"
+            }
+        }
+    },
+    "add": "Adicionar",
+    "@add": {
+        "description": "The text for the button to add a contact"
+    },
+    "toxIdLengthError": "Deve ser {length} caracteres hexadecimais",
+    "@toxIdLengthError": {
+        "description": "The error message when the Tox ID is not the right length or format",
+        "placeholders": {
+            "length": {
+                "type": "int",
+                "example": "76"
+            }
+        }
+    },
+    "messageEmptyError": "O campo de mensagem não pode estar vazio",
+    "@messageEmptyError": {
+        "description": "The error message when the message is empty"
+    },
+    "menuProfile": "Perfil",
+    "@menuProfile": {
+        "description": "The text for the profile menu item"
+    },
+    "menuQuit": "Sair",
+    "@menuQuit": {
+        "description": "The text for the quit menu item"
+    },
+    "menuSettings": "Configurações",
+    "@menuSettings": {
+        "description": "The text for the settings menu item"
+    },
+    "nickLengthError": "O apelido deve estar entre 1 e {max} caracteres",
+    "@nickLengthError": {
+        "description": "The error message when the nickname is too short or too long",
+        "placeholders": {
+            "max": {
+                "type": "int",
+                "example": "32"
+            }
+        }
+    },
+    "statusMessageLengthError": "Mensagem de estado não pode exceder {max} caracteres",
+    "@statusMessageLengthError": {
+        "description": "The error message when the status message is longer than the supported maximum",
+        "placeholders": {
+            "max": {
+                "type": "int",
+                "example": "128"
+            }
+        }
+    },
+    "profileTextFieldNick": "Apelido",
+    "@profileTextFieldNick": {
+        "description": "The text for the nickname field"
+    },
+    "profileTextFieldUserStatusMessage": "Mensagem de estado",
+    "@profileTextFieldUserStatusMessage": {
+        "description": "The text for the status message field"
+    },
+    "applyChanges": "Aplicar mudanças",
+    "@applyChanges": {
+        "description": "The text for the button to apply changes"
+    },
+    "applied": "Aplicado",
+    "@applied": {
+        "description": "The text when changes have been applied"
+    },
+    "newProfile": "Novo perfil",
+    "@newProfile": {
+        "description": "The title text for the create profile dialog"
+    },
+    "create": "Criar",
+    "@create": {
+        "description": "The text for the button create a new profile"
+    },
+    "logout": "Desconectar",
+    "@logout": {
+        "description": "The text for the logout menu item"
+    },
+    "deleteProfile": "Apagar perfil",
+    "@deleteProfile": {
+        "description": "The text for the delete profile menu item"
+    },
+    "deleteProfileMessage": "Tem certeza que deseja apagar o seu perfil \"{name}\"? Esta ação não pode ser desfeita. Isto irá apagar todos os seus contactos e mensagens. Certifique-se de ter um backup.",
+    "@deleteProfileMessage": {
+        "description": "The message to confirm the deletion of a profile",
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Alice"
+            }
+        }
+    },
+    "cancel": "Cancelar",
+    "@cancel": {
+        "description": "The text for the cancel button"
+    },
+    "delete": "Apagar",
+    "@delete": {
+        "description": "The text for the delete button"
+    },
+    "profileDeleted": "Perfil \"{name}\" apagado",
+    "@profileDeleted": {
+        "description": "The text when a profile has been deleted",
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Alice"
+            }
+        }
+    }
+}
