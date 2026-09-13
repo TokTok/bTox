@@ -8,4 +8,11 @@ linter:
 
 analyzer:
   exclude:
-    - '**/*.g.dart'
+    - "**/*.g.dart"
+    - build/**
+    - android/**
+    - ios/**
+    - web/**
+    - windows/**
+    - macos/**
+    - linux/**

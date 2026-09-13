@@ -431,21 +431,19 @@ void main() {
     expect(unpacked, event);
   });
 
-  Glados(any.list(any.event)).test(
-    'Event list round-trip property (Batch mode)',
-    (events) {
-      final packer = Packer();
-      packer.packListLength(events.length);
-      for (final e in events) {
-        packer.packListLength(2);
-        packer.packInt(e.eventType.value);
-        e.pack(packer);
-      }
+  Glados(any.list(any.event))
+      .test('Event list round-trip property (Batch mode)', (events) {
+        final packer = Packer();
+        packer.packListLength(events.length);
+        for (final e in events) {
+          packer.packListLength(2);
+          packer.packInt(e.eventType.value);
+          e.pack(packer);
+        }
 
-      final bytes = packer.takeBytes();
-      final unpackedList = Event.unpackList(Unpacker(bytes));
+        final bytes = packer.takeBytes();
+        final unpackedList = Event.unpackList(Unpacker(bytes));
 
-      expect(unpackedList, events);
-    },
-  );
+        expect(unpackedList, events);
+      });
 }

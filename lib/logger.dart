@@ -15,9 +15,8 @@ class _StackFrame {
   String toString() => '$file:$line:$column';
 
   static _StackFrame? fromString(String frame) {
-    final match = RegExp(
-      r'packages?[:/]([^ :]+)[: ](\d+):(\d+)',
-    ).firstMatch(frame);
+    final match = RegExp(r'packages?[:/]([^ :]+)[: ](\d+):(\d+)')
+        .firstMatch(frame);
     if (match == null) return null;
     return _StackFrame(
       match.group(1)!,

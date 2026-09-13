@@ -6,12 +6,14 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 part 'keyboard_height.g.dart';
 
 @riverpod
-Stream<double> keyboardHeight(Ref ref) {
-  if (!AnyPlatform.instance.isMobile) {
+Stream<double> keyboardHeight(Ref ref) => keyboardHeightStream();
+
+Stream<double> keyboardHeightStream({bool? isMobile}) {
+  if (!(isMobile ?? AnyPlatform.instance.isMobile)) {
     return Stream.empty();
   }
   final _ = KeyboardHeightPlugin();
-  return const EventChannel(
-    'keyboardHeightEventChannel',
-  ).receiveBroadcastStream().map((event) => event as double);
+  return const EventChannel('keyboardHeightEventChannel')
+      .receiveBroadcastStream()
+      .map((event) => event as double);
 }

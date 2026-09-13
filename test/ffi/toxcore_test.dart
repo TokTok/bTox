@@ -28,6 +28,7 @@ void main() {
     provideDummy<ffi.Pointer<ffi_gen.Tox_Options>>(ffi.nullptr);
     provideDummy<ffi.Pointer<ffi_gen.Tox>>(ffi.nullptr);
     provideDummy<ffi.Pointer<ffi_gen.Tox_Events>>(ffi.nullptr);
+    provideDummy<ffi.Pointer<ffi_gen.Tox_Iterate_Options>>(ffi.nullptr);
     provideDummy<ffi.Pointer<ffi.Uint8>>(ffi.nullptr);
     provideDummy<ffi.Pointer<ffi.Char>>(ffi.nullptr);
     provideDummy<ffi.Pointer<ffi.UnsignedInt>>(ffi.nullptr);
@@ -106,9 +107,8 @@ void main() {
       final toxcore = Toxcore(lib, const api_opts.ToxOptions());
       toxcore.statusMessage = 'Busy';
 
-      verify(
-        mockFfi.tox_self_set_status_message(toxPtr, any, 4, any),
-      ).called(1);
+      verify(mockFfi.tox_self_set_status_message(toxPtr, any, 4, any))
+          .called(1);
     });
 
     test('nospam getter and setter', () {
@@ -161,14 +161,13 @@ void main() {
       when(mockFfi.tox_new(any, any)).thenReturn(toxPtr);
 
       // Mock an error in tox_self_set_name
-      when(mockFfi.tox_self_set_name(any, any, any, any)).thenAnswer((
-        invocation,
-      ) {
-        final errPtr =
-            invocation.positionalArguments[3] as ffi.Pointer<tox_lib.CEnum>;
-        errPtr.value = ffi_gen.Tox_Err_Set_Info.TOX_ERR_SET_INFO_NULL.value;
-        return false;
-      });
+      when(mockFfi.tox_self_set_name(any, any, any, any))
+          .thenAnswer((invocation) {
+            final errPtr =
+                invocation.positionalArguments[3] as ffi.Pointer<tox_lib.CEnum>;
+            errPtr.value = ffi_gen.Tox_Err_Set_Info.TOX_ERR_SET_INFO_NULL.value;
+            return false;
+          });
 
       // ignore: argument_type_not_assignable
       final toxcore = Toxcore(lib, const api_opts.ToxOptions());
@@ -195,18 +194,16 @@ void main() {
 
       verify(mockFfi.tox_options_set_ipv6_enabled(optionsPtr, true)).called(1);
       verify(mockFfi.tox_options_set_udp_enabled(optionsPtr, false)).called(1);
-      verify(
-        mockFfi.tox_options_set_local_discovery_enabled(optionsPtr, true),
-      ).called(1);
+      verify(mockFfi.tox_options_set_local_discovery_enabled(optionsPtr, true))
+          .called(1);
       verify(
         mockFfi.tox_options_set_savedata_type(
           optionsPtr,
           ffi_gen.Tox_Savedata_Type.TOX_SAVEDATA_TYPE_SECRET_KEY,
         ),
       ).called(1);
-      verify(
-        mockFfi.tox_options_set_savedata_data(optionsPtr, any, 3),
-      ).called(1);
+      verify(mockFfi.tox_options_set_savedata_data(optionsPtr, any, 3))
+          .called(1);
     });
 
     test('iterate() returns list of events', () {
@@ -227,12 +224,12 @@ void main() {
       event.pack(packer);
       final bytes = packer.takeBytes();
 
-      when(
-        mockFfi.tox_events_iterate(toxPtr, true, any),
-      ).thenReturn(eventsHandle);
-      when(
-        mockFfi.tox_events_bytes_size(eventsHandle),
-      ).thenReturn(bytes.length);
+      when(mockFfi.tox_iterate_options_new(any))
+          .thenReturn(safePtr<ffi_gen.Tox_Iterate_Options>());
+      when(mockFfi.tox_events_iterate(toxPtr, any, any))
+          .thenReturn(eventsHandle);
+      when(mockFfi.tox_events_bytes_size(eventsHandle))
+          .thenReturn(bytes.length);
 
       when(mockFfi.tox_events_get_bytes(eventsHandle, any)).thenAnswer((
         invocation,

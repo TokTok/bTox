@@ -60,9 +60,8 @@ void main() {
         MessageDataNull(): MessageDataNull(),
       }),
     ]);
-    final l2 = Unpacker(
-      (Packer()..packMessageData(l1)).takeBytes(),
-    ).unpackList();
+    final l2 = Unpacker((Packer()..packMessageData(l1)).takeBytes())
+        .unpackList();
     final l3 = MessageData.fromJson(jsonDecode(jsonEncode(l1)));
 
     expect(l1.value, l2);

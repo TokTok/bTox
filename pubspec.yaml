@@ -59,11 +59,11 @@ dependencies:
   path_provider: ^2.1.5
   path: ^1.9.0
   riverpod_annotation: ^4.0.0
-  sodium_libs: ^3.4.3+1
   sodium: ^3.4.4
   sqlcipher_flutter_libs: ^0.6.4
   sqlite3: ^2.7.3
   wasm_ffi: ^2.0.7
+  web: ^1.1.1
 
 dev_dependencies:
   flutter_test:
@@ -147,11 +147,23 @@ ffigen:
       - tools/include/tox/tox.h
       - tools/include/tox/tox_options.h
       - tools/include/tox/tox_events.h
+      - tools/include/tox/tox_private.h
       - tools/include/tox/toxav.h
       - tools/include/tox/toxencryptsave.h
     include-directives:
       # Prevent system headers from being included.
       - "tools/include/tox/*.h"
+  functions:
+    exclude:
+      - "tox_default_system"
+      - "tox_get_system"
+      - "tox_new_testing"
+      - "tox_events_load"
+      - "tox_events_equal"
+  structs:
+    exclude:
+      - "Tox_System"
+      - "Tox_Options_Testing"
   name: ToxFfi
   description: Bindings to TokTok/c-toxcore.
   silence-enum-warning: true

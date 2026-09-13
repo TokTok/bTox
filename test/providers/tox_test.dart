@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+
 import 'package:btox/api/toxcore/tox_events.dart';
 import 'package:btox/ffi/toxcore.dart' as ffi;
 import 'package:btox/models/bootstrap_nodes.dart';
@@ -7,6 +8,7 @@ import 'package:btox/providers/bootstrap_nodes.dart';
 import 'package:btox/providers/tox.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+
 import '../mocks/fake_toxcore.dart';
 
 void main() {

@@ -22,9 +22,8 @@ final class ToxIdField extends StatelessWidget {
         validator: (value) {
           value ??= '';
           if (value.length != constants.addressSize * 2) {
-            final msg = AppLocalizations.of(
-              context,
-            )!.toxIdLengthError(constants.addressSize * 2);
+            final msg = AppLocalizations.of(context)!
+                .toxIdLengthError(constants.addressSize * 2);
             return '$msg (${value.length}/76)';
           }
           return null;

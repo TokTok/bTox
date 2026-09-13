@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+
 import 'package:btox/packets/messagepack/message_data.dart';
 import 'package:btox/packets/messagepack/packer.dart';
 import 'package:btox/packets/messagepack/unpacker.dart';
@@ -84,9 +85,8 @@ void main() {
       check(65535);
       check(65536);
       expect(
-        Unpacker(
-          (Packer()..packListLength(null)).takeBytes(),
-        ).unpackListLength(),
+        Unpacker((Packer()..packListLength(null)).takeBytes())
+            .unpackListLength(),
         0,
       );
     });

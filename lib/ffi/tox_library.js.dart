@@ -65,7 +65,6 @@ void _registerToxTypes() {
   registerOpaqueType<Tox_Event_Dht_Nodes_Response>();
   registerOpaqueType<Tox_Event>();
   registerOpaqueType<Tox_Events>();
-  registerOpaqueType<Tox_System>();
   registerOpaqueType<ToxAV>();
   registerOpaqueType<Tox_Pass_Key>();
 }

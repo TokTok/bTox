@@ -11,7 +11,8 @@ DRIFT_VERSION=2.31.0
 curl -L "https://github.com/simolus3/drift/releases/download/drift-$DRIFT_VERSION/drift_worker.js" -o web/drift_worker.js
 
 # Sodium libs.
-flutter pub run sodium_libs:update_web
+LIBSODIUM_JS_VERSION=0.7.14
+curl -L "https://raw.githubusercontent.com/jedisct1/libsodium.js/$LIBSODIUM_JS_VERSION/dist/browsers/sodium.js" -o web/sodium.js
 
 # Toxcore libs.
 tar -C web/ -zxf <(curl -L https://github.com/TokTok/c-toxcore/releases/download/nightly/toxcore-nightly-wasm.tar.gz)

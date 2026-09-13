@@ -43,9 +43,9 @@ Stream<Event> toxEvents(
 ) async* {
   final tox = await ref.watch(toxProvider(secretKey, nospam).future);
 
-  final nodes = (await ref.watch(
-    bootstrapNodesProvider.future,
-  )).nodes.where((node) => node.tcpPorts.isNotEmpty).toList(growable: false);
+  final nodes = (await ref.watch(bootstrapNodesProvider.future)).nodes
+      .where((node) => node.tcpPorts.isNotEmpty)
+      .toList(growable: false);
   final selectedNodes = nodes.take(8);
   _logger.d(
     'Got ${nodes.length} bootstrap nodes; '

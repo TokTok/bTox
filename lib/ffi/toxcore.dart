@@ -129,12 +129,27 @@ final class Toxcore extends api.Tox {
 
   @override
   List<Event> iterate() {
+    return _handleError(
+      _lib.allocator,
+      Tox_Err_Iterate_Options_New.fromValue,
+      (optErr) => _scoped(
+        _lib.ffi.tox_iterate_options_free,
+        _lib.ffi.tox_iterate_options_new(optErr),
+        (options) {
+          _lib.ffi.tox_iterate_options_set_fail_hard(options, true);
+          return _iterate(options);
+        },
+      ),
+    );
+  }
+
+  List<Event> _iterate(Pointer<Tox_Iterate_Options> options) {
     return _handleError(_lib.allocator, Tox_Err_Events_Iterate.fromValue, (
       err,
     ) {
       return _scoped(
         _lib.ffi.tox_events_free,
-        _lib.ffi.tox_events_iterate(_tox, true, err),
+        _lib.ffi.tox_events_iterate(_tox, options, err),
         (events) {
           return _scoped(
             _lib.allocator.free,

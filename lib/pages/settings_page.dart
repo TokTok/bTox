@@ -30,9 +30,8 @@ final class SettingsPage extends StatelessWidget {
                 builder: (context) => AlertDialog(
                   title: Text(AppLocalizations.of(context)!.deleteProfile),
                   content: Text(
-                    AppLocalizations.of(
-                      context,
-                    )!.deleteProfileMessage(profile.settings.nickname),
+                    AppLocalizations.of(context)!
+                        .deleteProfileMessage(profile.settings.nickname),
                   ),
                   actions: [
                     TextButton(
@@ -47,9 +46,8 @@ final class SettingsPage extends StatelessWidget {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
-                              AppLocalizations.of(
-                                context,
-                              )!.profileDeleted(profile.settings.nickname),
+                              AppLocalizations.of(context)!
+                                  .profileDeleted(profile.settings.nickname),
                             ),
                           ),
                         );

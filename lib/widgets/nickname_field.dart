@@ -30,9 +30,8 @@ final class NicknameField extends StatelessWidget {
             validator: (value) {
               value ??= '';
               if (value.isEmpty || value.length > constants.maxNameLength) {
-                return AppLocalizations.of(
-                  context,
-                )!.nickLengthError(constants.maxNameLength);
+                return AppLocalizations.of(context)!
+                    .nickLengthError(constants.maxNameLength);
               }
 
               return null;

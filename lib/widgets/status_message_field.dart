@@ -30,9 +30,8 @@ final class StatusMessageField extends StatelessWidget {
             validator: (value) {
               value ??= '';
               if (value.length > constants.maxStatusMessageLength) {
-                return AppLocalizations.of(
-                  context,
-                )!.statusMessageLengthError(constants.maxStatusMessageLength);
+                return AppLocalizations.of(context)!
+                    .statusMessageLengthError(constants.maxStatusMessageLength);
               }
 
               return null;
