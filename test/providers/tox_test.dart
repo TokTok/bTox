@@ -139,7 +139,7 @@ void main() {
     fakeTox.pushEvent(
       ToxEventDhtNodesResponse(
         publicKey: PublicKey(Uint8List(32)),
-        ip: Uint8List.fromList([127, 0, 0, 1]),
+        ip: '127.0.0.1',
         port: 33445,
       ),
     );

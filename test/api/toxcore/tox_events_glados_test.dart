@@ -63,7 +63,7 @@ extension BToxAny on Any {
 
   Generator<ToxEventDhtNodesResponse> get dhtNodesResponse => combine3(
     publicKey,
-    uint8List,
+    letterOrDigits,
     int32,
     (k, ip, p) => ToxEventDhtNodesResponse(publicKey: k, ip: ip, port: p),
   );
@@ -446,4 +446,23 @@ void main() {
 
         expect(unpackedList, events);
       });
+
+  test('DHT nodes response ip is unpacked from a msgpack str', () {
+    final bytes = Uint8List.fromList([
+      0x91, // list of 1 event
+      0x92, 39, // [type, data] with TOX_EVENT_DHT_NODES_RESPONSE
+      0x93, // [public_key, ip, port]
+      0xc4, 32, ...List.filled(32, 0xab),
+      0xa7, ...'1.2.3.4'.codeUnits,
+      0xcd, 0x82, 0x1b, // 33307
+    ]);
+
+    expect(Event.unpackList(Unpacker(bytes)), [
+      ToxEventDhtNodesResponse(
+        publicKey: PublicKey(Uint8List.fromList(List.filled(32, 0xab))),
+        ip: '1.2.3.4',
+        port: 33307,
+      ),
+    ]);
+  });
 }

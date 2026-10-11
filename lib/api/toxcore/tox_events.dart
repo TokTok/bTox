@@ -49,7 +49,7 @@ sealed class Event extends Packet with _$Event {
 
   const factory Event.dhtNodesResponse({
     required PublicKey publicKey,
-    @Uint8ListConverter() required Uint8List ip,
+    required String ip,
     required int port,
   }) = ToxEventDhtNodesResponse;
 
@@ -323,7 +323,7 @@ sealed class Event extends Packet with _$Event {
     dhtNodesResponse: (publicKey, ip, port) => packer
       ..packListLength(3)
       ..pack(publicKey)
-      ..packBinary(ip)
+      ..packString(ip)
       ..packInt(port),
     fileChunkRequest: (length, fileNumber, friendNumber, position) => packer
       ..packListLength(4)
@@ -752,7 +752,7 @@ sealed class Event extends Packet with _$Event {
         ensure(unpacker.unpackListLength(), 3);
         return Event.dhtNodesResponse(
           publicKey: PublicKey.unpack(unpacker),
-          ip: unpacker.unpackBinary()!,
+          ip: unpacker.unpackString()!,
           port: unpacker.unpackInt()!,
         );
       case Tox_Event_Type.TOX_EVENT_INVALID:
