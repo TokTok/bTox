@@ -79,10 +79,6 @@
     "@menuProfile": {
         "description": "The text for the profile menu item"
     },
-    "menuQuit": "Sair",
-    "@menuQuit": {
-        "description": "The text for the quit menu item"
-    },
     "menuSettings": "Configurações",
     "@menuSettings": {
         "description": "The text for the settings menu item"

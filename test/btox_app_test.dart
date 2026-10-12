@@ -27,9 +27,8 @@ void main() {
   final myToxId = ToxAddress.fromString(
     String.fromCharCodes(Iterable.generate(76, (_) => '0'.codeUnits.first)),
   );
-  final friendToxId = ToxAddress.fromString(
-    String.fromCharCodes(Iterable.generate(76, (_) => '1'.codeUnits.first)),
-  );
+  // All 1s, but with a valid checksum.
+  final friendToxId = ToxAddress.fromString('${'1' * 72}0000');
 
   testWidgets('Add contact adds a contact', (WidgetTester tester) async {
     final tox = FakeToxcore();

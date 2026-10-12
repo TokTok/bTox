@@ -18,7 +18,7 @@ if [ "${RUNNER_OS:-}" != "Windows" ]; then
   fi
 fi
 
-if [ -n "${CPATH:-}" ] || [ "${RUNNER_OS:-}" = "Windows" ]; then
+if [ "${CPATH:-}" != "" ] || [ "${RUNNER_OS:-}" = "Windows" ]; then
   dart run ffigen
   sed \
     -e 's|dart:ffi|package:wasm_ffi/ffi.dart|g' \
@@ -33,3 +33,12 @@ fi
 
 # Generate the database (drift) code.
 dart run build_runner build --delete-conflicting-outputs
+
+# Dump the database schema for migrations. Fails if the schema changed without
+# a schema version bump.
+dart run drift_dev make-migrations
+if [ "${CI:-}" != "" ] && [ "$(git status --porcelain drift_schemas test/drift lib/db)" != "" ]; then
+  git status drift_schemas test/drift lib/db
+  echo "ERROR: Commit the files that make-migrations generated."
+  exit 1
+fi

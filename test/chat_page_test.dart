@@ -39,6 +39,7 @@ void main() {
     publicKey: PublicKey.fromJson(
       '1111111111111111111111111111111111111111111111111111111111111111',
     ),
+    online: true,
   );
 
   testWidgets('Empty chat page should display message entry box', (
@@ -96,7 +97,7 @@ void main() {
           author: profile.publicKey,
           timestamp: DateTime(2025, 1, 1, 0, 2, 23),
           content: TextContent(text: 'Thank you! Happy New Year to you too!'),
-        ),
+        ).copyWith(delivered: const Value(true)),
       ),
     );
 
@@ -396,5 +397,6 @@ Message _fakeInsertMessage(Id<Messages> id, MessagesCompanion message) {
     sha: message.sha.value,
     timestamp: message.timestamp.value,
     content: message.content.value,
+    delivered: message.delivered.present ? message.delivered.value : null,
   );
 }

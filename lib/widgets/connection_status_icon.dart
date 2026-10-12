@@ -1,38 +1,21 @@
-import 'package:btox/api/toxcore/tox_events.dart';
-import 'package:btox/db/database.dart';
 import 'package:btox/ffi/toxcore.dart';
-import 'package:btox/logger.dart';
-import 'package:btox/providers/tox.dart';
+import 'package:btox/providers/connection_status.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-const _logger = Logger(['ConnectionStatusIcon']);
-
 final class ConnectionStatusIcon extends ConsumerWidget {
-  final Profile profile;
-
-  const ConnectionStatusIcon({super.key, required this.profile});
+  const ConnectionStatusIcon({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return ref
-        .watch(toxEventsProvider(profile.secretKey, profile.nospam))
-        .when(
-          data: (event) {
-            final online =
-                event is ToxEventSelfConnectionStatus &&
-                event.connectionStatus != Tox_Connection.TOX_CONNECTION_NONE;
-            return Icon(
-              online ? Icons.online_prediction : Icons.offline_bolt_outlined,
-              color: online ? Colors.green : Colors.red,
-            );
-          },
-          loading: () =>
-              const Icon(Icons.offline_bolt_outlined, color: Colors.red),
-          error: (error, _) {
-            _logger.e('Error: $error');
-            return const Icon(Icons.error, color: Colors.red);
-          },
-        );
+    final online = switch (ref.watch(connectionStatusProvider)) {
+      null || Tox_Connection.TOX_CONNECTION_NONE => false,
+      Tox_Connection.TOX_CONNECTION_TCP ||
+      Tox_Connection.TOX_CONNECTION_UDP => true,
+    };
+    return Icon(
+      online ? Icons.online_prediction : Icons.offline_bolt_outlined,
+      color: online ? Colors.green : Colors.red,
+    );
   }
 }

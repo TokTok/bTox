@@ -1,12 +1,14 @@
-import 'package:btox/background_service.dart';
 import 'package:btox/db/database.dart';
 import 'package:btox/l10n/generated/app_localizations.dart';
 import 'package:btox/logger.dart';
+import 'package:btox/providers/profiles.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 const _logger = Logger(['SettingsPage']);
 
-final class SettingsPage extends StatelessWidget {
+final class SettingsPage extends ConsumerWidget {
   final Database database;
   final Profile profile;
 
@@ -17,7 +19,11 @@ final class SettingsPage extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settings =
+        ref.watch(profileProvider(profile.id)).value?.settings ??
+        profile.settings;
+
     return Scaffold(
       appBar: AppBar(title: Text(AppLocalizations.of(context)!.menuSettings)),
       body: ListView(
@@ -64,18 +70,15 @@ final class SettingsPage extends StatelessWidget {
               );
             },
           ),
-          ListTile(
-            title: Text('Start background service'),
-            onTap: () {
-              startBackgroundService();
-            },
-          ),
-          ListTile(
-            title: Text('Stop background service'),
-            onTap: () {
-              stopBackgroundService();
-            },
-          ),
+          if (defaultTargetPlatform == TargetPlatform.android)
+            SwitchListTile(
+              title: Text(AppLocalizations.of(context)!.stayOnline),
+              value: settings.stayOnline,
+              onChanged: (value) => database.updateProfileSettings(
+                profile.id,
+                settings.copyWith(stayOnline: value),
+              ),
+            ),
         ],
       ),
     );

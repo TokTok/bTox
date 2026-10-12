@@ -1,0 +1,2 @@
+# make-migrations compares schema dumps byte for byte.
+/drift_schemas/** text eol=lf

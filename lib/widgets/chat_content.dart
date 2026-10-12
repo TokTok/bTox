@@ -38,6 +38,15 @@ final class ChatContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final Positioned? stateIcon = switch (state) {
       ChatContentState.none => null,
+      ChatContentState.pending => const Positioned(
+        bottom: _kStateIconBottom,
+        right: _kStateIconRight,
+        child: Icon(
+          Icons.schedule,
+          size: _kStateIconSize,
+          color: Color(0xFF97AD8E),
+        ),
+      ),
       ChatContentState.sent => const Positioned(
         bottom: _kStateIconBottom,
         right: _kStateIconRight,
@@ -123,4 +132,4 @@ final class ChatContent extends StatelessWidget {
 
 enum ChatContentDirection { sent, received }
 
-enum ChatContentState { none, sent, delivered, seen }
+enum ChatContentState { none, pending, sent, delivered, seen }

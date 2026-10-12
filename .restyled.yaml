@@ -2,6 +2,8 @@
 exclude:
   - "LICENSE"
   # Generated files.
+  # make-migrations compares these byte for byte.
+  - "drift_schemas/**/*.json"
   - "**/CMakeLists.txt"
   - "linux/**/*.cc"
   - "linux/**/*.h"

@@ -33,8 +33,39 @@ final class FakeToxcore extends api.Tox {
   final Set<int> missingFriendNumbers = {};
   final List<Event> _events = [];
 
+  final List<PublicKey> friends = [];
+
+  final List<(ToxAddress, String)> friendRequests = [];
+
+  final List<int> deletedFriends = [];
+
+  /// (friend number, message ID, text)
+  final List<(int, int, String)> sentMessages = [];
+
+  final Set<int> unreachableFriends = {};
+
+  int _nextMessageId = 0;
+
   void pushEvent(Event event) {
     _events.add(event);
+  }
+
+  @override
+  int addFriend(ToxAddress address, String message) {
+    final friendNumber = addFriendNorequest(address.publicKey);
+    friendRequests.add((address, message));
+    return friendNumber;
+  }
+
+  @override
+  int addFriendNorequest(PublicKey publicKey) {
+    if (friends.contains(publicKey)) {
+      throw api.ApiException(
+        ffi.Tox_Err_Friend_Add.TOX_ERR_FRIEND_ADD_ALREADY_SENT,
+      );
+    }
+    friends.add(publicKey);
+    return friends.length - 1;
   }
 
   @override
@@ -52,6 +83,18 @@ final class FakeToxcore extends api.Tox {
   }
 
   @override
+  void deleteFriend(int friendNumber) => deletedFriends.add(friendNumber);
+
+  @override
+  List<int> get friendList => List.generate(friends.length, (i) => i);
+
+  @override
+  SecretKey get secretKey => SecretKey(Uint8List(32));
+
+  @override
+  String getFriendName(int friendNumber) => '';
+
+  @override
   PublicKey getFriendPublicKey(int friendNumber) {
     if (missingFriendNumbers.contains(friendNumber)) {
       throw api.ApiException(
@@ -59,6 +102,9 @@ final class FakeToxcore extends api.Tox {
             .Tox_Err_Friend_Get_Public_Key
             .TOX_ERR_FRIEND_GET_PUBLIC_KEY_FRIEND_NOT_FOUND,
       );
+    }
+    if (friendNumber < friends.length) {
+      return friends[friendNumber];
     }
     return PublicKey(Uint8List.fromList(List.filled(32, friendNumber + 1)));
   }
@@ -74,6 +120,27 @@ final class FakeToxcore extends api.Tox {
   void kill() {
     _logger.d('Killing Tox instance');
     isAlive = false;
+  }
+
+  @override
+  int sendFriendMessage(int friendNumber, String message) {
+    if (friendNumber >= friends.length) {
+      throw api.ApiException(
+        ffi
+            .Tox_Err_Friend_Send_Message
+            .TOX_ERR_FRIEND_SEND_MESSAGE_FRIEND_NOT_FOUND,
+      );
+    }
+    if (unreachableFriends.contains(friendNumber)) {
+      throw api.ApiException(
+        ffi
+            .Tox_Err_Friend_Send_Message
+            .TOX_ERR_FRIEND_SEND_MESSAGE_FRIEND_NOT_CONNECTED,
+      );
+    }
+    final messageId = _nextMessageId++;
+    sentMessages.add((friendNumber, messageId, message));
+    return messageId;
   }
 
   @override

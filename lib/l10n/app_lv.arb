@@ -51,10 +51,6 @@
   "@menuProfile": {
     "description": "The text for the profile menu item"
   },
-  "menuQuit": "Iziet",
-  "@menuQuit": {
-    "description": "The text for the quit menu item"
-  },
   "addContactMessageLengthError": "Maksimums {max} rakstzīmes ({length} ir pārāk garš)",
   "@addContactMessageLengthError": {
     "description": "The error message when the friend request message is too long",

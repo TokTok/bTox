@@ -9,6 +9,7 @@ import 'package:btox/models/messaging.dart';
 import 'package:btox/providers/database.dart';
 import 'package:btox/providers/profiles.dart';
 import 'package:btox/providers/tox.dart';
+import 'package:btox/services/message_notifier.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 const _logger = Logger(['ToxMessageService']);
@@ -72,6 +73,7 @@ final class ToxMessageService {
 
           if (contacts.isNotEmpty) {
             final contact = contacts.first;
+            final text = utf8.decode(msgBytes, allowMalformed: true);
             await database.addMessage(
               newMessage(
                 contactId: contact.id,
@@ -79,11 +81,10 @@ final class ToxMessageService {
                 merged: null,
                 author: senderKey,
                 timestamp: DateTime.now().toUtc(),
-                content: TextContent(
-                  text: utf8.decode(msgBytes, allowMalformed: true),
-                ),
+                content: TextContent(text: text),
               ),
             );
+            _ref.read(messageNotifierProvider)?.notify(contact, text);
           } else {
             _logger.w(
               'Received message from unknown contact: ${senderKey.toJson()}',
@@ -94,8 +95,32 @@ final class ToxMessageService {
         }
         break;
 
-      case ToxEventFriendRequest(publicKey: final pubKey):
+      case ToxEventFriendName(:final friendNumber, :final name):
+        try {
+          await database.updateContactName(
+            profile.id,
+            tox.getFriendPublicKey(friendNumber),
+            utf8.decode(name, allowMalformed: true),
+          );
+        } catch (e) {
+          _logger.e('Error handling friend name: $e');
+        }
+        break;
+
+      case ToxEventFriendRequest(publicKey: final pubKey, :final message):
         _logger.i('Received friend request from ${pubKey.toJson()}');
+        try {
+          await database.addFriendRequest(
+            FriendRequestsCompanion.insert(
+              profileId: profile.id,
+              publicKey: pubKey,
+              message: utf8.decode(message, allowMalformed: true),
+              timestamp: DateTime.now().toUtc(),
+            ),
+          );
+        } catch (e) {
+          _logger.e('Error handling friend request: $e');
+        }
         break;
 
       default:

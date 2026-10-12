@@ -1,0 +1,186 @@
+#!/usr/bin/env python3
+"""Derives Android icons from the round bTox icon (assets/images/btox-icon.png).
+
+Writes:
+  - assets/launcher_icon/{background,foreground,monochrome}.png: the adaptive
+    launcher icon layers, which `dart run flutter_launcher_icons` then turns
+    into the Android launcher icon (see pubspec.yaml).
+  - android/app/src/main/res/drawable-*/ic_bg_service_small.png: the
+    background service's notification small icon. It overrides the
+    flutter_background_service plugin's resource of the same name.
+
+Run from the repository root. Needs Pillow, e.g.:
+  nix-shell -p 'python3.withPackages(p: [p.pillow])' --run tools/make-icons
+"""
+import colorsys
+import math
+from collections import deque
+
+from PIL import Image
+
+SOURCE = "assets/images/btox-icon.png"
+LAUNCHER_DIR = "assets/launcher_icon"
+RES_DIR = "android/app/src/main/res"
+
+# Adaptive icon layers are 108dp; launchers may mask away everything outside
+# the central 66dp circle.
+LAYER_SIZE = 1024
+SAFE_ZONE = 66 / 108
+
+DENSITIES = [("mdpi", 1), ("hdpi", 1.5), ("xhdpi", 2), ("xxhdpi", 3),
+             ("xxxhdpi", 4)]
+
+
+def is_background(pixel):
+    """The round icon's dark grey gradient (outer disc and speech bubble).
+
+    :param pixel:
+
+    """
+    r, g, b, a = pixel
+    if a < 128:
+        return True
+    _, s, v = colorsys.rgb_to_hsv(r / 255, g / 255, b / 255)
+    return s < 0.15 and v < 0.55
+
+
+def glyph_mask(im):
+    """The lock-and-bee glyph as a boolean mask, with the speech bubble cut
+    out and the bee filled in.
+
+    :param im:
+
+    """
+    w, h = im.size
+    px = im.load()
+    mask = [[not is_background(px[x, y]) for x in range(w)] for y in range(h)]
+
+    def enclosed_holes():
+        """ """
+        seen = [[False] * w for _ in range(h)]
+        for y0 in range(h):
+            for x0 in range(w):
+                if mask[y0][x0] or seen[y0][x0]:
+                    continue
+                hole, queue = [], deque([(x0, y0)])
+                seen[y0][x0] = True
+                while queue:
+                    x, y = queue.popleft()
+                    hole.append((x, y))
+                    for nx, ny in ((x + 1, y), (x - 1, y), (x, y + 1),
+                                   (x, y - 1)):
+                        if (0 <= nx < w and 0 <= ny < h and not seen[ny][nx]
+                                and not mask[ny][nx]):
+                            seen[ny][nx] = True
+                            queue.append((nx, ny))
+                if not any(x in (0, w - 1) or y in (0, h - 1)
+                           for x, y in hole):
+                    yield hole
+
+    # Only the speech bubble above the lock body stays transparent inside the
+    # glyph; the bee's dark details share its colour and touch its tail.
+    for hole in list(enclosed_holes()):
+        for x, y in hole:
+            if y > 0.49 * h:
+                mask[y][x] = True
+    # Then fill what that cut off from the bubble (e.g. the antenna tips).
+    for hole in list(enclosed_holes()):
+        if len(hole) < 0.005 * w * h:
+            for x, y in hole:
+                mask[y][x] = True
+
+    return mask
+
+
+def save_launcher_layers(im, mask, alpha):
+    """
+
+    :param im:
+    :param mask:
+    :param alpha:
+
+    """
+    w, h = im.size
+    bbox = alpha.getbbox()
+    cx, cy = (bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2
+    radius = max(
+        math.hypot(x - cx, y - cy) for y in range(h) for x in range(w)
+        if mask[y][x])
+
+    # Fit the glyph's farthest pixel on the safe-zone circle.
+    scale = SAFE_ZONE / 2 * LAYER_SIZE / radius
+    glyph = im.copy()
+    glyph.putalpha(alpha)
+    glyph = glyph.crop(bbox)
+    glyph = glyph.resize(
+        (round(glyph.width * scale), round(glyph.height * scale)),
+        Image.LANCZOS)
+    offset = (
+        round(LAYER_SIZE / 2 - (cx - bbox[0]) * scale),
+        round(LAYER_SIZE / 2 - (cy - bbox[1]) * scale),
+    )
+
+    foreground = Image.new("RGBA", (LAYER_SIZE, LAYER_SIZE), (0, 0, 0, 0))
+    foreground.paste(glyph, offset, glyph)
+    foreground.save(f"{LAUNCHER_DIR}/foreground.png", optimize=True)
+
+    monochrome = Image.new("RGBA", (LAYER_SIZE, LAYER_SIZE),
+                           (255, 255, 255, 0))
+    monochrome.putalpha(foreground.split()[3])
+    monochrome.save(f"{LAUNCHER_DIR}/monochrome.png", optimize=True)
+
+    # The round icon's vertical gradient, sampled down its centre column.
+    px = im.load()
+    column = [
+        px[w // 2, y][:3] for y in range(h)
+        if px[w // 2, y][3] == 255 and is_background(px[w // 2, y])
+    ]
+    top, bottom = column[0], column[-1]
+    background = Image.new("RGB", (LAYER_SIZE, LAYER_SIZE))
+    for y in range(LAYER_SIZE):
+        t = y / (LAYER_SIZE - 1)
+        colour = tuple(round(a + (b - a) * t) for a, b in zip(top, bottom))
+        background.paste(colour, (0, y, LAYER_SIZE, y + 1))
+    background.save(f"{LAUNCHER_DIR}/background.png", optimize=True)
+
+
+def save_notification_icons(alpha):
+    """
+
+    :param alpha:
+
+    """
+    # The silhouette fills the 24dp canvas edge to edge; Android adds the
+    # padding around it.
+    glyph = alpha.crop(alpha.getbbox())
+    for bucket, density in DENSITIES:
+        n = round(24 * density)
+        f = n / max(glyph.size)
+        small = glyph.resize(
+            (max(1, round(glyph.width * f)), max(1, round(glyph.height * f))),
+            Image.LANCZOS,
+        )
+        canvas = Image.new("L", (n, n))
+        canvas.paste(small, ((n - small.width) // 2, (n - small.height) // 2))
+        icon = Image.new("RGBA", (n, n), (255, 255, 255, 0))
+        icon.putalpha(canvas)
+        icon.save(f"{RES_DIR}/drawable-{bucket}/ic_bg_service_small.png",
+                  optimize=True)
+
+
+def main():
+    """ """
+    im = Image.open(SOURCE).convert("RGBA")
+    w, h = im.size
+    mask = glyph_mask(im)
+    alpha = Image.new("L", (w, h))
+    alpha.putdata(
+        [255 if mask[y][x] else 0 for y in range(h) for x in range(w)])
+
+    save_launcher_layers(im, mask, alpha)
+    save_notification_icons(alpha)
+    print("Now run: dart run flutter_launcher_icons")
+
+
+if __name__ == "__main__":
+    main()

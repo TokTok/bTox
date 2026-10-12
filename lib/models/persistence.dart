@@ -1,4 +1,6 @@
 // ignore_for_file: recursive_getters
+// No running of this code, it's only for Drift's code generator.
+// coverage:ignore-file
 
 import 'package:btox/models/content.dart';
 import 'package:btox/models/crypto.dart';
@@ -14,6 +16,29 @@ abstract class Contacts extends Table {
 
   TextColumn get name => text().nullable()();
   TextColumn get publicKey => text().map(const PublicKeyConverter())();
+
+  // Resent whenever Tox starts, until the friend first comes online.
+  TextColumn get friendRequestAddress =>
+      text().map(const ToxAddressConverter()).nullable()();
+  TextColumn get friendRequestMessage => text().nullable()();
+
+  BoolColumn get online => boolean().withDefault(const Constant(false))();
+}
+
+abstract class FriendRequests extends Table {
+  IntColumn get id =>
+      integer().autoIncrement().map(const IdConverter<FriendRequests>())();
+  IntColumn get profileId =>
+      integer().references(Profiles, #id).map(const IdConverter<Profiles>())();
+
+  TextColumn get publicKey => text().map(const PublicKeyConverter())();
+  TextColumn get message => text()();
+  DateTimeColumn get timestamp => dateTime()();
+
+  @override
+  List<Set<Column>> get uniqueKeys => [
+    {profileId, publicKey},
+  ];
 }
 
 abstract class Messages extends Table {
@@ -39,6 +64,9 @@ abstract class Messages extends Table {
 
   DateTimeColumn get timestamp => dateTime()();
   TextColumn get content => text().map(const ContentConverter())();
+
+  // Null for received messages and for ours from before schema version 2.
+  BoolColumn get delivered => boolean().nullable()();
 }
 
 abstract class Profiles extends Table {

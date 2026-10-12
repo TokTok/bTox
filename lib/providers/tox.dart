@@ -36,41 +36,63 @@ Future<ToxConstants> toxConstants(Ref ref) async {
 }
 
 @riverpod
-Stream<Event> toxEvents(
-  Ref ref,
-  SecretKey secretKey,
-  ToxAddressNospam nospam,
-) async* {
-  bool disposed = false;
-  ref.onDispose(() => disposed = true);
+class ToxEvents extends _$ToxEvents {
+  @override
+  Stream<Event> build(SecretKey secretKey, ToxAddressNospam nospam) async* {
+    bool disposed = false;
+    ref.onDispose(() => disposed = true);
 
-  final tox = await ref.watch(toxProvider(secretKey, nospam).future);
+    final tox = await ref.watch(toxProvider(secretKey, nospam).future);
 
-  final nodes = (await ref.watch(bootstrapNodesProvider.future)).nodes
-      .where((node) => node.tcpPorts.isNotEmpty)
-      .toList(growable: false);
-  final selectedNodes = nodes.take(8);
-  _logger.d(
-    'Got ${nodes.length} bootstrap nodes; '
-    'using ${selectedNodes.length}...',
-  );
-  try {
-    for (final node in selectedNodes) {
-      tox.bootstrap(node.ipv4, node.port, node.publicKey);
-      tox.addTcpRelay(node.ipv4, node.tcpPorts.first, node.publicKey);
+    final nodes = (await ref.watch(bootstrapNodesProvider.future)).nodes
+        .where((node) => node.tcpPorts.isNotEmpty)
+        .toList(growable: false);
+    final selectedNodes = nodes.take(8);
+    _logger.d(
+      'Got ${nodes.length} bootstrap nodes; '
+      'using ${selectedNodes.length}...',
+    );
+    try {
+      for (final node in selectedNodes) {
+        tox.bootstrap(node.ipv4, node.port, node.publicKey);
+        tox.addTcpRelay(node.ipv4, node.tcpPorts.first, node.publicKey);
+      }
+    } on ApiException catch (_) {
+      _logger.e('Failed to bootstrap');
     }
-  } on ApiException catch (_) {
-    _logger.e('Failed to bootstrap');
+
+    while (!disposed && tox.isAlive) {
+      for (final event in tox.iterate()) {
+        if (event is ToxEventDhtNodesResponse) {
+          continue;
+        }
+        _logger.d('Tox event: $event');
+        yield event;
+      }
+      await Future.delayed(Duration(milliseconds: tox.iterationInterval));
+    }
   }
 
-  while (!disposed && tox.isAlive) {
-    for (final event in tox.iterate()) {
-      if (event is ToxEventDhtNodesResponse) {
-        continue;
+  // Equal events, e.g. the same message twice, are still separate events.
+  @override
+  bool updateShouldNotify(AsyncValue<Event> previous, AsyncValue<Event> next) =>
+      true;
+}
+
+@riverpod
+class SelfConnectionStatus extends _$SelfConnectionStatus {
+  @override
+  ffi.Tox_Connection build(SecretKey secretKey, ToxAddressNospam nospam) {
+    ref.listen(toxEventsProvider(secretKey, nospam), (_, next) {
+      if (next.hasError) {
+        _logger.e('Tox events failed: ${next.error}');
       }
-      _logger.d('Tox event: $event');
-      yield event;
-    }
-    await Future.delayed(Duration(milliseconds: tox.iterationInterval));
+      if (next.value case ToxEventSelfConnectionStatus(
+        :final connectionStatus,
+      )) {
+        state = connectionStatus;
+      }
+    });
+    return ffi.Tox_Connection.TOX_CONNECTION_NONE;
   }
 }

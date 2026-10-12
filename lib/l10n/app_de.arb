@@ -84,10 +84,6 @@
     "@messageEmptyError": {
         "description": "The error message when the message is empty"
     },
-    "menuQuit": "Beenden",
-    "@menuQuit": {
-        "description": "The text for the quit menu item"
-    },
     "menuSettings": "Einstellungen",
     "@menuSettings": {
         "description": "The text for the settings menu item"

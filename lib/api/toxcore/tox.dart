@@ -26,23 +26,41 @@ abstract class Tox {
 
   int get iterationInterval;
 
+  List<int> get friendList;
+
+  String get name;
+
   set name(String value);
 
   ToxAddressNospam get nospam;
 
   set nospam(ToxAddressNospam value);
 
+  SecretKey get secretKey;
+
+  String get statusMessage;
+
   set statusMessage(String value);
+
+  int addFriend(ToxAddress address, String message);
+
+  int addFriendNorequest(PublicKey publicKey);
 
   void addTcpRelay(String host, int port, PublicKey publicKey);
 
   void bootstrap(String host, int port, PublicKey publicKey);
+
+  void deleteFriend(int friendNumber);
+
+  String getFriendName(int friendNumber);
 
   PublicKey getFriendPublicKey(int friendNumber);
 
   List<Event> iterate();
 
   void kill();
+
+  int sendFriendMessage(int friendNumber, String message);
 }
 
 final class ToxConstants {

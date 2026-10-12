@@ -299,27 +299,27 @@ sealed class Event extends Packet with _$Event {
     conferenceConnected: (conferenceNumber) => packer.packInt(conferenceNumber),
     conferenceInvite: (cookie, type, friendNumber) => packer
       ..packListLength(3)
-      ..packBinary(cookie)
+      ..packInt(friendNumber)
       ..packInt(type.value)
-      ..packInt(friendNumber),
+      ..packBinary(cookie),
     conferenceMessage: (message, type, conferenceNumber, peerNumber) => packer
       ..packListLength(4)
-      ..packBinary(message)
-      ..packInt(type.value)
       ..packInt(conferenceNumber)
-      ..packInt(peerNumber),
+      ..packInt(peerNumber)
+      ..packInt(type.value)
+      ..packBinary(message),
     conferencePeerListChanged: (conferenceNumber) =>
         packer.packInt(conferenceNumber),
     conferencePeerName: (name, conferenceNumber, peerNumber) => packer
       ..packListLength(3)
-      ..packBinary(name)
       ..packInt(conferenceNumber)
-      ..packInt(peerNumber),
+      ..packInt(peerNumber)
+      ..packBinary(name),
     conferenceTitle: (title, conferenceNumber, peerNumber) => packer
       ..packListLength(3)
-      ..packBinary(title)
       ..packInt(conferenceNumber)
-      ..packInt(peerNumber),
+      ..packInt(peerNumber)
+      ..packBinary(title),
     dhtNodesResponse: (publicKey, ip, port) => packer
       ..packListLength(3)
       ..pack(publicKey)
@@ -327,72 +327,69 @@ sealed class Event extends Packet with _$Event {
       ..packInt(port),
     fileChunkRequest: (length, fileNumber, friendNumber, position) => packer
       ..packListLength(4)
-      ..packInt(length)
-      ..packInt(fileNumber)
       ..packInt(friendNumber)
-      ..packInt(position),
+      ..packInt(fileNumber)
+      ..packInt(position)
+      ..packInt(length),
     fileRecv: (filename, fileNumber, fileSize, friendNumber, kind) => packer
       ..packListLength(5)
-      ..packBinary(filename)
-      ..packInt(fileNumber)
-      ..packInt(fileSize)
       ..packInt(friendNumber)
-      ..packInt(kind),
+      ..packInt(fileNumber)
+      ..packInt(kind)
+      ..packInt(fileSize)
+      ..packBinary(filename),
     fileRecvChunk: (data, fileNumber, friendNumber, position) => packer
       ..packListLength(4)
-      ..packBinary(data)
-      ..packInt(fileNumber)
       ..packInt(friendNumber)
-      ..packInt(position),
+      ..packInt(fileNumber)
+      ..packInt(position)
+      ..packBinary(data),
     fileRecvControl: (control, fileNumber, friendNumber) => packer
       ..packListLength(3)
-      ..packInt(control.value)
+      ..packInt(friendNumber)
       ..packInt(fileNumber)
-      ..packInt(friendNumber),
+      ..packInt(control.value),
     friendConnectionStatus: (connectionStatus, friendNumber) => packer
       ..packListLength(2)
-      ..packInt(connectionStatus.value)
-      ..packInt(friendNumber),
+      ..packInt(friendNumber)
+      ..packInt(connectionStatus.value),
     friendLosslessPacket: (data, dataLength, friendNumber) => packer
-      ..packListLength(3)
-      ..packBinary(data)
-      ..packInt(dataLength)
-      ..packInt(friendNumber),
+      ..packListLength(2)
+      ..packInt(friendNumber)
+      ..packBinary(data),
     friendLossyPacket: (data, dataLength, friendNumber) => packer
-      ..packListLength(3)
-      ..packBinary(data)
-      ..packInt(dataLength)
-      ..packInt(friendNumber),
+      ..packListLength(2)
+      ..packInt(friendNumber)
+      ..packBinary(data),
     friendMessage: (friendNumber, type, messageLength, message) => packer
-      ..packListLength(4)
+      ..packListLength(3)
       ..packInt(friendNumber)
       ..packInt(type.value)
-      ..packInt(messageLength)
       ..packBinary(message),
     friendName: (name, friendNumber) => packer
       ..packListLength(2)
-      ..packBinary(name)
-      ..packInt(friendNumber),
+      ..packInt(friendNumber)
+      ..packBinary(name),
     friendReadReceipt: (friendNumber, messageId) => packer
       ..packListLength(2)
       ..packInt(friendNumber)
       ..packInt(messageId),
     friendRequest: (message, publicKey) => packer
       ..packListLength(2)
-      ..packBinary(message)
-      ..pack(publicKey),
+      ..pack(publicKey)
+      ..packBinary(message),
     friendStatus: (status, friendNumber) => packer
       ..packListLength(2)
-      ..packInt(status.value)
-      ..packInt(friendNumber),
+      ..packInt(friendNumber)
+      ..packInt(status.value),
     friendStatusMessage: (message, friendNumber) => packer
       ..packListLength(2)
-      ..packBinary(message)
-      ..packInt(friendNumber),
+      ..packInt(friendNumber)
+      ..packBinary(message),
     friendTyping: (typing, friendNumber) => packer
       ..packListLength(2)
-      ..packBool(typing)
-      ..packInt(friendNumber),
+      ..packInt(friendNumber)
+      ..packBool(typing),
     groupCustomPacket: (groupNumber, peerId, data) => packer
       ..packListLength(3)
       ..packInt(groupNumber)
@@ -495,54 +492,61 @@ sealed class Event extends Packet with _$Event {
       case Tox_Event_Type.TOX_EVENT_FRIEND_REQUEST:
         ensure(unpacker.unpackListLength(), 2);
         return Event.friendRequest(
-          message: unpacker.unpackBinary()!,
           publicKey: PublicKey.unpack(unpacker),
+          message: unpacker.unpackBinary()!,
         );
       case Tox_Event_Type.TOX_EVENT_FRIEND_CONNECTION_STATUS:
         ensure(unpacker.unpackListLength(), 2);
         return Event.friendConnectionStatus(
-          connectionStatus: Tox_Connection.fromValue(unpacker.unpackInt()!),
           friendNumber: unpacker.unpackInt()!,
+          connectionStatus: Tox_Connection.fromValue(unpacker.unpackInt()!),
         );
       case Tox_Event_Type.TOX_EVENT_FRIEND_LOSSY_PACKET:
-        ensure(unpacker.unpackListLength(), 3);
+        ensure(unpacker.unpackListLength(), 2);
+        final friendNumber = unpacker.unpackInt()!;
+        final data = unpacker.unpackBinary()!;
         return Event.friendLossyPacket(
-          data: unpacker.unpackBinary()!,
-          dataLength: unpacker.unpackInt()!,
-          friendNumber: unpacker.unpackInt()!,
+          data: data,
+          dataLength: data.length,
+          friendNumber: friendNumber,
         );
       case Tox_Event_Type.TOX_EVENT_FRIEND_LOSSLESS_PACKET:
-        ensure(unpacker.unpackListLength(), 3);
+        ensure(unpacker.unpackListLength(), 2);
+        final friendNumber = unpacker.unpackInt()!;
+        final data = unpacker.unpackBinary()!;
         return Event.friendLosslessPacket(
-          data: unpacker.unpackBinary()!,
-          dataLength: unpacker.unpackInt()!,
-          friendNumber: unpacker.unpackInt()!,
+          data: data,
+          dataLength: data.length,
+          friendNumber: friendNumber,
         );
       case Tox_Event_Type.TOX_EVENT_FRIEND_NAME:
         ensure(unpacker.unpackListLength(), 2);
         return Event.friendName(
-          name: unpacker.unpackBinary()!,
           friendNumber: unpacker.unpackInt()!,
+          name: unpacker.unpackBinary()!,
         );
       case Tox_Event_Type.TOX_EVENT_FRIEND_STATUS:
         ensure(unpacker.unpackListLength(), 2);
         return Event.friendStatus(
-          status: Tox_User_Status.fromValue(unpacker.unpackInt()!),
           friendNumber: unpacker.unpackInt()!,
+          status: Tox_User_Status.fromValue(unpacker.unpackInt()!),
         );
       case Tox_Event_Type.TOX_EVENT_FRIEND_STATUS_MESSAGE:
         ensure(unpacker.unpackListLength(), 2);
         return Event.friendStatusMessage(
-          message: unpacker.unpackBinary()!,
           friendNumber: unpacker.unpackInt()!,
+          message: unpacker.unpackBinary()!,
         );
       case Tox_Event_Type.TOX_EVENT_FRIEND_MESSAGE:
-        ensure(unpacker.unpackListLength(), 4);
+        ensure(unpacker.unpackListLength(), 3);
+        final friendNumber = unpacker.unpackInt()!;
+        final type = Tox_Message_Type.fromValue(unpacker.unpackInt()!);
+        final message = unpacker.unpackBinary()!;
         return Event.friendMessage(
-          friendNumber: unpacker.unpackInt()!,
-          type: Tox_Message_Type.fromValue(unpacker.unpackInt()!),
-          messageLength: unpacker.unpackInt()!,
-          message: unpacker.unpackBinary()!,
+          friendNumber: friendNumber,
+          type: type,
+          messageLength: message.length,
+          message: message,
         );
       case Tox_Event_Type.TOX_EVENT_FRIEND_READ_RECEIPT:
         ensure(unpacker.unpackListLength(), 2);
@@ -553,47 +557,47 @@ sealed class Event extends Packet with _$Event {
       case Tox_Event_Type.TOX_EVENT_FRIEND_TYPING:
         ensure(unpacker.unpackListLength(), 2);
         return Event.friendTyping(
-          typing: unpacker.unpackBool()!,
           friendNumber: unpacker.unpackInt()!,
+          typing: unpacker.unpackBool()!,
         );
       case Tox_Event_Type.TOX_EVENT_FILE_CHUNK_REQUEST:
         ensure(unpacker.unpackListLength(), 4);
         return Event.fileChunkRequest(
-          length: unpacker.unpackInt()!,
-          fileNumber: unpacker.unpackInt()!,
           friendNumber: unpacker.unpackInt()!,
+          fileNumber: unpacker.unpackInt()!,
           position: unpacker.unpackInt()!,
+          length: unpacker.unpackInt()!,
         );
       case Tox_Event_Type.TOX_EVENT_FILE_RECV:
         ensure(unpacker.unpackListLength(), 5);
         return Event.fileRecv(
-          filename: unpacker.unpackBinary()!,
-          fileNumber: unpacker.unpackInt()!,
-          fileSize: unpacker.unpackInt()!,
           friendNumber: unpacker.unpackInt()!,
+          fileNumber: unpacker.unpackInt()!,
           kind: unpacker.unpackInt()!,
+          fileSize: unpacker.unpackInt()!,
+          filename: unpacker.unpackBinary()!,
         );
       case Tox_Event_Type.TOX_EVENT_FILE_RECV_CHUNK:
         ensure(unpacker.unpackListLength(), 4);
         return Event.fileRecvChunk(
-          data: unpacker.unpackBinary()!,
-          fileNumber: unpacker.unpackInt()!,
           friendNumber: unpacker.unpackInt()!,
+          fileNumber: unpacker.unpackInt()!,
           position: unpacker.unpackInt()!,
+          data: unpacker.unpackBinary()!,
         );
       case Tox_Event_Type.TOX_EVENT_FILE_RECV_CONTROL:
         ensure(unpacker.unpackListLength(), 3);
         return Event.fileRecvControl(
-          control: Tox_File_Control.fromValue(unpacker.unpackInt()!),
-          fileNumber: unpacker.unpackInt()!,
           friendNumber: unpacker.unpackInt()!,
+          fileNumber: unpacker.unpackInt()!,
+          control: Tox_File_Control.fromValue(unpacker.unpackInt()!),
         );
       case Tox_Event_Type.TOX_EVENT_CONFERENCE_INVITE:
         ensure(unpacker.unpackListLength(), 3);
         return Event.conferenceInvite(
-          cookie: unpacker.unpackBinary()!,
-          type: Tox_Conference_Type.fromValue(unpacker.unpackInt()!),
           friendNumber: unpacker.unpackInt()!,
+          type: Tox_Conference_Type.fromValue(unpacker.unpackInt()!),
+          cookie: unpacker.unpackBinary()!,
         );
       case Tox_Event_Type.TOX_EVENT_CONFERENCE_CONNECTED:
         return Event.conferenceConnected(
@@ -606,24 +610,24 @@ sealed class Event extends Packet with _$Event {
       case Tox_Event_Type.TOX_EVENT_CONFERENCE_PEER_NAME:
         ensure(unpacker.unpackListLength(), 3);
         return Event.conferencePeerName(
-          name: unpacker.unpackBinary()!,
           conferenceNumber: unpacker.unpackInt()!,
           peerNumber: unpacker.unpackInt()!,
+          name: unpacker.unpackBinary()!,
         );
       case Tox_Event_Type.TOX_EVENT_CONFERENCE_TITLE:
         ensure(unpacker.unpackListLength(), 3);
         return Event.conferenceTitle(
-          title: unpacker.unpackBinary()!,
           conferenceNumber: unpacker.unpackInt()!,
           peerNumber: unpacker.unpackInt()!,
+          title: unpacker.unpackBinary()!,
         );
       case Tox_Event_Type.TOX_EVENT_CONFERENCE_MESSAGE:
         ensure(unpacker.unpackListLength(), 4);
         return Event.conferenceMessage(
-          message: unpacker.unpackBinary()!,
-          type: Tox_Message_Type.fromValue(unpacker.unpackInt()!),
           conferenceNumber: unpacker.unpackInt()!,
           peerNumber: unpacker.unpackInt()!,
+          type: Tox_Message_Type.fromValue(unpacker.unpackInt()!),
+          message: unpacker.unpackBinary()!,
         );
       case Tox_Event_Type.TOX_EVENT_GROUP_CUSTOM_PACKET:
         ensure(unpacker.unpackListLength(), 3);

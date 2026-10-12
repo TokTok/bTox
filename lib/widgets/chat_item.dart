@@ -104,9 +104,11 @@ final class ChatItem extends HookWidget {
                   direction: isSender
                       ? ChatContentDirection.sent
                       : ChatContentDirection.received,
-                  state: isSender
-                      ? ChatContentState.seen
-                      : ChatContentState.none,
+                  state: switch (message.delivered) {
+                    false => ChatContentState.pending,
+                    true => ChatContentState.delivered,
+                    null => ChatContentState.none,
+                  },
                   textStyle: Theme.of(context).textTheme.bodyLarge!,
                   onTap: () => showTime.value = !showTime.value,
                 ),

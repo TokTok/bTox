@@ -65,10 +65,6 @@
     "@menuProfile": {
         "description": "The text for the profile menu item"
     },
-    "menuQuit": "Quitter",
-    "@menuQuit": {
-        "description": "The text for the quit menu item"
-    },
     "menuSettings": "Paramètres",
     "@menuSettings": {
         "description": "The text for the settings menu item"

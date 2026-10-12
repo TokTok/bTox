@@ -82,6 +82,41 @@ final class Toxcore extends api.Tox {
   int get iterationInterval => _lib.ffi.tox_iteration_interval(_tox);
 
   @override
+  List<int> get friendList {
+    final size = _lib.ffi.tox_self_get_friend_list_size(_tox);
+    return _scoped(_lib.allocator.free, _lib.allocator<Uint32>(size), (ptr) {
+      _lib.ffi.tox_self_get_friend_list(_tox, ptr);
+      return ptr.asTypedList(size).toList();
+    });
+  }
+
+  @override
+  String get name => _string(
+    _lib.ffi.tox_self_get_name_size(_tox),
+    (ptr) => _lib.ffi.tox_self_get_name(_tox, ptr),
+  );
+
+  @override
+  SecretKey get secretKey {
+    return _scoped(
+      _lib.allocator.free,
+      _lib.allocator<Uint8>(_lib.ffi.tox_secret_key_size()),
+      (ptr) {
+        _lib.ffi.tox_self_get_secret_key(_tox, ptr);
+        return SecretKey(
+          ptr.asTypedList(_lib.ffi.tox_secret_key_size()).clone(),
+        );
+      },
+    );
+  }
+
+  @override
+  String get statusMessage => _string(
+    _lib.ffi.tox_self_get_status_message_size(_tox),
+    (ptr) => _lib.ffi.tox_self_get_status_message(_tox, ptr),
+  );
+
+  @override
   set name(String value) {
     value.scopedBytes(_lib.allocator, (ptr, length) {
       _handleError(
@@ -112,6 +147,42 @@ final class Toxcore extends api.Tox {
       _lib.ffi.tox_self_set_nospam(_tox, value.value);
 
   @override
+  int addFriend(ToxAddress address, String message) {
+    return address.bytes.scoped(_lib.allocator, (addressPtr, length) {
+      assert(length == _lib.ffi.tox_address_size());
+      return message.scopedBytes(_lib.allocator, (messagePtr, messageLength) {
+        return _handleError(
+          _lib.allocator,
+          Tox_Err_Friend_Add.fromValue,
+          (err) => _lib.ffi.tox_friend_add(
+            _tox,
+            addressPtr,
+            messagePtr,
+            messageLength,
+            err,
+          ),
+          'tox_friend_add',
+          [address],
+        );
+      });
+    });
+  }
+
+  @override
+  int addFriendNorequest(PublicKey publicKey) {
+    return publicKey.bytes.scoped(_lib.allocator, (publicKeyPtr, length) {
+      assert(length == _lib.ffi.tox_public_key_size());
+      return _handleError(
+        _lib.allocator,
+        Tox_Err_Friend_Add.fromValue,
+        (err) => _lib.ffi.tox_friend_add_norequest(_tox, publicKeyPtr, err),
+        'tox_friend_add_norequest',
+        [publicKey],
+      );
+    });
+  }
+
+  @override
   void addTcpRelay(String host, int port, PublicKey publicKey) {
     _bootstrap(
       host,
@@ -125,6 +196,37 @@ final class Toxcore extends api.Tox {
   @override
   void bootstrap(String host, int port, PublicKey publicKey) {
     _bootstrap(host, port, publicKey, _lib.ffi.tox_bootstrap, 'tox_bootstrap');
+  }
+
+  @override
+  void deleteFriend(int friendNumber) {
+    _handleError(
+      _lib.allocator,
+      Tox_Err_Friend_Delete.fromValue,
+      (err) => _lib.ffi.tox_friend_delete(_tox, friendNumber, err),
+      'tox_friend_delete',
+      [friendNumber],
+    );
+  }
+
+  @override
+  String getFriendName(int friendNumber) {
+    final size = _handleError(
+      _lib.allocator,
+      Tox_Err_Friend_Query.fromValue,
+      (err) => _lib.ffi.tox_friend_get_name_size(_tox, friendNumber, err),
+      'tox_friend_get_name_size',
+      [friendNumber],
+    );
+    return _string(size, (ptr) {
+      _handleError(
+        _lib.allocator,
+        Tox_Err_Friend_Query.fromValue,
+        (err) => _lib.ffi.tox_friend_get_name(_tox, friendNumber, ptr, err),
+        'tox_friend_get_name',
+        [friendNumber],
+      );
+    });
   }
 
   @override
@@ -179,9 +281,13 @@ final class Toxcore extends api.Tox {
               if (!_lib.ffi.tox_events_get_bytes(events, ptr)) {
                 throw Exception('Failed to get events bytes');
               }
+              // The events keep views of these bytes, so copy them out of
+              // the native buffer we free.
               return Event.unpackList(
                 Unpacker(
-                  ptr.asTypedList(_lib.ffi.tox_events_bytes_size(events)),
+                  ptr
+                      .asTypedList(_lib.ffi.tox_events_bytes_size(events))
+                      .clone(),
                 ),
               );
             },
@@ -197,6 +303,33 @@ final class Toxcore extends api.Tox {
     final ptr = _tox;
     _tox = nullptr;
     _lib.ffi.tox_kill(ptr);
+  }
+
+  @override
+  int sendFriendMessage(int friendNumber, String message) {
+    return message.scopedBytes(_lib.allocator, (ptr, length) {
+      return _handleError(
+        _lib.allocator,
+        Tox_Err_Friend_Send_Message.fromValue,
+        (err) => _lib.ffi.tox_friend_send_message(
+          _tox,
+          friendNumber,
+          Tox_Message_Type.TOX_MESSAGE_TYPE_NORMAL,
+          ptr,
+          length,
+          err,
+        ),
+        'tox_friend_send_message',
+        [friendNumber],
+      );
+    });
+  }
+
+  String _string(int size, void Function(Pointer<Uint8>) get) {
+    return _scoped(_lib.allocator.free, _lib.allocator<Uint8>(size), (ptr) {
+      get(ptr);
+      return utf8.decode(ptr.asTypedList(size), allowMalformed: true);
+    });
   }
 
   void _bootstrap(
@@ -226,6 +359,36 @@ final class Toxcore extends api.Tox {
       });
     });
   }
+}
+
+bool isToxSaveEncrypted(ToxLibrary lib, Uint8List save) =>
+    save.length >= lib.ffi.tox_pass_encryption_extra_length() &&
+    save.scoped(lib.allocator, (ptr, _) => lib.ffi.tox_is_data_encrypted(ptr));
+
+Uint8List decryptToxSave(ToxLibrary lib, Uint8List save, String passphrase) {
+  final plainLength = save.length - lib.ffi.tox_pass_encryption_extra_length();
+  return save.scoped(lib.allocator, (savePtr, length) {
+    return passphrase.scopedBytes(lib.allocator, (passPtr, passLength) {
+      return _scoped(lib.allocator.free, lib.allocator<Uint8>(plainLength), (
+        plain,
+      ) {
+        _handleError(
+          lib.allocator,
+          Tox_Err_Decryption.fromValue,
+          (err) => lib.ffi.tox_pass_decrypt(
+            savePtr,
+            length,
+            passPtr,
+            passLength,
+            plain,
+            err,
+          ),
+          'tox_pass_decrypt',
+        );
+        return plain.asTypedList(plainLength).clone();
+      });
+    });
+  });
 }
 
 extension on api.ToxOptions {

@@ -73,6 +73,20 @@ final class SecretKey extends _CryptoBytes {
   int get length => SecretKey.kLength;
 }
 
+final class ToxAddressConverter extends TypeConverter<ToxAddress, String>
+    with JsonTypeConverter2<ToxAddress, String, String> {
+  const ToxAddressConverter();
+
+  @override
+  ToxAddress fromJson(String json) => ToxAddress.fromString(json);
+  @override
+  ToxAddress fromSql(String fromDb) => fromJson(fromDb);
+  @override
+  String toJson(ToxAddress value) => value.toJson();
+  @override
+  String toSql(ToxAddress value) => toJson(value);
+}
+
 final class SecretKeyConverter extends TypeConverter<SecretKey, String>
     with JsonTypeConverter2<SecretKey, String, String> {
   const SecretKeyConverter();
@@ -134,6 +148,27 @@ final class ToxAddress extends _CryptoBytes {
 
   factory ToxAddress.fromString(String value) {
     return ToxAddress(Uint8List.fromList(hex.decode(value)));
+  }
+
+  factory ToxAddress.of(PublicKey publicKey, ToxAddressNospam nospam) {
+    final bytes = Uint8List(kLength)..setAll(0, publicKey.bytes);
+    bytes.buffer.asByteData().setUint32(PublicKey.kLength, nospam.value);
+    bytes.setAll(kLength - ToxAddressHash.kLength, _checksum(bytes));
+    return ToxAddress(bytes);
+  }
+
+  bool get hasValidChecksum {
+    final checksum = _checksum(bytes);
+    final end = kLength - ToxAddressHash.kLength;
+    return bytes[end] == checksum[0] && bytes[end + 1] == checksum[1];
+  }
+
+  static List<int> _checksum(Uint8List bytes) {
+    final checksum = [0, 0];
+    for (var i = 0; i < PublicKey.kLength + ToxAddressNospam.kLength; i++) {
+      checksum[i % 2] ^= bytes[i];
+    }
+    return checksum;
   }
 
   ToxAddressHash get hash => ToxAddressHash(

@@ -79,10 +79,6 @@
     "@menuProfile": {
         "description": "The text for the profile menu item"
     },
-    "menuQuit": "Kilépés",
-    "@menuQuit": {
-        "description": "The text for the quit menu item"
-    },
     "menuSettings": "Beállítások",
     "@menuSettings": {
         "description": "The text for the settings menu item"

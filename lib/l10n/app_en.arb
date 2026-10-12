@@ -34,6 +34,14 @@
   "@toxId": {
     "description": "The text for the Tox ID field"
   },
+  "copyToxId": "Copy Tox ID",
+  "@copyToxId": {
+    "description": "The tooltip for copying your own Tox ID"
+  },
+  "toxIdCopied": "Tox ID copied",
+  "@toxIdCopied": {
+    "description": "The message shown after copying your own Tox ID"
+  },
   "defaultAddContactMessage": "Hey, I'm {nick}, come chat with me on bTox!",
   "@defaultAddContactMessage": {
     "description": "The default message to send when adding a contact",
@@ -72,6 +80,10 @@
       }
     }
   },
+  "toxIdChecksumError": "Not a valid Tox ID, please check it for typos",
+  "@toxIdChecksumError": {
+    "description": "The error message when the Tox ID's checksum doesn't match, e.g. because of a typo"
+  },
   "messageEmptyError": "The message can't be empty",
   "@messageEmptyError": {
     "description": "The error message when the message is empty"
@@ -79,10 +91,6 @@
   "menuProfile": "Profile",
   "@menuProfile": {
     "description": "The text for the profile menu item"
-  },
-  "menuQuit": "Quit",
-  "@menuQuit": {
-    "description": "The text for the quit menu item"
   },
   "menuSettings": "Settings",
   "@menuSettings": {
@@ -157,6 +165,84 @@
   "delete": "Delete",
   "@delete": {
     "description": "The text for the delete button"
+  },
+  "acceptFriendRequest": "Accept friend request",
+  "@acceptFriendRequest": {
+    "description": "The tooltip for accepting an incoming friend request"
+  },
+  "rejectFriendRequest": "Reject friend request",
+  "@rejectFriendRequest": {
+    "description": "The tooltip for rejecting an incoming friend request"
+  },
+  "online": "Online",
+  "@online": {
+    "description": "A contact's connection state, for screen readers"
+  },
+  "offline": "Offline",
+  "@offline": {
+    "description": "A contact's connection state, for screen readers"
+  },
+  "deleteContact": "Delete contact",
+  "@deleteContact": {
+    "description": "The title of the dialog for deleting a contact"
+  },
+  "deleteContactMessage": "Delete \"{name}\" and all your messages with them? This can't be undone.",
+  "@deleteContactMessage": {
+    "description": "The message to confirm the deletion of a contact",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Alice"
+      }
+    }
+  },
+  "contactDeleted": "Contact \"{name}\" deleted",
+  "@contactDeleted": {
+    "description": "The text when a contact has been deleted",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Alice"
+      }
+    }
+  },
+  "importProfile": "Import profile",
+  "@importProfile": {
+    "description": "The button and dialog title for importing a .tox profile file"
+  },
+  "import": "Import",
+  "@import": {
+    "description": "The button that confirms importing a profile"
+  },
+  "password": "Password",
+  "@password": {
+    "description": "The label for an encrypted profile's password"
+  },
+  "wrongPassword": "Wrong password",
+  "@wrongPassword": {
+    "description": "The error when an encrypted profile's password is wrong"
+  },
+  "profileImported": "Profile \"{name}\" imported",
+  "@profileImported": {
+    "description": "The text when a profile has been imported",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Alice"
+      }
+    }
+  },
+  "profileAlreadyImported": "This profile is already in bTox",
+  "@profileAlreadyImported": {
+    "description": "The error when importing a profile that bTox already has"
+  },
+  "notAToxProfile": "Not a Tox profile",
+  "@notAToxProfile": {
+    "description": "The error when the chosen file isn't a Tox profile"
+  },
+  "stayOnline": "Stay online when closed",
+  "@stayOnline": {
+    "description": "The setting to keep running in the background after closing the app"
   },
   "profileDeleted": "Profile \"{name}\" deleted",
   "@profileDeleted": {

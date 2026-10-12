@@ -5,9 +5,7 @@ import 'package:btox/logger.dart';
 import 'package:btox/pages/settings_page.dart';
 import 'package:btox/pages/user_profile_page.dart';
 import 'package:btox/widgets/circle_identicon.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 const _logger = Logger(['MainMenu']);
@@ -81,14 +79,6 @@ final class MainMenu extends ConsumerWidget {
             await database.deactivateProfiles();
           },
         ),
-        if (defaultTargetPlatform == TargetPlatform.android)
-          ListTile(
-            leading: const Icon(Icons.close),
-            title: Text(AppLocalizations.of(context)!.menuQuit),
-            onTap: () {
-              SystemChannels.platform.invokeMethod('SystemNavigator.pop');
-            },
-          ),
       ],
     );
   }

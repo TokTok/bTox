@@ -1,0 +1,8 @@
+targets:
+  $default:
+    builders:
+      drift_dev:
+        options:
+          # For `dart run drift_dev make-migrations`.
+          databases:
+            btox: lib/db/database.dart

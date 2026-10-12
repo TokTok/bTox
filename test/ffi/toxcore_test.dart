@@ -196,6 +196,46 @@ void main() {
       );
     });
 
+    test('adds and deletes friends', () {
+      final toxPtr = safePtr<ffi_gen.Tox>();
+      when(mockFfi.tox_new(any, any)).thenReturn(toxPtr);
+      when(mockFfi.tox_friend_add(toxPtr, any, any, any, any)).thenReturn(4);
+      when(mockFfi.tox_friend_add_norequest(toxPtr, any, any)).thenReturn(2);
+
+      // ignore: argument_type_not_assignable
+      final toxcore = Toxcore(lib, const api_opts.ToxOptions());
+      final address = ToxAddress.fromString('${'1' * 72}0000');
+
+      expect(toxcore.addFriend(address, 'Hi!'), 4);
+      verify(mockFfi.tox_friend_add(toxPtr, any, any, 3, any)).called(1);
+      expect(toxcore.addFriendNorequest(address.publicKey), 2);
+
+      toxcore.deleteFriend(2);
+      verify(mockFfi.tox_friend_delete(toxPtr, 2, any)).called(1);
+    });
+
+    test('sendFriendMessage sends a normal message', () {
+      final toxPtr = safePtr<ffi_gen.Tox>();
+      when(mockFfi.tox_new(any, any)).thenReturn(toxPtr);
+      when(
+        mockFfi.tox_friend_send_message(
+          toxPtr,
+          5,
+          ffi_gen.Tox_Message_Type.TOX_MESSAGE_TYPE_NORMAL,
+          any,
+          any,
+          any,
+        ),
+      ).thenReturn(9);
+
+      // ignore: argument_type_not_assignable
+      final toxcore = Toxcore(lib, const api_opts.ToxOptions());
+
+      expect(toxcore.sendFriendMessage(5, 'Grüße'), 9);
+      verify(mockFfi.tox_friend_send_message(toxPtr, 5, any, any, 7, any))
+          .called(1);
+    });
+
     test('throws ApiException on error', () {
       final toxPtr = safePtr<ffi_gen.Tox>();
       when(mockFfi.tox_new(any, any)).thenReturn(toxPtr);

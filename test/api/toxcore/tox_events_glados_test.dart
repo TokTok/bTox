@@ -213,20 +213,24 @@ extension BToxAny on Any {
         ToxEventFileRecvControl(control: c, fileNumber: fn, friendNumber: frn),
   );
 
-  Generator<ToxEventFriendLosslessPacket> get friendLosslessPacket => combine3(
+  Generator<ToxEventFriendLosslessPacket> get friendLosslessPacket => combine2(
     uint8List,
     int32,
-    int32,
-    (d, dl, fn) =>
-        ToxEventFriendLosslessPacket(data: d, dataLength: dl, friendNumber: fn),
+    (d, fn) => ToxEventFriendLosslessPacket(
+      data: d,
+      dataLength: d.length,
+      friendNumber: fn,
+    ),
   );
 
-  Generator<ToxEventFriendLossyPacket> get friendLossyPacket => combine3(
+  Generator<ToxEventFriendLossyPacket> get friendLossyPacket => combine2(
     uint8List,
     int32,
-    int32,
-    (d, dl, fn) =>
-        ToxEventFriendLossyPacket(data: d, dataLength: dl, friendNumber: fn),
+    (d, fn) => ToxEventFriendLossyPacket(
+      data: d,
+      dataLength: d.length,
+      friendNumber: fn,
+    ),
   );
 
   Generator<ToxEventFriendName> get friendName => combine2(

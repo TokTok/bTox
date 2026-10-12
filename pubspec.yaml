@@ -65,6 +65,8 @@ dependencies:
   sqlite3: ^2.9.4
   wasm_ffi: ^2.0.7
   web: ^1.1.1
+  qr_flutter: ^4.1.0
+  flutter_local_notifications: ^22.3.2
 
 dev_dependencies:
   flutter_test:
@@ -97,6 +99,10 @@ flutter_launcher_icons:
   web:
     generate: true
   image_path: "assets/images/btox-icon.png"
+  adaptive_icon_background: "assets/launcher_icon/background.png"
+  adaptive_icon_foreground: "assets/launcher_icon/foreground.png"
+  adaptive_icon_foreground_inset: 0
+  adaptive_icon_monochrome: "assets/launcher_icon/monochrome.png"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

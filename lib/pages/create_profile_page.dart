@@ -17,9 +17,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 const _logger = Logger(['CreateProfilePage']);
 
 final class CreateProfilePage extends HookConsumerWidget {
-  final Function(Id<Profiles>)? onProfileCreated;
-
-  const CreateProfilePage({super.key, this.onProfileCreated});
+  const CreateProfilePage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -35,6 +33,7 @@ final class CreateProfilePage extends HookConsumerWidget {
     final statusMessageController = useTextEditingController(
       text: 'Producing works of art in Kannywood',
     );
+    final creating = useState(false);
 
     return Scaffold(
       appBar: AppBar(title: Text(AppLocalizations.of(context)!.newProfile)),
@@ -58,25 +57,45 @@ final class CreateProfilePage extends HookConsumerWidget {
           const Padding(padding: EdgeInsets.all(8)),
           ElevatedButton(
             key: const Key('createProfileButton'),
-            onPressed: () async {
-              _logger.d('Creating new profile');
-              final keyPair = sodium.crypto.box.keyPair();
+            onPressed: creating.value
+                ? null
+                : () async {
+                    // A second tap can come before the button is disabled.
+                    if (creating.value) {
+                      return;
+                    }
+                    creating.value = true;
+                    _logger.d('Creating new profile');
+                    final keyPair = sodium.crypto.box.keyPair();
 
-              final id = await database.addProfile(
-                ProfilesCompanion.insert(
-                  active: const Value(true),
-                  settings: ProfileSettings(
-                    nickname: nicknameController.text,
-                    statusMessage: statusMessageController.text,
-                  ),
-                  secretKey: SecretKey.fromSodium(keyPair.secretKey),
-                  publicKey: PublicKey(keyPair.publicKey),
-                  nospam: ToxAddressNospam(0),
-                ),
-              );
-              _logger.d('Created new profile with ID $id');
-              onProfileCreated?.call(id);
-            },
+                    final Id<Profiles> id;
+                    try {
+                      id = await database.transaction(() async {
+                        final id = await database.addProfile(
+                          ProfilesCompanion.insert(
+                            settings: ProfileSettings(
+                              nickname: nicknameController.text,
+                              statusMessage: statusMessageController.text,
+                            ),
+                            secretKey: SecretKey.fromSodium(keyPair.secretKey),
+                            publicKey: PublicKey(keyPair.publicKey),
+                            nospam: ToxAddressNospam(0),
+                          ),
+                        );
+                        await database.activateProfile(id);
+                        return id;
+                      });
+                    } catch (e) {
+                      _logger.e('Failed to create profile: $e');
+                      creating.value = false;
+                      return;
+                    }
+                    _logger.d('Created new profile with ID $id');
+                    // On first start, this page is the home page instead.
+                    if (context.mounted && Navigator.canPop(context)) {
+                      Navigator.pop(context);
+                    }
+                  },
             child: Text(AppLocalizations.of(context)!.create),
           ),
         ],

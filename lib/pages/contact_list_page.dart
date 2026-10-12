@@ -10,6 +10,7 @@ import 'package:btox/providers/profiles.dart';
 import 'package:btox/providers/tox.dart';
 import 'package:btox/widgets/connection_status_icon.dart';
 import 'package:btox/widgets/contact_list_item.dart';
+import 'package:btox/widgets/friend_request_list_item.dart';
 import 'package:btox/widgets/main_menu.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -28,6 +29,10 @@ final class ContactListPage extends ConsumerWidget {
     if (profile == null || constants == null || database == null) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
+
+    final requests =
+        ref.watch(friendRequestsForProfileProvider(profile.id)).value ??
+        const [];
 
     return Scaffold(
       drawer: MainMenu(
@@ -56,7 +61,7 @@ final class ContactListPage extends ConsumerWidget {
                 width: 24,
                 child: Align(
                   alignment: Alignment.centerLeft,
-                  child: ConnectionStatusIcon(profile: profile),
+                  child: const ConnectionStatusIcon(),
                 ),
               ),
             ),
@@ -69,10 +74,18 @@ final class ContactListPage extends ConsumerWidget {
           .when(
             data: (contacts) {
               return ListView.builder(
-                itemCount: contacts.length,
+                itemCount: requests.length + contacts.length,
                 itemBuilder: (context, index) {
+                  if (index < requests.length) {
+                    return FriendRequestListItem(
+                      request: requests[index],
+                      onAccept: database.acceptFriendRequest,
+                      onReject: (request) =>
+                          database.deleteFriendRequest(request.id),
+                    );
+                  }
                   return ContactListItem(
-                    contact: contacts[index],
+                    contact: contacts[index - requests.length],
                     onTap: (contact) {
                       _logger.d('Opening chat with contact: ${contact.id}');
                       Navigator.push(
@@ -82,6 +95,8 @@ final class ContactListPage extends ConsumerWidget {
                         ),
                       );
                     },
+                    onLongPress: (contact) =>
+                        _confirmDelete(context, database, contact),
                   );
                 },
               );
@@ -97,12 +112,13 @@ final class ContactListPage extends ConsumerWidget {
             builder: (context) => AddContactPage(
               constants: constants,
               onAddContact: (toxID, message) async {
+                final address = ToxAddress.fromString(toxID);
                 final id = await database.addContact(
                   ContactsCompanion.insert(
                     profileId: profile.id,
-                    publicKey: PublicKey.fromJson(
-                      toxID.substring(0, toxID.length - 12),
-                    ),
+                    publicKey: address.publicKey,
+                    friendRequestAddress: Value(address),
+                    friendRequestMessage: Value(message),
                   ),
                 );
                 _logger.d('Added contact: $id');
@@ -113,6 +129,41 @@ final class ContactListPage extends ConsumerWidget {
         ),
         tooltip: AppLocalizations.of(context)!.addContact,
         child: const Icon(Icons.add),
+      ),
+    );
+  }
+
+  void _confirmDelete(
+    BuildContext context,
+    Database database,
+    Contact contact,
+  ) {
+    final l10n = AppLocalizations.of(context)!;
+    final name = contact.name ?? l10n.defaultContactName;
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.deleteContact),
+        content: Text(l10n.deleteContactMessage(name)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(l10n.cancel),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(dialogContext);
+              _logger.i('Deleting contact ${contact.id}');
+              await database.deleteContact(contact.id);
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(l10n.contactDeleted(name))),
+                );
+              }
+            },
+            child: Text(l10n.delete),
+          ),
+        ],
       ),
     );
   }

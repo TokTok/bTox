@@ -69,10 +69,6 @@
   "@menuProfile": {
     "description": "The text for the profile menu item"
   },
-  "menuQuit": "வெளியேறு",
-  "@menuQuit": {
-    "description": "The text for the quit menu item"
-  },
   "menuSettings": "அமைப்புகள்",
   "@menuSettings": {
     "description": "The text for the settings menu item"

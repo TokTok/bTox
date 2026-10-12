@@ -80,10 +80,6 @@
     "@menuProfile": {
         "description": "The text for the profile menu item"
     },
-    "menuQuit": "Insir",
-    "@menuQuit": {
-        "description": "The text for the quit menu item"
-    },
     "menuSettings": "Asestasion",
     "@menuSettings": {
         "description": "The text for the settings menu item"

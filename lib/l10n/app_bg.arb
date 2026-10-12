@@ -69,10 +69,6 @@
   "@menuProfile": {
     "description": "The text for the profile menu item"
   },
-  "menuQuit": "Изход",
-  "@menuQuit": {
-    "description": "The text for the quit menu item"
-  },
   "menuSettings": "Настройки",
   "@menuSettings": {
     "description": "The text for the settings menu item"

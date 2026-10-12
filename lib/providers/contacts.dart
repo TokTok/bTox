@@ -10,6 +10,15 @@ final contactsForProfileProvider =
       yield* db.watchContactsFor(profileId);
     });
 
+final friendRequestsForProfileProvider =
+    StreamProvider.family<List<FriendRequest>, Id<Profiles>>((
+      ref,
+      profileId,
+    ) async* {
+      final db = await ref.watch(databaseProvider.future);
+      yield* db.watchFriendRequestsFor(profileId);
+    });
+
 final contactProvider = StreamProvider.family<Contact, Id<Contacts>>((
   ref,
   contactId,

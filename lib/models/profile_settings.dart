@@ -11,6 +11,7 @@ abstract class ProfileSettings with _$ProfileSettings {
   const factory ProfileSettings({
     required String nickname,
     required String statusMessage,
+    @Default(true) bool stayOnline,
   }) = _ProfileSettings;
 
   factory ProfileSettings.fromJson(Map<String, dynamic> json) =>
