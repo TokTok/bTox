@@ -14,7 +14,7 @@ void main() {
         message: Sha256.fromDigest(sha256.convert('Hello'.codeUnits)),
         text: 'Hallo',
       ),
-      FileContent(url: 'https://example.com/file.txt'),
+      FileContent(name: 'file.txt', size: 3, path: '/tmp/file.txt'),
       LocationContent(latitude: 1.2, longitude: 2.3),
       MediaContent(url: 'https://example.com/image.jpg'),
       ReactionContent(
@@ -34,5 +34,17 @@ void main() {
 
     expect(l1, l2);
     expect(l1, l3);
+  }, tags: ['models']);
+
+  test('plain text is what the message says', () {
+    expect(const TextContent(text: 'Hi').plainText, 'Hi');
+    expect(
+      const FileContent(name: 'a.txt', size: 1, path: '/a').plainText,
+      'a.txt',
+    );
+    expect(
+      const LocationContent(latitude: 1.5, longitude: 2.5).plainText,
+      'geo:1.5,2.5',
+    );
   }, tags: ['models']);
 }

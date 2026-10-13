@@ -21,7 +21,7 @@ void main() {
   testDatabase('Messages can be added to the database', (Database db) async {
     final profileId = await db.addProfile(
       ProfilesCompanion.insert(
-        active: Value(true),
+        signedIn: Value(true),
         settings: ProfileSettings(
           nickname: 'Yeetman',
           statusMessage: 'Yeeting everyone',
@@ -86,7 +86,7 @@ void main() {
   testDatabase('Profile lifecycle and settings', (db) async {
     final p1 = await db.addProfile(
       ProfilesCompanion.insert(
-        active: Value(true),
+        signedIn: Value(true),
         settings: ProfileSettings(nickname: 'P1', statusMessage: ''),
         secretKey: mySecretKey,
         publicKey: myToxId.publicKey,
@@ -95,7 +95,7 @@ void main() {
     );
     final p2 = await db.addProfile(
       ProfilesCompanion.insert(
-        active: Value(false),
+        signedIn: Value(false),
         settings: ProfileSettings(nickname: 'P2', statusMessage: ''),
         secretKey: mySecretKey,
         publicKey: myToxId.publicKey,
@@ -104,13 +104,12 @@ void main() {
     );
 
     // Initial state
-    expect((await db.watchProfile(p1).first).active, isTrue);
-    expect((await db.watchProfile(p2).first).active, isFalse);
+    expect((await db.watchProfile(p1).first).signedIn, isTrue);
+    expect((await db.watchProfile(p2).first).signedIn, isFalse);
 
-    // Activate P2
-    await db.activateProfile(p2);
-    expect((await db.watchProfile(p1).first).active, isFalse);
-    expect((await db.watchProfile(p2).first).active, isTrue);
+    await db.signIn(p2);
+    expect((await db.watchProfile(p1).first).signedIn, isTrue);
+    expect((await db.watchProfile(p2).first).signedIn, isTrue);
 
     // Update settings
     final newSettings = ProfileSettings(
@@ -141,7 +140,7 @@ void main() {
   testDatabase('Two separate histories can be merged', (db) async {
     final profileId = await db.addProfile(
       ProfilesCompanion.insert(
-        active: Value(true),
+        signedIn: Value(true),
         settings: ProfileSettings(
           nickname: 'Yeetman',
           statusMessage: 'Yeeting everyone',

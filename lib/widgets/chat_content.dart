@@ -10,6 +10,13 @@ const double _kStateIconSize = 18;
 
 const _logger = Logger(['ChatContent']);
 
+Positioned _stateIcon(IconData icon, [Color color = const Color(0xFF97AD8E)]) =>
+    Positioned(
+      bottom: _kStateIconBottom,
+      right: _kStateIconRight,
+      child: Icon(icon, size: _kStateIconSize, color: color),
+    );
+
 final class ChatContent extends StatelessWidget {
   final Content content;
   final Color color;
@@ -36,43 +43,14 @@ final class ChatContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Positioned? stateIcon = switch (state) {
+    final stateIcon = switch (state) {
       ChatContentState.none => null,
-      ChatContentState.pending => const Positioned(
-        bottom: _kStateIconBottom,
-        right: _kStateIconRight,
-        child: Icon(
-          Icons.schedule,
-          size: _kStateIconSize,
-          color: Color(0xFF97AD8E),
-        ),
-      ),
-      ChatContentState.sent => const Positioned(
-        bottom: _kStateIconBottom,
-        right: _kStateIconRight,
-        child: Icon(
-          Icons.done,
-          size: _kStateIconSize,
-          color: Color(0xFF97AD8E),
-        ),
-      ),
-      ChatContentState.delivered => const Positioned(
-        bottom: _kStateIconBottom,
-        right: _kStateIconRight,
-        child: Icon(
-          Icons.done_all,
-          size: _kStateIconSize,
-          color: Color(0xFF97AD8E),
-        ),
-      ),
-      ChatContentState.seen => const Positioned(
-        bottom: _kStateIconBottom,
-        right: _kStateIconRight,
-        child: Icon(
-          Icons.done_all,
-          size: _kStateIconSize,
-          color: Color(0xFF92DEDA),
-        ),
+      ChatContentState.pending => _stateIcon(Icons.schedule),
+      ChatContentState.sent => _stateIcon(Icons.done),
+      ChatContentState.delivered => _stateIcon(Icons.done_all),
+      ChatContentState.seen => _stateIcon(
+        Icons.done_all,
+        const Color(0xFF92DEDA),
       ),
     };
 

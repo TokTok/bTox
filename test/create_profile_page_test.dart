@@ -17,7 +17,6 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'mocks/fake_bootstrap_nodes.dart';
 import 'mocks/fake_sodium.dart';
-import 'mocks/fake_tox_constants.dart';
 import 'mocks/fake_toxcore.dart';
 
 void main() {
@@ -44,7 +43,6 @@ void main() {
           bootstrapNodesProvider.overrideWith(fakeBootstrapNodesProvider),
           databaseProvider.overrideWith((ref) => db),
           sodiumProvider.overrideWith((ref) => FakeSodium()),
-          toxConstantsProvider.overrideWith((ref) => fakeToxcoreConstants),
           toxProvider.overrideWith((ref, args) => tox),
         ],
         child: const BtoxApp(),
@@ -61,7 +59,7 @@ void main() {
     expect(find.byType(CreateProfilePage), findsNothing);
     expect(find.byType(ContactListPage), findsOneWidget);
     final profiles = await db.select(db.profiles).get();
-    expect(profiles.map((p) => (p.settings.nickname, p.active)), [
+    expect(profiles.map((p) => (p.settings.nickname, p.signedIn)), [
       ('Old', false),
       ('Yanciman', true),
     ]);

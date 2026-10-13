@@ -3,12 +3,9 @@ import 'dart:async';
 import 'package:btox/providers/profiles.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-final stayOnlineProvider = Provider<bool?>((ref) {
-  if (!ref.watch(profilesProvider).hasValue) {
-    return null;
-  }
-  return ref.watch(activeProfileProvider)?.settings.stayOnline ?? false;
-});
+final stayOnlineProvider = Provider<bool?>(
+  (ref) => ref.watch(appSettingsProvider).value?.stayOnline,
+);
 
 final class StayOnlinePolicy {
   final void Function() onStop;

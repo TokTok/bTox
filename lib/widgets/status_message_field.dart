@@ -1,15 +1,13 @@
-import 'package:btox/api/toxcore/tox.dart';
+import 'package:btox/api/toxcore/tox_constants.dart';
 import 'package:btox/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
 
 final class StatusMessageField extends StatelessWidget {
-  final ToxConstants constants;
   final TextEditingController controller;
   final void Function(String)? onChanged;
 
   const StatusMessageField({
     super.key,
-    required this.constants,
     required this.controller,
     this.onChanged,
   });
@@ -29,9 +27,9 @@ final class StatusMessageField extends StatelessWidget {
             autovalidateMode: AutovalidateMode.onUserInteraction,
             validator: (value) {
               value ??= '';
-              if (value.length > constants.maxStatusMessageLength) {
+              if (value.length > toxMaxStatusMessageLength) {
                 return AppLocalizations.of(context)!
-                    .statusMessageLengthError(constants.maxStatusMessageLength);
+                    .statusMessageLengthError(toxMaxStatusMessageLength);
               }
 
               return null;

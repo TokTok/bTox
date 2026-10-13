@@ -3,8 +3,6 @@ import 'package:btox/widgets/tox_id_field.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import '../mocks/fake_tox_constants.dart';
-
 void main() {
   Future<String?> validate(WidgetTester tester, String toxId) async {
     final formKey = GlobalKey<FormState>();
@@ -14,10 +12,7 @@ void main() {
         home: Scaffold(
           body: Form(
             key: formKey,
-            child: ToxIdField(
-              constants: fakeToxcoreConstants,
-              controller: TextEditingController(text: toxId),
-            ),
+            child: ToxIdField(controller: TextEditingController(text: toxId)),
           ),
         ),
       ),

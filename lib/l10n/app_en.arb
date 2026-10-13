@@ -236,6 +236,27 @@
   "@profileAlreadyImported": {
     "description": "The error when importing a profile that bTox already has"
   },
+  "exportData": "Export data",
+  "@exportData": {
+    "description": "Settings entry that saves all accounts and messages to a file"
+  },
+  "exportDataHint": "All accounts and messages, encrypted with a password",
+  "@exportDataHint": {
+    "description": "Explanation below the export data setting"
+  },
+  "export": "Export",
+  "@export": {
+    "description": "Button that exports data"
+  },
+  "accountsRestored": "{count, plural, =0{The backup has no new accounts} =1{1 account restored} other{{count} accounts restored}}",
+  "@accountsRestored": {
+    "description": "Shown after importing accounts from a bTox backup",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "notAToxProfile": "Not a Tox profile",
   "@notAToxProfile": {
     "description": "The error when the chosen file isn't a Tox profile"
@@ -243,6 +264,104 @@
   "stayOnline": "Stay online when closed",
   "@stayOnline": {
     "description": "The setting to keep running in the background after closing the app"
+  },
+  "stayOnlineHint": "Keeps all signed-in accounts online",
+  "@stayOnlineHint": {
+    "description": "Explains that stay online applies to every signed-in account"
+  },
+  "accounts": "Accounts",
+  "@accounts": {
+    "description": "The menu item for signing in and managing accounts"
+  },
+  "appSettings": "App",
+  "@appSettings": {
+    "description": "The heading of the settings for the whole app"
+  },
+  "accountSettings": "Account: {name}",
+  "@accountSettings": {
+    "description": "The heading of the settings for one account",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Alice"
+      }
+    }
+  },
+  "autoAcceptFiles": "Accept files automatically up to",
+  "@autoAcceptFiles": {
+    "description": "The setting for the largest incoming file accepted without asking"
+  },
+  "never": "Never",
+  "@never": {
+    "description": "Auto-accepting no files at all"
+  },
+  "acceptFile": "Accept",
+  "@acceptFile": {
+    "description": "The button to receive an offered file"
+  },
+  "declineFile": "Decline",
+  "@declineFile": {
+    "description": "The button to refuse an offered file"
+  },
+  "fileCancelled": "Cancelled",
+  "@fileCancelled": {
+    "description": "A file transfer that was declined or stopped"
+  },
+  "network": "Network",
+  "@network": {
+    "description": "The heading of the network settings"
+  },
+  "udpEnabled": "Use UDP",
+  "@udpEnabled": {
+    "description": "The setting for Tox's UDP transport"
+  },
+  "udpEnabledHint": "When off, connect only through TCP relays",
+  "@udpEnabledHint": {
+    "description": "Explains turning off UDP"
+  },
+  "ipv6Enabled": "Use IPv6",
+  "@ipv6Enabled": {
+    "description": "The setting for connecting over IPv6"
+  },
+  "localDiscoveryEnabled": "Local discovery",
+  "@localDiscoveryEnabled": {
+    "description": "The setting for finding friends on the local network"
+  },
+  "localDiscoveryEnabledHint": "Find friends on the same network directly",
+  "@localDiscoveryEnabledHint": {
+    "description": "Explains local discovery"
+  },
+  "offWithProxy": "Off while using a proxy, which only carries TCP",
+  "@offWithProxy": {
+    "description": "Why UDP and local discovery are off when a proxy is set"
+  },
+  "proxy": "Proxy",
+  "@proxy": {
+    "description": "The proxy setting and dialog title"
+  },
+  "proxyNone": "None",
+  "@proxyNone": {
+    "description": "No proxy"
+  },
+  "proxyHost": "Host",
+  "@proxyHost": {
+    "description": "The label for the proxy host field"
+  },
+  "proxyPort": "Port",
+  "@proxyPort": {
+    "description": "The label for the proxy port field"
+  },
+  "invalidProxyHost": "Enter a host",
+  "@invalidProxyHost": {
+    "description": "The error when the proxy host is empty"
+  },
+  "invalidProxyPort": "Enter a port from 1 to 65535",
+  "@invalidProxyPort": {
+    "description": "The error when the proxy port is out of range"
+  },
+  "save": "Save",
+  "@save": {
+    "description": "The text for the save button"
   },
   "profileDeleted": "Profile \"{name}\" deleted",
   "@profileDeleted": {

@@ -17,7 +17,13 @@ const _tag = 'message';
 final messageNotifierProvider = Provider<MessageNotifier?>((ref) => null);
 
 final class MessageNotifier {
-  final Future<void> Function(Id<Contacts> id, String title, String body) _show;
+  final Future<void> Function(
+    Id<Contacts> id,
+    String title,
+    String body,
+    String? account,
+  )
+  _show;
   final Future<void> Function(Id<Contacts> id) _cancel;
   Id<Contacts>? _openChat;
 
@@ -26,21 +32,21 @@ final class MessageNotifier {
   static Future<MessageNotifier> android() async {
     final plugin = FlutterLocalNotificationsPlugin();
     await plugin.initialize(settings: _settings);
-    const details = NotificationDetails(
-      android: AndroidNotificationDetails(
-        'messages',
-        'Messages',
-        importance: Importance.high,
-        priority: Priority.high,
-        tag: _tag,
-      ),
-    );
     return MessageNotifier(
-      (id, title, body) => plugin.show(
+      (id, title, body, account) => plugin.show(
         id: id.value,
         title: title,
         body: body,
-        notificationDetails: details,
+        notificationDetails: NotificationDetails(
+          android: AndroidNotificationDetails(
+            'messages',
+            'Messages',
+            importance: Importance.high,
+            priority: Priority.high,
+            tag: _tag,
+            subText: account,
+          ),
+        ),
         payload: '${id.value}',
       ),
       (id) => plugin.cancel(id: id.value, tag: _tag),
@@ -55,12 +61,35 @@ final class MessageNotifier {
     }
   }
 
-  void notify(Contact contact, String text) {
+  void notify(Contact contact, String text, String? account) {
     if (contact.id != _openChat) {
-      _show(contact.id, contact.name ?? 'Unknown', text);
+      _show(contact.id, contact.name ?? 'Unknown', text, account);
     }
   }
 }
+
+// flutter_background_service's defaults for its own notification.
+const _serviceChannel = 'FOREGROUND_DEFAULT';
+const _serviceNotificationId = 112233;
+
+/// Replaces the background service's notification, which can't list lines.
+/// Without a title, Android shows the app name in its place.
+Future<void> showServiceNotification(String summary, List<String> lines) =>
+    FlutterLocalNotificationsPlugin().show(
+      id: _serviceNotificationId,
+      body: summary,
+      notificationDetails: NotificationDetails(
+        android: AndroidNotificationDetails(
+          _serviceChannel,
+          'Background Service',
+          importance: Importance.low,
+          ongoing: true,
+          onlyAlertOnce: true,
+          showWhen: false,
+          styleInformation: lines.isEmpty ? null : InboxStyleInformation(lines),
+        ),
+      ),
+    );
 
 /// Calls [openChat] for tapped notifications, including one that started
 /// the app.

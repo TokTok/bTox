@@ -1,16 +1,17 @@
 import 'dart:async';
 import 'dart:ui';
 
-import 'package:btox/ffi/toxcore.dart';
 import 'package:btox/logger.dart';
+import 'package:btox/models/connection_status.dart';
 import 'package:btox/models/id.dart';
 import 'package:btox/models/persistence.dart';
 import 'package:btox/platform/any_platform.dart';
 import 'package:btox/providers/database.dart';
+import 'package:btox/providers/profiles.dart';
 import 'package:btox/services/connection_status_channel.dart';
 import 'package:btox/services/message_notifier.dart';
 import 'package:btox/services/stay_online_policy.dart';
-import 'package:btox/services/tox_owner.dart';
+import 'package:btox/services/tox_session.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -38,20 +39,13 @@ Future<void> initializeService() async {
       isForegroundMode: true,
       // The service sets this from the stay-online setting.
       autoStartOnBoot: false,
-      // The header already shows the app name.
-      initialNotificationTitle: connectionStatusText(null),
-      initialNotificationContent: '',
+      // Without a title, Android shows the app name in its place.
+      initialNotificationTitle: '',
+      initialNotificationContent: connectionStatusText(null),
       foregroundServiceTypes: [AndroidForegroundType.remoteMessaging],
     ),
   );
 }
-
-String connectionStatusText(Tox_Connection? status) => switch (status) {
-  null => 'Offline',
-  Tox_Connection.TOX_CONNECTION_NONE => 'Connecting…',
-  Tox_Connection.TOX_CONNECTION_TCP => 'Online via TCP relay',
-  Tox_Connection.TOX_CONNECTION_UDP => 'Online',
-};
 
 /// Tells the background service which chat is on screen, if any.
 void reportOpenChat(Id<Contacts>? contactId) {
@@ -85,11 +79,11 @@ void _onStart(ServiceInstance service) async {
   });
 
   await _BackgroundService.instance.start(
-    onStatus: (status) {
+    onStatuses: (statuses, names) {
       if (service is AndroidServiceInstance) {
-        service.setForegroundNotificationInfo(
-          title: connectionStatusText(status),
-          content: '',
+        showServiceNotification(
+          connectionSummaryText(statuses.values),
+          connectionStatusLines(statuses, names),
         );
       }
     },
@@ -116,7 +110,11 @@ final class _BackgroundService {
   _BackgroundService._();
 
   Future<void> start({
-    required void Function(Tox_Connection? status) onStatus,
+    required void Function(
+      ConnectionStatuses statuses,
+      Map<Id<Profiles>, String> names,
+    )
+    onStatuses,
     required void Function() onStop,
     required void Function(bool) onAutoStartOnBoot,
   }) async {
@@ -152,10 +150,13 @@ final class _BackgroundService {
       (_, stayOnline) => policy.stayOnline = stayOnline,
       fireImmediately: true,
     );
-    runToxOwner(container, (status) {
-      publisher.publish(status);
-      onStatus(status);
-    });
+    container.listen(toxSessionsProvider, (_, statuses) {
+      publisher.publish(statuses);
+      onStatuses(statuses, {
+        for (final profile in container.read(signedInProfilesProvider))
+          profile.id: profile.settings.nickname,
+      });
+    }, fireImmediately: true);
   }
 
   set openChat(Id<Contacts>? contactId) => _notifier?.openChat = contactId;

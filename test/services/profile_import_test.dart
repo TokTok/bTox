@@ -11,10 +11,13 @@ import 'package:btox/db/database.dart';
 import 'package:btox/ffi/generated/toxcore.ffi.dart' as gen;
 import 'package:btox/ffi/tox_library.ffi.dart' as tox_lib;
 import 'package:btox/ffi/toxcore.dart' show decryptToxSave, isToxSaveEncrypted;
+import 'package:btox/l10n/generated/app_localizations.dart';
 import 'package:btox/models/crypto.dart';
 import 'package:btox/models/profile_settings.dart';
 import 'package:btox/pages/contact_list_page.dart';
+import 'package:btox/pages/settings_page.dart';
 import 'package:btox/providers/bootstrap_nodes.dart';
+import 'package:btox/providers/connection_status.dart';
 import 'package:btox/providers/database.dart';
 import 'package:btox/providers/sodium.dart';
 import 'package:btox/providers/tox.dart';
@@ -28,7 +31,6 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../mocks/fake_bootstrap_nodes.dart';
 import '../mocks/fake_sodium.dart';
-import '../mocks/fake_tox_constants.dart';
 import '../mocks/fake_toxcore.dart';
 
 final _lib = tox_lib.ToxLibrary(
@@ -81,9 +83,9 @@ _exportFromOtherClient() {
 }
 
 final class _FakeFilePicker extends FilePicker {
-  final Uint8List bytes;
+  Uint8List? bytes;
 
-  _FakeFilePicker(this.bytes);
+  _FakeFilePicker([this.bytes]);
 
   @override
   Future<FilePickerResult?> pickFiles({
@@ -100,8 +102,22 @@ final class _FakeFilePicker extends FilePicker {
     bool lockParentWindow = false,
     bool readSequential = false,
   }) async => FilePickerResult([
-    PlatformFile(name: 'alice.tox', size: bytes.length, bytes: bytes),
+    PlatformFile(name: 'alice.tox', size: bytes!.length, bytes: bytes),
   ]);
+
+  @override
+  Future<String?> saveFile({
+    String? dialogTitle,
+    String? fileName,
+    String? initialDirectory,
+    FileType type = FileType.any,
+    List<String>? allowedExtensions,
+    Uint8List? bytes,
+    bool lockParentWindow = false,
+  }) async {
+    this.bytes = bytes;
+    return null;
+  }
 }
 
 void main() {
@@ -130,7 +146,7 @@ void main() {
     final db = Database(NativeDatabase.memory());
     addTearDown(db.close);
     final id = await importProfile(db, profile);
-    expect((await db.watchProfile(id).first).active, isTrue);
+    expect((await db.watchProfile(id).first).signedIn, isTrue);
     final contacts = await db.watchContactsFor(id).first;
     expect(contacts.map((c) => (c.publicKey, c.name)), [(_friendKey, null)]);
     await expectLater(
@@ -161,7 +177,6 @@ void main() {
           bootstrapNodesProvider.overrideWith(fakeBootstrapNodesProvider),
           databaseProvider.overrideWith((ref) => db),
           sodiumProvider.overrideWith((ref) => FakeSodium()),
-          toxConstantsProvider.overrideWith((ref) => fakeToxcoreConstants),
           tox_lib.toxFfiProvider.overrideWith((ref) => _lib),
           toxProvider.overrideWith((ref, args) => tox),
         ],
@@ -187,5 +202,91 @@ void main() {
     await tester.pumpWidget(const SizedBox());
     await tester.pumpAndSettle();
     await tester.runAsync(db.close);
+  });
+
+  testWidgets('a backup from Settings restores the chosen accounts', (
+    tester,
+  ) async {
+    final picker = _FakeFilePicker();
+    FilePicker.platform = picker;
+    ProfilesCompanion profile(String name, int key) => ProfilesCompanion.insert(
+      settings: ProfileSettings(nickname: name, statusMessage: ''),
+      secretKey: SecretKey(Uint8List(32)),
+      publicKey: PublicKey(Uint8List.fromList(List.filled(32, key))),
+      nospam: ToxAddressNospam(0),
+    );
+    final source = Database(NativeDatabase.memory());
+    final alice = await tester.runAsync(() async {
+      final id = await source.addProfile(profile('Alice', 1));
+      await source.addProfile(profile('Bob', 2));
+      return source.watchProfile(id).first;
+    });
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          connectionStatusProvider.overrideWithValue(null),
+          databaseProvider.overrideWith((ref) => source),
+          tox_lib.toxFfiProvider.overrideWith((ref) => _lib),
+        ],
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          home: SettingsPage(database: source, profile: alice!),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Export data'));
+    await tester.tap(find.text('Export data'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Export'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'secret');
+    await tester.tap(find.text('Export'));
+    await tester.pumpAndSettle();
+    expect(picker.bytes, isNotNull);
+    await tester.pumpWidget(const SizedBox());
+
+    final tox = FakeToxcore();
+    final target = Database(NativeDatabase.memory());
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          bootstrapNodesProvider.overrideWith(fakeBootstrapNodesProvider),
+          databaseProvider.overrideWith((ref) => target),
+          sodiumProvider.overrideWith((ref) => FakeSodium()),
+          tox_lib.toxFfiProvider.overrideWith((ref) => _lib),
+          toxProvider.overrideWith((ref, args) => tox),
+        ],
+        child: const BtoxApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Import profile'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.byType(TextField),
+      ),
+      'secret',
+    );
+    await tester.tap(find.text('Import'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Bob'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Import'));
+    await tester.pumpAndSettle();
+    expect(find.text('1 account restored'), findsOneWidget);
+    final restored = await tester.runAsync(
+      () => target.select(target.profiles).get(),
+    );
+    expect(restored!.map((p) => p.settings.nickname), ['Alice']);
+
+    tox.kill();
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpAndSettle();
+    await tester.runAsync(source.close);
+    await tester.runAsync(target.close);
   });
 }

@@ -4,6 +4,4 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 part 'map_tile.g.dart';
 
 @riverpod
-TileProvider mapTile(Ref ref) {
-  return NetworkTileProvider();
-}
+TileProvider mapTile(Ref ref) => NetworkTileProvider();

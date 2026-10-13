@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:btox/db/database.dart';
 import 'package:btox/models/content.dart';
 import 'package:btox/models/crypto.dart';
+import 'package:btox/models/messaging.dart';
 import 'package:btox/models/profile_settings.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -37,32 +38,73 @@ void main() {
       expect(profiles.first.id, id);
     });
 
-    test('activateProfile toggles active flag correctly', () async {
-      final p1 = ProfilesCompanion.insert(
-        active: const Value(true),
-        settings: const ProfileSettings(nickname: 'P1', statusMessage: ''),
-        secretKey: SecretKey(Uint8List(32)),
-        publicKey: PublicKey(Uint8List(32)),
-        nospam: ToxAddressNospam(1),
+    test(
+      'signIn keeps other profiles signed in and shows the new one',
+      () async {
+        final p1 = ProfilesCompanion.insert(
+          signedIn: const Value(true),
+          settings: const ProfileSettings(nickname: 'P1', statusMessage: ''),
+          secretKey: SecretKey(Uint8List(32)),
+          publicKey: PublicKey(Uint8List(32)),
+          nospam: ToxAddressNospam(1),
+        );
+        final p2 = ProfilesCompanion.insert(
+          signedIn: const Value(false),
+          settings: const ProfileSettings(nickname: 'P2', statusMessage: ''),
+          secretKey: SecretKey(Uint8List(32)),
+          publicKey: PublicKey(Uint8List(32)),
+          nospam: ToxAddressNospam(2),
+        );
+
+        final id1 = await db.addProfile(p1);
+        final id2 = await db.addProfile(p2);
+
+        await db.signIn(id2);
+        expect((await db.watchProfile(id1).first).signedIn, isTrue);
+        expect((await db.watchProfile(id2).first).signedIn, isTrue);
+        expect((await db.watchAppSettings().first).currentProfile, id2);
+
+        await db.signOut(id1);
+        expect((await db.watchProfile(id1).first).signedIn, isFalse);
+      },
+    );
+
+    test('counts messages from contacts until they are read', () async {
+      final me = PublicKey(Uint8List.fromList(List.filled(32, 1)));
+      final friend = PublicKey(Uint8List.fromList(List.filled(32, 2)));
+      final profile = await db.addProfile(
+        ProfilesCompanion.insert(
+          signedIn: const Value(true),
+          settings: const ProfileSettings(nickname: 'Me', statusMessage: ''),
+          secretKey: SecretKey(Uint8List(32)),
+          publicKey: me,
+          nospam: ToxAddressNospam(0),
+        ),
       );
-      final p2 = ProfilesCompanion.insert(
-        active: const Value(false),
-        settings: const ProfileSettings(nickname: 'P2', statusMessage: ''),
-        secretKey: SecretKey(Uint8List(32)),
-        publicKey: PublicKey(Uint8List(32)),
-        nospam: ToxAddressNospam(2),
+      final contact = await db.addContact(
+        ContactsCompanion.insert(profileId: profile, publicKey: friend),
+      );
+      Future<void> add(PublicKey author) => db.addMessage(
+        newMessage(
+          contactId: contact,
+          parent: null,
+          merged: null,
+          author: author,
+          timestamp: DateTime.utc(2026),
+          content: const TextContent(text: 'hi'),
+        ),
       );
 
-      final id1 = await db.addProfile(p1);
-      final id2 = await db.addProfile(p2);
+      await add(friend);
+      await add(me);
+      await add(friend);
+      expect(await db.watchUnreadCountsFor(profile).first, {contact: 2});
 
-      await db.activateProfile(id2);
+      await db.markContactRead(contact);
+      expect(await db.watchUnreadCountsFor(profile).first, isEmpty);
 
-      final profile1 = await db.watchProfile(id1).first;
-      final profile2 = await db.watchProfile(id2).first;
-
-      expect(profile1.active, isFalse);
-      expect(profile2.active, isTrue);
+      await add(friend);
+      expect(await db.watchUnreadCountsFor(profile).first, {contact: 1});
     });
 
     test('deleteProfile cleans up contacts and messages', () async {

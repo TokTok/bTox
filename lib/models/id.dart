@@ -16,9 +16,7 @@ final class Id<T> {
   int get hashCode => value.hashCode;
 
   @override
-  String toString() {
-    return 'Id<$T>($value)';
-  }
+  String toString() => 'Id<$T>($value)';
 }
 
 final class IdConverter<T> extends TypeConverter<Id<T>, int>
@@ -26,22 +24,11 @@ final class IdConverter<T> extends TypeConverter<Id<T>, int>
   const IdConverter();
 
   @override
-  Id<T> fromJson(int json) {
-    return Id(json);
-  }
-
+  Id<T> fromJson(int json) => Id(json);
   @override
-  Id<T> fromSql(int fromDb) {
-    return Id(fromDb);
-  }
-
+  Id<T> fromSql(int fromDb) => Id(fromDb);
   @override
-  int toJson(Id<T> value) {
-    return value.value;
-  }
-
+  int toJson(Id<T> value) => value.value;
   @override
-  int toSql(Id<T> value) {
-    return value.value;
-  }
+  int toSql(Id<T> value) => value.value;
 }

@@ -5,24 +5,20 @@ import 'package:btox/providers/database.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final contactsForProfileProvider =
-    StreamProvider.family<List<Contact>, Id<Profiles>>((ref, profileId) async* {
-      final db = await ref.watch(databaseProvider.future);
-      yield* db.watchContactsFor(profileId);
-    });
+    StreamProvider.family<List<Contact>, Id<Profiles>>(
+      (ref, id) => watchDb(ref, (db) => db.watchContactsFor(id)),
+    );
 
 final friendRequestsForProfileProvider =
-    StreamProvider.family<List<FriendRequest>, Id<Profiles>>((
-      ref,
-      profileId,
-    ) async* {
-      final db = await ref.watch(databaseProvider.future);
-      yield* db.watchFriendRequestsFor(profileId);
-    });
+    StreamProvider.family<List<FriendRequest>, Id<Profiles>>(
+      (ref, id) => watchDb(ref, (db) => db.watchFriendRequestsFor(id)),
+    );
 
-final contactProvider = StreamProvider.family<Contact, Id<Contacts>>((
-  ref,
-  contactId,
-) async* {
-  final db = await ref.watch(databaseProvider.future);
-  yield* db.watchContact(contactId);
-});
+final contactProvider = StreamProvider.family<Contact, Id<Contacts>>(
+  (ref, id) => watchDb(ref, (db) => db.watchContact(id)),
+);
+
+final unreadCountsProvider =
+    StreamProvider.family<Map<Id<Contacts>, int>, Id<Profiles>>(
+      (ref, id) => watchDb(ref, (db) => db.watchUnreadCountsFor(id)),
+    );

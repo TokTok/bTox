@@ -1,8 +1,10 @@
 import 'dart:math';
 
 import 'package:btox/db/database.dart';
+import 'package:btox/models/content.dart';
 import 'package:btox/widgets/chat_content.dart';
 import 'package:btox/widgets/chat_context_menu.dart';
+import 'package:btox/widgets/chat_file_bubble.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -79,13 +81,11 @@ final class ChatItem extends HookWidget {
                 await ChatContextMenu.show(
                   context,
                   details.globalPosition,
-                  onReply: () {
-                    onReply?.call();
-                  },
+                  onReply: () => onReply?.call(),
                   onForward: () {},
                   onCopy: () {
                     Clipboard.setData(
-                      ClipboardData(text: message.content.toString()),
+                      ClipboardData(text: message.content.plainText),
                     );
                   },
                   onSelect: () {},
@@ -97,21 +97,28 @@ final class ChatItem extends HookWidget {
                 padding: isSender
                     ? EdgeInsets.only(right: dragValue)
                     : EdgeInsets.only(left: dragValue),
-                child: ChatContent(
-                  content: message.content,
-                  extraWidth: _kMaxBubbleDrag,
-                  color: _bubbleColor(isSender, Theme.of(context)),
-                  direction: isSender
-                      ? ChatContentDirection.sent
-                      : ChatContentDirection.received,
-                  state: switch (message.delivered) {
-                    false => ChatContentState.pending,
-                    true => ChatContentState.delivered,
-                    null => ChatContentState.none,
-                  },
-                  textStyle: Theme.of(context).textTheme.bodyLarge!,
-                  onTap: () => showTime.value = !showTime.value,
-                ),
+                child: message.content is FileContent
+                    ? ChatFileBubble(
+                        message: message,
+                        isSender: isSender,
+                        color: _bubbleColor(isSender, Theme.of(context)),
+                        textStyle: Theme.of(context).textTheme.bodyLarge!,
+                      )
+                    : ChatContent(
+                        content: message.content,
+                        extraWidth: _kMaxBubbleDrag,
+                        color: _bubbleColor(isSender, Theme.of(context)),
+                        direction: isSender
+                            ? ChatContentDirection.sent
+                            : ChatContentDirection.received,
+                        state: switch (message.delivered) {
+                          false => ChatContentState.pending,
+                          true => ChatContentState.delivered,
+                          null => ChatContentState.none,
+                        },
+                        textStyle: Theme.of(context).textTheme.bodyLarge!,
+                        onTap: () => showTime.value = !showTime.value,
+                      ),
               ),
             ),
           ],

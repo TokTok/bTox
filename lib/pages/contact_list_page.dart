@@ -7,7 +7,7 @@ import 'package:btox/pages/chat_page.dart';
 import 'package:btox/providers/contacts.dart';
 import 'package:btox/providers/database.dart';
 import 'package:btox/providers/profiles.dart';
-import 'package:btox/providers/tox.dart';
+import 'package:btox/widgets/confirm_dialog.dart';
 import 'package:btox/widgets/connection_status_icon.dart';
 import 'package:btox/widgets/contact_list_item.dart';
 import 'package:btox/widgets/friend_request_list_item.dart';
@@ -22,36 +22,22 @@ final class ContactListPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final profile = ref.watch(activeProfileProvider);
-    final constants = ref.watch(toxConstantsProvider).asData?.value;
+    final profile = ref.watch(currentProfileProvider);
     final database = ref.watch(databaseProvider).asData?.value;
 
-    if (profile == null || constants == null || database == null) {
+    if (profile == null || database == null) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     final requests =
         ref.watch(friendRequestsForProfileProvider(profile.id)).value ??
         const [];
+    final unread =
+        ref.watch(unreadCountsProvider(profile.id)).value ?? const {};
 
     return Scaffold(
-      drawer: MainMenu(
-        constants: constants,
-        profile: profile,
-        database: database,
-      ),
+      drawer: MainMenu(profile: profile, database: database),
       appBar: AppBar(
-        leading: Builder(
-          builder: (BuildContext context) {
-            return IconButton(
-              icon: const Icon(Icons.menu),
-              onPressed: () {
-                Scaffold.of(context).openDrawer();
-              },
-              tooltip: MaterialLocalizations.of(context).openAppDrawerTooltip,
-            );
-          },
-        ),
         title: Row(
           children: [
             Padding(
@@ -84,8 +70,10 @@ final class ContactListPage extends ConsumerWidget {
                           database.deleteFriendRequest(request.id),
                     );
                   }
+                  final contact = contacts[index - requests.length];
                   return ContactListItem(
-                    contact: contacts[index - requests.length],
+                    contact: contact,
+                    unread: unread[contact.id] ?? 0,
                     onTap: (contact) {
                       _logger.d('Opening chat with contact: ${contact.id}');
                       Navigator.push(
@@ -110,7 +98,6 @@ final class ContactListPage extends ConsumerWidget {
           context,
           MaterialPageRoute(
             builder: (context) => AddContactPage(
-              constants: constants,
               onAddContact: (toxID, message) async {
                 final address = ToxAddress.fromString(toxID);
                 final id = await database.addContact(
@@ -133,38 +120,26 @@ final class ContactListPage extends ConsumerWidget {
     );
   }
 
-  void _confirmDelete(
+  Future<void> _confirmDelete(
     BuildContext context,
     Database database,
     Contact contact,
-  ) {
+  ) async {
     final l10n = AppLocalizations.of(context)!;
     final name = contact.name ?? l10n.defaultContactName;
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(l10n.deleteContact),
-        content: Text(l10n.deleteContactMessage(name)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: Text(l10n.cancel),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(dialogContext);
-              _logger.i('Deleting contact ${contact.id}');
-              await database.deleteContact(contact.id);
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(l10n.contactDeleted(name))),
-                );
-              }
-            },
-            child: Text(l10n.delete),
-          ),
-        ],
-      ),
-    );
+    if (!await confirm(
+      context,
+      title: l10n.deleteContact,
+      message: l10n.deleteContactMessage(name),
+      action: l10n.delete,
+    )) {
+      return;
+    }
+    _logger.i('Deleting contact ${contact.id}');
+    await database.deleteContact(contact.id);
+    if (context.mounted) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(l10n.contactDeleted(name))));
+    }
   }
 }

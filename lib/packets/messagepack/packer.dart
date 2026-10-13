@@ -25,253 +25,145 @@ void _setInt64(ByteData d, int offset, int v) {
 /// Use methods packXXX, where XXX is type names. Methods can take value and `null`.
 /// If `null` provided for packXXX method it will be packed to `null` implicitly.
 /// For explicitly packing `null` separate packNull function exist.
-///
-/// Streaming packing requires buffer to collect your data.
-/// Try to figure out the best initial size of this buffer, that minimal enough to fit your most common data packing scenario.
-/// Try to find balance. Provide this value in constructor [Packer()]
 final class Packer {
-  /// Provide the [_bufSize] size, that minimal enough to fit your most used data packets.
-  /// Try to find balance, small buffer is good, and if most of your data will fit to it, performance will be good.
-  /// If buffer not enough it will be increased automatically.
-  Packer([this._bufSize = 64]) {
-    _newBuf(_bufSize);
+  final _bytes = BytesBuilder();
+  final _scratch = ByteData(8);
+
+  /// Writes [tag], then the [size] bytes that [set] writes.
+  void _put(int tag, int size, void Function(ByteData d) set) {
+    _bytes.addByte(tag);
+    set(_scratch);
+    _bytes.add(Uint8List.sublistView(_scratch, 0, size));
   }
 
-  int _bufSize;
-
-  late Uint8List _buf;
-  late ByteData _d;
-  int _offset = 0;
-
-  void _newBuf(int size) {
-    _buf = Uint8List(size);
-    _d = ByteData.view(_buf.buffer, _buf.offsetInBytes);
-    _offset = 0;
-  }
-
-  final _builder = BytesBuilder(copy: false);
-  final _strCodec = const Utf8Codec();
-
-  void _nextBuf() {
-    _flushBuf();
-    _bufSize = _bufSize *= 2;
-    _newBuf(_bufSize);
-  }
-
-  /// Flush [_buf] to [_builder] when [_buf] if almost full
-  /// or when packer completes his job and transforms to bytes
-  void _flushBuf() {
-    _builder.add(Uint8List.view(_buf.buffer, _buf.offsetInBytes, _offset));
-  }
-
-  /// Pack binary and string uses this internally.
-  void _putBytes(List<int> bytes) {
-    final length = bytes.length;
-    if (_buf.length - _offset < length) _nextBuf();
-    if (_offset == 0) {
-      /// buf flushed to builder, next new buf created, so we can write directly to builder
-      _builder.add(bytes);
+  /// Writes a length header: [fix] with the length in its low bits if it
+  /// fits in [fixMask], otherwise the smallest of [tag8], [tag16], [tag32].
+  void _length(
+    String type,
+    int length, {
+    int? fix,
+    int fixMask = 0,
+    int? tag8,
+    required int tag16,
+    required int tag32,
+  }) {
+    if (fix != null && length <= fixMask) {
+      _bytes.addByte(fix | length);
+    } else if (tag8 != null && length <= 0xFF) {
+      _put(tag8, 1, (d) => d.setUint8(0, length));
+    } else if (length <= 0xFFFF) {
+      _put(tag16, 2, (d) => d.setUint16(0, length));
+    } else if (length <= 0xFFFFFFFF) {
+      _put(tag32, 4, (d) => d.setUint32(0, length));
     } else {
-      /// buf has space for us
-      _buf.setRange(_offset, _offset + length, bytes);
-      _offset += length;
+      throw ArgumentError('Max $type length is 0xFFFFFFFF');
     }
   }
 
   /// Explicitly pack null value.
   /// Other packXXX implicitly handle null values.
-  void packNull() {
-    if (_buf.length - _offset < 1) _nextBuf();
-    _d.setUint8(_offset++, kTagNil);
-  }
+  void packNull() => _bytes.addByte(kTagNil);
 
   /// Pack [bool] or `null`.
   // ignore: avoid_positional_boolean_parameters
-  void packBool(bool? v) {
-    if (_buf.length - _offset < 1) _nextBuf();
-    if (v == null) {
-      _d.setUint8(_offset++, kTagNil);
-    } else {
-      _d.setUint8(_offset++, v ? kTagTrue : kTagFalse);
-    }
-  }
+  void packBool(bool? v) =>
+      _bytes.addByte(v == null ? kTagNil : (v ? kTagTrue : kTagFalse));
 
   /// Pack [int] or `null`.
   void packInt(int? v) {
-    // max 8 byte int + 1 control byte
-    if (_buf.length - _offset < 9) _nextBuf();
     if (v == null) {
-      _d.setUint8(_offset++, kTagNil);
+      packNull();
+    } else if (v >= -32 && v <= 127) {
+      _bytes.addByte(v & 0xFF);
     } else if (v >= 0) {
-      if (v <= 127) {
-        _d.setUint8(_offset++, v);
-      } else if (v <= 0xFF) {
-        _d.setUint8(_offset++, kTagUint8);
-        _d.setUint8(_offset++, v);
+      if (v <= 0xFF) {
+        _put(kTagUint8, 1, (d) => d.setUint8(0, v));
       } else if (v <= 0xFFFF) {
-        _d.setUint8(_offset++, kTagUint16);
-        _d.setUint16(_offset, v);
-        _offset += 2;
+        _put(kTagUint16, 2, (d) => d.setUint16(0, v));
       } else if (v <= 0xFFFFFFFF) {
-        _d.setUint8(_offset++, kTagUint32);
-        _d.setUint32(_offset, v);
-        _offset += 4;
+        _put(kTagUint32, 4, (d) => d.setUint32(0, v));
       } else {
-        _d.setUint8(_offset++, kTagUint64);
-        _setUint64(_d, _offset, v);
-        _offset += 8;
+        _put(kTagUint64, 8, (d) => _setUint64(d, 0, v));
       }
-    } else if (v >= -32) {
-      _d.setInt8(_offset++, v);
     } else if (v >= -128) {
-      _d.setUint8(_offset++, kTagInt8);
-      _d.setInt8(_offset++, v);
+      _put(kTagInt8, 1, (d) => d.setInt8(0, v));
     } else if (v >= -32768) {
-      _d.setUint8(_offset++, kTagInt16);
-      _d.setInt16(_offset, v);
-      _offset += 2;
+      _put(kTagInt16, 2, (d) => d.setInt16(0, v));
     } else if (v >= -2147483648) {
-      _d.setUint8(_offset++, kTagInt32);
-      _d.setInt32(_offset, v);
-      _offset += 4;
+      _put(kTagInt32, 4, (d) => d.setInt32(0, v));
     } else {
-      _d.setUint8(_offset++, kTagInt64);
-      _setInt64(_d, _offset, v);
-      _offset += 8;
+      _put(kTagInt64, 8, (d) => _setInt64(d, 0, v));
     }
   }
 
   /// Pack [double] or `null`.
-  void packDouble(double? v) {
-    // 8 byte double + 1 control byte
-    if (_buf.length - _offset < 9) _nextBuf();
-    if (v == null) {
-      _d.setUint8(_offset++, kTagNil);
-      return;
-    }
-    _d.setUint8(_offset++, kTagFloat64);
-    _d.setFloat64(_offset, v);
-    _offset += 8;
-  }
+  void packDouble(double? v) =>
+      v == null ? packNull() : _put(kTagFloat64, 8, (d) => d.setFloat64(0, v));
 
   /// Pack [String] or `null`.
   ///
-  /// Depending on whether your distinguish empty [String] from `null` or not:
-  /// - Empty and `null` is same: consider pack empty [String] to `null`, to save 1 byte on a wire.
-  /// ```
-  /// p.packStringEmptyIsNull(s) //or
-  /// p.packString(s.isEmpty ? null : s) //or
-  /// s.isEmpty ? p.packNull() : p.packString(s)
-  /// ```
-  /// - Empty and `null` distinguishable: no action required just save `p.packString(s)`.
   /// Throws [ArgumentError] if [String.length] exceed (2^32)-1.
   void packString(String? v) {
-    // max 4 byte str header + 1 control byte
-    if (_buf.length - _offset < 5) _nextBuf();
     if (v == null) {
-      _d.setUint8(_offset++, kTagNil);
-      return;
+      return packNull();
     }
-    final encoded = _strCodec.encode(v);
-    final length = encoded.length;
-    if (length <= 31) {
-      _d.setUint8(_offset++, 0xA0 | length);
-    } else if (length <= 0xFF) {
-      _d.setUint8(_offset++, kTagStr8);
-      _d.setUint8(_offset++, length);
-    } else if (length <= 0xFFFF) {
-      _d.setUint8(_offset++, kTagStr16);
-      _d.setUint16(_offset, length);
-      _offset += 2;
-    } else if (length <= 0xFFFFFFFF) {
-      _d.setUint8(_offset++, kTagStr32);
-      _d.setUint32(_offset, length);
-      _offset += 4;
-    } else {
-      throw ArgumentError('Max String length is 0xFFFFFFFF');
-    }
-    _putBytes(encoded);
+    final encoded = utf8.encode(v);
+    _length(
+      'String',
+      encoded.length,
+      fix: 0xA0,
+      fixMask: 0x1F,
+      tag8: kTagStr8,
+      tag16: kTagStr16,
+      tag32: kTagStr32,
+    );
+    _bytes.add(encoded);
   }
 
   /// Convenient function that call [packString(v)] by passing empty [String] as `null`.
   ///
   /// Convenient when you not distinguish between empty [String] and null on msgpack wire.
-  /// See [packString] method documentation for more details.
-  void packStringEmptyIsNull(String? v) {
-    if (v == null || v.isEmpty) {
-      packNull();
-    } else {
-      packString(v);
-    }
-  }
+  void packStringEmptyIsNull(String? v) =>
+      packString(v == null || v.isEmpty ? null : v);
 
   /// Pack `List<int>` or null.
   void packBinary(List<int>? buffer) {
-    // max 4 byte binary header + 1 control byte
-    if (_buf.length - _offset < 5) _nextBuf();
     if (buffer == null) {
-      _d.setUint8(_offset++, kTagNil);
-      return;
+      return packNull();
     }
-    final length = buffer.length;
-    if (length <= 0xFF) {
-      _d.setUint8(_offset++, kTagBin8);
-      _d.setUint8(_offset++, length);
-    } else if (length <= 0xFFFF) {
-      _d.setUint8(_offset++, kTagBin16);
-      _d.setUint16(_offset, length);
-      _offset += 2;
-    } else if (length <= 0xFFFFFFFF) {
-      _d.setUint8(_offset++, kTagBin32);
-      _d.setUint32(_offset, length);
-      _offset += 4;
-    } else {
-      throw ArgumentError('Max binary length is 0xFFFFFFFF');
-    }
-    _putBytes(buffer);
+    _length(
+      'binary',
+      buffer.length,
+      tag8: kTagBin8,
+      tag16: kTagBin16,
+      tag32: kTagBin32,
+    );
+    _bytes.add(buffer);
   }
 
   /// Pack [List.length] or `null`.
-  void packListLength(int? length) {
-    // max 4 length header + 1 control byte
-    if (_buf.length - _offset < 5) _nextBuf();
-    if (length == null) {
-      _d.setUint8(_offset++, kTagNil);
-    } else if (length <= 0xF) {
-      _d.setUint8(_offset++, 0x90 | length);
-    } else if (length <= 0xFFFF) {
-      _d.setUint8(_offset++, kTagArray16);
-      _d.setUint16(_offset, length);
-      _offset += 2;
-    } else if (length <= 0xFFFFFFFF) {
-      _d.setUint8(_offset++, kTagArray32);
-      _d.setUint32(_offset, length);
-      _offset += 4;
-    } else {
-      throw ArgumentError('Max list length is 0xFFFFFFFF');
-    }
-  }
+  void packListLength(int? length) => length == null
+      ? packNull()
+      : _length(
+          'list',
+          length,
+          fix: 0x90,
+          fixMask: 0xF,
+          tag16: kTagArray16,
+          tag32: kTagArray32,
+        );
 
   /// Pack [Map.length] or `null`.
-  void packMapLength(int? length) {
-    // max 4 byte header + 1 control byte
-    if (_buf.length - _offset < 5) _nextBuf();
-    if (length == null) {
-      _d.setUint8(_offset++, kTagNil);
-    } else if (length <= 0xF) {
-      _d.setUint8(_offset++, 0x80 | length);
-    } else if (length <= 0xFFFF) {
-      _d.setUint8(_offset++, kTagMap16);
-      _d.setUint16(_offset, length);
-      _offset += 2;
-    } else if (length <= 0xFFFFFFFF) {
-      _d.setUint8(_offset++, kTagMap32);
-      _d.setUint32(_offset, length);
-      _offset += 4;
-    } else {
-      throw ArgumentError('Max map length is 0xFFFFFFFF');
-    }
-  }
+  void packMapLength(int? length) => length == null
+      ? packNull()
+      : _length(
+          'map',
+          length,
+          fix: 0x80,
+          fixMask: 0xF,
+          tag16: kTagMap16,
+          tag32: kTagMap32,
+        );
 
   void packMessageData(MessageData data) {
     data.pack(this);
@@ -283,14 +175,5 @@ final class Packer {
 
   /// Get bytes representation of this packer.
   /// Note: after this call do not reuse packer - create new.
-  Uint8List takeBytes() {
-    Uint8List bytes;
-    if (_builder.isEmpty) {
-      bytes = Uint8List.view(_buf.buffer, _buf.offsetInBytes, _offset);
-    } else {
-      _flushBuf();
-      bytes = _builder.takeBytes();
-    }
-    return bytes;
-  }
+  Uint8List takeBytes() => _bytes.takeBytes();
 }

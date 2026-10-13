@@ -2,28 +2,31 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:btox/api/toxcore/tox.dart';
+import 'package:btox/api/toxcore/tox_constants.dart';
 import 'package:btox/api/toxcore/tox_events.dart';
 import 'package:btox/db/database.dart';
-import 'package:btox/ffi/toxcore.dart' show Tox_Connection;
+import 'package:btox/ffi/toxcore.dart' show Tox_Connection, Tox_Message_Type;
 import 'package:btox/logger.dart';
 import 'package:btox/models/content.dart';
 import 'package:btox/models/crypto.dart';
 import 'package:btox/models/id.dart';
+import 'package:btox/models/messaging.dart';
 import 'package:btox/models/persistence.dart';
 import 'package:btox/models/profile_settings.dart';
+import 'package:btox/providers/attachments.dart';
 import 'package:btox/providers/database.dart';
-import 'package:btox/providers/profiles.dart';
 import 'package:btox/providers/tox.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:btox/services/file_transfers.dart';
+import 'package:btox/services/message_notifier.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-part 'tox_outbox.g.dart';
+part 'tox_sync.g.dart';
 
-const _logger = Logger(['ToxOutbox']);
+const _logger = Logger(['ToxSync']);
 
 /// Only the Tox owner may watch this.
 @riverpod
-Future<ToxOutbox> toxOutbox(
+Future<ToxSync> toxSync(
   Ref ref,
   Id<Profiles> profileId,
   SecretKey secretKey,
@@ -31,30 +34,42 @@ Future<ToxOutbox> toxOutbox(
 ) async {
   final db = await ref.watch(databaseProvider.future);
   final tox = await ref.watch(toxProvider(secretKey, nospam).future);
-  final constants = await ref.watch(toxConstantsProvider.future);
 
-  final outbox = ToxOutbox(
+  final sync = ToxSync(
     db,
     tox,
     profileId,
-    maxMessageLength: constants.maxMessageLength,
+    maxMessageLength: toxMaxMessageLength,
+    notifier: ref.watch(messageNotifierProvider),
+    attachmentsDirectory: () => ref.read(attachmentsDirectoryProvider.future),
   );
-  ref.onDispose(outbox.dispose);
+  ref.onDispose(sync.dispose);
   ref.listen(toxEventsProvider(secretKey, nospam), (_, next) {
     if (next.value case final event?) {
-      outbox.handleEvent(event);
+      sync.handleEvent(event);
     }
   });
-  outbox.start();
-  return outbox;
+  sync.start();
+  return sync;
 }
 
-final activeToxOutboxProvider = Provider<void>((ref) {
-  final profile = ref.watch(activeProfileProvider);
-  if (profile != null) {
-    ref.watch(toxOutboxProvider(profile.id, profile.secretKey, profile.nospam));
-  }
-});
+final _geo = RegExp(r'^geo:(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)$');
+
+// Until clients can agree on richer content, locations travel as text.
+String? _toText(Content content) => switch (content) {
+  TextContent(:final text) => text,
+  LocationContent(:final latitude, :final longitude) =>
+    'geo:$latitude,$longitude',
+  _ => null,
+};
+
+Content _fromText(String text) => switch (_geo.firstMatch(text)) {
+  final match? => LocationContent(
+    latitude: double.parse(match[1]!),
+    longitude: double.parse(match[2]!),
+  ),
+  null => TextContent(text: text),
+};
 
 List<String> splitMessage(String text, int maxBytes) {
   final parts = <String>[];
@@ -81,12 +96,14 @@ List<String> splitMessage(String text, int maxBytes) {
   return parts;
 }
 
-/// Tox starts without friends, so every contact is added again on start.
-final class ToxOutbox {
+/// Keeps a profile's Tox and its database in sync. Tox starts without
+/// friends, so every contact is added again on start.
+final class ToxSync {
   final Database _db;
   final Tox _tox;
   final Id<Profiles> _profileId;
   final int _maxMessageLength;
+  final MessageNotifier? _notifier;
 
   final _subscriptions = <StreamSubscription<Object?>>[];
 
@@ -103,20 +120,39 @@ final class ToxOutbox {
   /// aren't sent twice.
   final _sent = <Id<Messages>, (int, Set<int>)>{};
 
-  ToxOutbox(
+  final FileTransfers _files;
+
+  ToxSync(
     this._db,
     this._tox,
     this._profileId, {
     required int maxMessageLength,
-  }) : _maxMessageLength = maxMessageLength;
+    MessageNotifier? notifier,
+    Future<String> Function()? attachmentsDirectory,
+  }) : _maxMessageLength = maxMessageLength,
+       _notifier = notifier,
+       _files = FileTransfers(
+         _db,
+         _tox,
+         attachmentsDirectory ?? () async => '',
+       );
 
   void start() {
     _run('reset online states', _db.clearContactsOnline(_profileId));
+    _run('cancel unfinished files', _db.cancelIncomingFiles(_profileId));
     _subscriptions
       ..add(_db.watchProfile(_profileId).listen(_updateProfile))
       ..add(_db.watchContactsFor(_profileId).listen(_updateContacts))
       ..add(
         _db.watchUndeliveredMessagesFor(_profileId).listen(_updateUndelivered),
+      )
+      ..add(
+        _db.watchIncomingFilesFor(_profileId).listen(_files.incomingChanged),
+      )
+      ..add(
+        _db.watchAppSettings().listen(
+          (settings) => _files.autoAcceptSize = settings.autoAcceptFileSize,
+        ),
       );
   }
 
@@ -125,6 +161,7 @@ final class ToxOutbox {
       subscription.cancel();
     }
     _subscriptions.clear();
+    _files.dispose();
     _run('reset online states', _db.clearContactsOnline(_profileId));
   }
 
@@ -135,17 +172,15 @@ final class ToxOutbox {
         :final connectionStatus,
       ):
         final online = connectionStatus != Tox_Connection.TOX_CONNECTION_NONE;
-        for (final MapEntry(key: publicKey, value: number)
-            in _friendNumbers.entries) {
-          if (number == friendNumber) {
-            _run(
-              'update online state',
-              _db.updateContactOnline(_profileId, publicKey, online),
-            );
-          }
+        if (_publicKeyOf(friendNumber) case final publicKey?) {
+          _run(
+            'update online state',
+            _db.updateContactOnline(_profileId, publicKey, online),
+          );
         }
         if (!online) {
           _onlineFriends.remove(friendNumber);
+          _files.friendOffline(friendNumber);
           // Tox forgets the messages it hasn't delivered yet.
           _sent.removeWhere(
             (_, sent) => sent.$1 == friendNumber && sent.$2.isNotEmpty,
@@ -164,19 +199,103 @@ final class ToxOutbox {
             break;
           }
         }
+      case ToxEventFriendMessage(:final friendNumber, :final message):
+        _receive(friendNumber, utf8.decode(message, allowMalformed: true));
+      case ToxEventFriendName(:final friendNumber, :final name):
+        if (_publicKeyOf(friendNumber) case final publicKey?) {
+          _run(
+            'save friend name',
+            _db.updateContactName(
+              _profileId,
+              publicKey,
+              utf8.decode(name, allowMalformed: true),
+            ),
+          );
+        }
+      case ToxEventFriendRequest(:final publicKey, :final message):
+        _logger.i('Received friend request from ${publicKey.toJson()}');
+        _run(
+          'save friend request',
+          _db.addFriendRequest(
+            FriendRequestsCompanion.insert(
+              profileId: _profileId,
+              publicKey: publicKey,
+              message: utf8.decode(message, allowMalformed: true),
+              timestamp: DateTime.now().toUtc(),
+            ),
+          ),
+        );
+      case ToxEventFileRecv(
+        :final friendNumber,
+        :final fileNumber,
+        :final kind,
+        :final fileSize,
+        :final filename,
+      ):
+        if (_contactOf(friendNumber) case final contact?) {
+          _run(
+            'receive file',
+            _files.offered(
+              contact,
+              friendNumber,
+              fileNumber,
+              kind,
+              fileSize,
+              utf8.decode(filename, allowMalformed: true),
+            ),
+          );
+        }
+      case final ToxEventFileRecvChunk e:
+        _files.received(e.friendNumber, e.fileNumber, e.position, e.data);
+      case final ToxEventFileChunkRequest e:
+        _files.requested(e.friendNumber, e.fileNumber, e.position, e.length);
+      case final ToxEventFileRecvControl e:
+        _files.controlled(e.friendNumber, e.fileNumber, e.control);
       default:
         break;
     }
+  }
+
+  Contact? _contactOf(int friendNumber) {
+    final publicKey = _publicKeyOf(friendNumber);
+    return _contacts.where((c) => c.publicKey == publicKey).firstOrNull;
+  }
+
+  PublicKey? _publicKeyOf(int friendNumber) => _friendNumbers.entries
+      .where((entry) => entry.value == friendNumber)
+      .firstOrNull
+      ?.key;
+
+  void _receive(int friendNumber, String text) {
+    final contact = _contactOf(friendNumber);
+    if (contact == null) {
+      _logger.w('Received a message from unknown friend $friendNumber');
+      return;
+    }
+    _run(
+      'save message',
+      _db.addMessage(
+        newMessage(
+          contactId: contact.id,
+          parent: null,
+          merged: null,
+          author: contact.publicKey,
+          timestamp: DateTime.now().toUtc(),
+          content: _fromText(text),
+        ),
+      ),
+    );
+    _notifier?.notify(contact, text, _settings?.nickname);
   }
 
   void _updateProfile(Profile profile) {
     final settings = profile.settings;
     try {
       if (settings.nickname != _settings?.nickname) {
-        _tox.name = settings.nickname;
+        _tox.selfSetName(utf8.encode(settings.nickname));
       }
       if (settings.statusMessage != _settings?.statusMessage) {
-        _tox.statusMessage = settings.statusMessage;
+        _tox.selfSetStatusMessage(utf8.encode(settings.statusMessage));
       }
     } on ApiException catch (e) {
       _logger.e('Failed to set profile info: $e');
@@ -197,11 +316,11 @@ final class ToxOutbox {
       }
       try {
         _friendNumbers[contact.publicKey] = switch (contact) {
-          Contact(:final friendRequestAddress?) => _tox.addFriend(
+          Contact(:final friendRequestAddress?) => _tox.friendAdd(
             friendRequestAddress,
-            contact.friendRequestMessage ?? '',
+            utf8.encode(contact.friendRequestMessage ?? ''),
           ),
-          _ => _tox.addFriendNorequest(contact.publicKey),
+          _ => _tox.friendAddNorequest(contact.publicKey),
         };
       } on ApiException catch (e) {
         _logger.e('Failed to add contact ${contact.id}: $e');
@@ -221,7 +340,7 @@ final class ToxOutbox {
     _onlineFriends.remove(friendNumber);
     _sent.removeWhere((_, sent) => sent.$1 == friendNumber);
     try {
-      _tox.deleteFriend(friendNumber);
+      _tox.friendDelete(friendNumber);
     } on ApiException catch (e) {
       _logger.e('Failed to delete friend $friendNumber: $e');
     }
@@ -256,9 +375,14 @@ final class ToxOutbox {
           _sent.containsKey(message.id)) {
         continue;
       }
-      // Other content stays undelivered until there's a protocol for it.
-      if (message.content case TextContent(:final text)) {
-        _send(message.id, friendNumber, text);
+      switch (message.content) {
+        case FileContent():
+          _files.send(message, friendNumber);
+        case final content:
+          // Other content stays undelivered until there's a protocol for it.
+          if (_toText(content) case final text?) {
+            _send(message.id, friendNumber, text);
+          }
       }
     }
   }
@@ -267,7 +391,13 @@ final class ToxOutbox {
     final parts = <int>{};
     try {
       for (final part in splitMessage(text, _maxMessageLength)) {
-        parts.add(_tox.sendFriendMessage(friendNumber, part));
+        parts.add(
+          _tox.friendSendMessage(
+            friendNumber,
+            Tox_Message_Type.TOX_MESSAGE_TYPE_NORMAL,
+            utf8.encode(part),
+          ),
+        );
       }
       _sent[id] = (friendNumber, parts);
     } on ApiException catch (e) {

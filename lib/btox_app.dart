@@ -2,11 +2,8 @@ import 'package:btox/l10n/generated/app_localizations.dart';
 import 'package:btox/pages/contact_list_page.dart';
 import 'package:btox/pages/create_profile_page.dart';
 import 'package:btox/pages/select_profile_page.dart';
-import 'package:btox/platform/any_platform.dart';
 import 'package:btox/providers/connection_status.dart';
 import 'package:btox/providers/profiles.dart';
-import 'package:btox/services/tox_message_service.dart';
-import 'package:btox/services/tox_outbox.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -28,14 +25,8 @@ final class BtoxApp extends ConsumerWidget {
   }
 
   Widget _appContent(WidgetRef ref) {
-    if (!AnyPlatform.instance.isMobile) {
-      // Initialize the background message handler.
-      ref.watch(toxMessageServiceProvider);
-      ref.watch(activeToxOutboxProvider);
-    } else {
-      // Subscribing tells the background service that the UI is open.
-      ref.watch(connectionStatusProvider);
-    }
+    // Subscribing tells the background service that the UI is open.
+    ref.watch(connectionStatusesProvider);
 
     return ref
         .watch(profilesProvider)
@@ -45,13 +36,13 @@ final class BtoxApp extends ConsumerWidget {
           error: (error, _) =>
               Scaffold(body: Center(child: Text('Error: $error'))),
           data: (profiles) {
-            final activeProfile = ref.watch(activeProfileProvider);
+            final currentProfile = ref.watch(currentProfileProvider);
 
             if (profiles.isEmpty) {
               return const CreateProfilePage();
             }
 
-            if (activeProfile == null) {
+            if (currentProfile == null) {
               return const SelectProfilePage();
             }
 

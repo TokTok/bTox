@@ -1,4 +1,3 @@
-import 'package:btox/api/toxcore/tox.dart';
 import 'package:btox/l10n/generated/app_localizations.dart';
 import 'package:btox/widgets/friend_request_message_field.dart';
 import 'package:btox/widgets/tox_id_field.dart';
@@ -6,13 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 
 final class AddContactPage extends HookWidget {
-  final ToxConstants constants;
   final String selfName;
   final Function(String, String) onAddContact;
 
   const AddContactPage({
     super.key,
-    required this.constants,
     required this.selfName,
     required this.onAddContact,
   });
@@ -25,6 +22,13 @@ final class AddContactPage extends HookWidget {
       text: AppLocalizations.of(context)!.defaultAddContactMessage(selfName),
     );
 
+    void submit() {
+      if (formKey.currentState!.validate()) {
+        onAddContact(toxIdInputController.text, messageInputController.text);
+        Navigator.pop(context);
+      }
+    }
+
     return Scaffold(
       appBar: AppBar(title: Text(AppLocalizations.of(context)!.addContact)),
       body: SingleChildScrollView(
@@ -32,31 +36,17 @@ final class AddContactPage extends HookWidget {
           key: formKey,
           child: Column(
             children: [
-              ToxIdField(
-                constants: constants,
-                controller: toxIdInputController,
-              ),
+              ToxIdField(controller: toxIdInputController),
               FriendRequestMessageField(
-                constants: constants,
                 controller: messageInputController,
-                onEditingComplete: () => _onAddContact(
-                  context,
-                  formKey.currentState!,
-                  toxIdInputController.text,
-                  messageInputController.text,
-                ),
+                onEditingComplete: submit,
               ),
               Align(
                 alignment: Alignment.topRight,
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: ElevatedButton(
-                    onPressed: () => _onAddContact(
-                      context,
-                      formKey.currentState!,
-                      toxIdInputController.text,
-                      messageInputController.text,
-                    ),
+                    onPressed: submit,
                     child: Text(AppLocalizations.of(context)!.add),
                   ),
                 ),
@@ -66,17 +56,5 @@ final class AddContactPage extends HookWidget {
         ),
       ),
     );
-  }
-
-  void _onAddContact(
-    BuildContext context,
-    FormState form,
-    String toxId,
-    String message,
-  ) {
-    if (form.validate()) {
-      onAddContact(toxId, message);
-      Navigator.pop(context);
-    }
   }
 }

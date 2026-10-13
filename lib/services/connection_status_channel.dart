@@ -2,17 +2,30 @@ import 'dart:async';
 import 'dart:isolate';
 import 'dart:ui';
 
-import 'package:btox/ffi/toxcore.dart';
+import 'package:btox/models/connection_status.dart';
+import 'package:btox/models/id.dart';
 
 const _portName = 'btox-connection-status';
 
-Tox_Connection? _parse(String? name) =>
-    name == null ? null : Tox_Connection.values.byName(name);
+ConnectionStatuses? _parse(Map<int, List<Object?>>? message) => message == null
+    ? null
+    : {
+        for (final MapEntry(:key, :value) in message.entries)
+          Id(key): ConnectionStatus.fromMessage(value),
+      };
+
+Map<int, List<Object?>>? _message(ConnectionStatuses? statuses) =>
+    statuses == null
+    ? null
+    : {
+        for (final MapEntry(:key, :value) in statuses.entries)
+          key.value: value.toMessage(),
+      };
 
 final class ConnectionStatusPublisher {
   final _port = ReceivePort('connection status');
   final _subscribers = <SendPort>{};
-  Tox_Connection? _status;
+  ConnectionStatuses? _statuses;
 
   final void Function(int count)? onSubscribersChanged;
 
@@ -28,7 +41,7 @@ final class ConnectionStatusPublisher {
           subscriber.send([
             'hello',
             Isolate.current.controlPort,
-            _status?.name,
+            _message(_statuses),
           ]);
         case SendPort exitedSubscriber:
           if (_subscribers.remove(exitedSubscriber)) {
@@ -40,10 +53,10 @@ final class ConnectionStatusPublisher {
     IsolateNameServer.registerPortWithName(_port.sendPort, _portName);
   }
 
-  void publish(Tox_Connection? status) {
-    _status = status;
+  void publish(ConnectionStatuses? statuses) {
+    _statuses = statuses;
     for (final subscriber in _subscribers) {
-      subscriber.send(['status', status?.name]);
+      subscriber.send(['status', _message(statuses)]);
     }
   }
 
@@ -53,8 +66,8 @@ final class ConnectionStatusPublisher {
   }
 }
 
-Stream<Tox_Connection?> watchConnectionStatus() {
-  late final StreamController<Tox_Connection?> controller;
+Stream<ConnectionStatuses?> watchConnectionStatuses() {
+  late final StreamController<ConnectionStatuses?> controller;
   late final ReceivePort port;
   SendPort? publisher;
   Timer? retry;
@@ -73,7 +86,11 @@ Stream<Tox_Connection?> watchConnectionStatus() {
       port = ReceivePort('connection status subscriber');
       port.listen((message) {
         switch (message) {
-          case ['hello', SendPort publisherControl, String? name]:
+          case [
+            'hello',
+            SendPort publisherControl,
+            Map<int, List<Object?>>? statuses,
+          ]:
             retry?.cancel();
             if (publisherControl != publisher) {
               publisher = publisherControl;
@@ -82,9 +99,9 @@ Stream<Tox_Connection?> watchConnectionStatus() {
                 response: ['exited', publisherControl],
               );
             }
-            controller.add(_parse(name));
-          case ['status', String? name]:
-            controller.add(_parse(name));
+            controller.add(_parse(statuses));
+          case ['status', Map<int, List<Object?>>? statuses]:
+            controller.add(_parse(statuses));
           case ['exited', SendPort publisherControl]:
             if (publisherControl == publisher) {
               publisher = null;

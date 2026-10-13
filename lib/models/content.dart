@@ -20,9 +20,7 @@ const _logger = Logger(['Content']);
 sealed class Content extends Packet {
   const Content();
 
-  factory Content.decode(Uint8List data) {
-    return Content.unpack(Unpacker(data));
-  }
+  factory Content.decode(Uint8List data) => Content.unpack(Unpacker(data));
 
   factory Content.unpack(Unpacker unpacker) {
     final int length = unpacker.unpackListLength();
@@ -33,24 +31,16 @@ sealed class Content extends Packet {
     final int index = unpacker.unpackInt()!;
     final ContentType type =
         ContentType.values.elementAtOrNull(index) ?? ContentType.unknown;
-    switch (type) {
-      case ContentType.unknown:
-        return UnknownContent.unpack(unpacker);
-      case ContentType.text:
-        return TextContent.unpack(unpacker);
-      case ContentType.edit:
-        return EditContent.unpack(unpacker);
-      case ContentType.delete:
-        return DeleteContent.unpack(unpacker);
-      case ContentType.reaction:
-        return ReactionContent.unpack(unpacker);
-      case ContentType.media:
-        return MediaContent.unpack(unpacker);
-      case ContentType.file:
-        return FileContent.unpack(unpacker);
-      case ContentType.location:
-        return LocationContent.unpack(unpacker);
-    }
+    return switch (type) {
+      ContentType.unknown => UnknownContent.unpack(unpacker),
+      ContentType.text => TextContent.unpack(unpacker),
+      ContentType.edit => EditContent.unpack(unpacker),
+      ContentType.delete => DeleteContent.unpack(unpacker),
+      ContentType.reaction => ReactionContent.unpack(unpacker),
+      ContentType.media => MediaContent.unpack(unpacker),
+      ContentType.file => FileContent.unpack(unpacker),
+      ContentType.location => LocationContent.unpack(unpacker),
+    };
   }
 
   ContentType get type;
@@ -66,6 +56,15 @@ sealed class Content extends Packet {
   void packContent(Packer packer);
 
   Map<String, dynamic> toJson();
+
+  /// What the message says, e.g. for copying it.
+  String get plainText => switch (this) {
+    TextContent(:final text) => text,
+    FileContent(:final name) => name,
+    LocationContent(:final latitude, :final longitude) =>
+      'geo:$latitude,$longitude',
+    _ => toString(),
+  };
 }
 
 final class ContentConverter extends TypeConverter<Content, String>
@@ -73,29 +72,17 @@ final class ContentConverter extends TypeConverter<Content, String>
   const ContentConverter();
 
   @override
-  Content fromJson(Map<String, dynamic> json) {
-    switch (ContentType.values.firstWhere(
-      (e) => e.name == json['_type'],
-      orElse: () => ContentType.unknown,
-    )) {
-      case ContentType.unknown:
-        return UnknownContent.fromJson(json);
-      case ContentType.text:
-        return TextContent.fromJson(json);
-      case ContentType.edit:
-        return EditContent.fromJson(json);
-      case ContentType.delete:
-        return DeleteContent.fromJson(json);
-      case ContentType.reaction:
-        return ReactionContent.fromJson(json);
-      case ContentType.media:
-        return MediaContent.fromJson(json);
-      case ContentType.file:
-        return FileContent.fromJson(json);
-      case ContentType.location:
-        return LocationContent.fromJson(json);
-    }
-  }
+  Content fromJson(Map<String, dynamic> json) =>
+      switch (ContentType.values.asNameMap()[json['_type']]) {
+        ContentType.text => TextContent.fromJson(json),
+        ContentType.edit => EditContent.fromJson(json),
+        ContentType.delete => DeleteContent.fromJson(json),
+        ContentType.reaction => ReactionContent.fromJson(json),
+        ContentType.media => MediaContent.fromJson(json),
+        ContentType.file => FileContent.fromJson(json),
+        ContentType.location => LocationContent.fromJson(json),
+        ContentType.unknown || null => UnknownContent.fromJson(json),
+      };
 
   @override
   Content fromSql(String fromDb) {
@@ -109,9 +96,10 @@ final class ContentConverter extends TypeConverter<Content, String>
   }
 
   @override
-  Map<String, dynamic> toJson(Content value) {
-    return {'_type': value.type.name, ...value.toJson()};
-  }
+  Map<String, dynamic> toJson(Content value) => {
+    '_type': value.type.name,
+    ...value.toJson(),
+  };
 
   @override
   String toSql(Content value) => jsonEncode(toJson(value));
@@ -136,9 +124,8 @@ sealed class DeleteContent extends Content with _$DeleteContent {
   factory DeleteContent.fromJson(Map<String, dynamic> json) =>
       _$DeleteContentFromJson(json);
 
-  factory DeleteContent.unpack(Unpacker unpacker) {
-    return DeleteContent(message: Sha256.unpack(unpacker));
-  }
+  factory DeleteContent.unpack(Unpacker unpacker) =>
+      DeleteContent(message: Sha256.unpack(unpacker));
 
   const DeleteContent._();
 
@@ -187,13 +174,26 @@ sealed class EditContent extends Content with _$EditContent {
 
 @freezed
 sealed class FileContent extends Content with _$FileContent {
-  const factory FileContent({required String url}) = _FileContent;
+  // Defaults keep placeholder file messages from older versions loading.
+  const factory FileContent({
+    @Default('') String name,
+    @Default(0) int size,
+    @Default('') String path,
+  }) = _FileContent;
 
   factory FileContent.fromJson(Map<String, dynamic> json) =>
       _$FileContentFromJson(json);
 
   factory FileContent.unpack(Unpacker unpacker) {
-    return FileContent(url: utf8.decode(unpacker.unpackBinary()!));
+    final length = unpacker.unpackListLength();
+    if (length != 3) {
+      throw Exception('Invalid file content');
+    }
+    return FileContent(
+      name: utf8.decode(unpacker.unpackBinary()!),
+      size: unpacker.unpackInt()!,
+      path: utf8.decode(unpacker.unpackBinary()!),
+    );
   }
 
   const FileContent._();
@@ -203,7 +203,11 @@ sealed class FileContent extends Content with _$FileContent {
 
   @override
   void packContent(Packer packer) {
-    packer.packBinary(utf8.encode(url));
+    packer
+      ..packListLength(3)
+      ..packBinary(utf8.encode(name))
+      ..packInt(size)
+      ..packBinary(utf8.encode(path));
   }
 }
 
@@ -249,9 +253,8 @@ sealed class MediaContent extends Content with _$MediaContent {
   factory MediaContent.fromJson(Map<String, dynamic> json) =>
       _$MediaContentFromJson(json);
 
-  factory MediaContent.unpack(Unpacker unpacker) {
-    return MediaContent(url: utf8.decode(unpacker.unpackBinary()!));
-  }
+  factory MediaContent.unpack(Unpacker unpacker) =>
+      MediaContent(url: utf8.decode(unpacker.unpackBinary()!));
 
   const MediaContent._();
 
@@ -307,9 +310,8 @@ sealed class TextContent extends Content with _$TextContent {
   factory TextContent.fromJson(Map<String, dynamic> json) =>
       _$TextContentFromJson(json);
 
-  factory TextContent.unpack(Unpacker unpacker) {
-    return TextContent(text: utf8.decode(unpacker.unpackBinary()!));
-  }
+  factory TextContent.unpack(Unpacker unpacker) =>
+      TextContent(text: utf8.decode(unpacker.unpackBinary()!));
 
   const TextContent._();
 
@@ -333,9 +335,8 @@ sealed class UnknownContent extends Content with _$UnknownContent {
   factory UnknownContent.fromJson(Map<String, dynamic> json) =>
       _$UnknownContentFromJson(json);
 
-  factory UnknownContent.unpack(Unpacker unpacker) {
-    return UnknownContent(data: unpacker.unpack());
-  }
+  factory UnknownContent.unpack(Unpacker unpacker) =>
+      UnknownContent(data: unpacker.unpack());
 
   const UnknownContent._();
 

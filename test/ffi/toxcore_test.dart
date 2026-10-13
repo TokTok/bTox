@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:ffi' as ffi;
 import 'dart:typed_data';
 
@@ -7,7 +8,6 @@ import 'package:btox/api/toxcore/tox_options.dart' as api_opts;
 import 'package:btox/ffi/generated/toxcore.ffi.dart' as ffi_gen;
 import 'package:btox/ffi/tox_library.ffi.dart' as tox_lib;
 import 'package:btox/ffi/toxcore.dart';
-import 'package:btox/models/crypto.dart';
 import 'package:btox/packets/messagepack.dart';
 import 'package:ffi/ffi.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -76,87 +76,7 @@ void main() {
       verify(mockFfi.tox_kill(toxPtr)).called(1);
     });
 
-    test('name setter calls tox_self_set_name', () {
-      final toxPtr = safePtr<ffi_gen.Tox>();
-      when(mockFfi.tox_new(any, any)).thenReturn(toxPtr);
-
-      // ignore: argument_type_not_assignable
-      final toxcore = Toxcore(lib, const api_opts.ToxOptions());
-      toxcore.name = 'Yanci';
-
-      verify(mockFfi.tox_self_set_name(toxPtr, any, 5, any)).called(1);
-    });
-
-    test('address getter', () {
-      final toxPtr = safePtr<ffi_gen.Tox>();
-      when(mockFfi.tox_new(any, any)).thenReturn(toxPtr);
-
-      // ignore: argument_type_not_assignable
-      final toxcore = Toxcore(lib, const api_opts.ToxOptions());
-      final addr = toxcore.address;
-
-      expect(addr.bytes.length, 38);
-      verify(mockFfi.tox_self_get_address(toxPtr, any)).called(1);
-    });
-
-    test('statusMessage setter', () {
-      final toxPtr = safePtr<ffi_gen.Tox>();
-      when(mockFfi.tox_new(any, any)).thenReturn(toxPtr);
-
-      // ignore: argument_type_not_assignable
-      final toxcore = Toxcore(lib, const api_opts.ToxOptions());
-      toxcore.statusMessage = 'Busy';
-
-      verify(mockFfi.tox_self_set_status_message(toxPtr, any, 4, any))
-          .called(1);
-    });
-
-    test('nospam getter and setter', () {
-      final toxPtr = safePtr<ffi_gen.Tox>();
-      when(mockFfi.tox_new(any, any)).thenReturn(toxPtr);
-      when(mockFfi.tox_self_get_nospam(toxPtr)).thenReturn(12345);
-
-      // ignore: argument_type_not_assignable
-      final toxcore = Toxcore(lib, const api_opts.ToxOptions());
-      expect(toxcore.nospam.value, 12345);
-
-      toxcore.nospam = ToxAddressNospam(67890);
-      verify(mockFfi.tox_self_set_nospam(toxPtr, 67890)).called(1);
-    });
-
-    test('bootstrap calls tox_bootstrap', () {
-      final toxPtr = safePtr<ffi_gen.Tox>();
-      when(mockFfi.tox_new(any, any)).thenReturn(toxPtr);
-
-      // ignore: argument_type_not_assignable
-      final toxcore = Toxcore(lib, const api_opts.ToxOptions());
-      toxcore.bootstrap('127.0.0.1', 33445, PublicKey(Uint8List(32)));
-
-      verify(mockFfi.tox_bootstrap(toxPtr, any, 33445, any, any)).called(1);
-    });
-
-    test('addTcpRelay calls tox_add_tcp_relay', () {
-      final toxPtr = safePtr<ffi_gen.Tox>();
-      when(mockFfi.tox_new(any, any)).thenReturn(toxPtr);
-
-      // ignore: argument_type_not_assignable
-      final toxcore = Toxcore(lib, const api_opts.ToxOptions());
-      toxcore.addTcpRelay('127.0.0.1', 33445, PublicKey(Uint8List(32)));
-
-      verify(mockFfi.tox_add_tcp_relay(toxPtr, any, 33445, any, any)).called(1);
-    });
-
-    test('iterationInterval getter', () {
-      final toxPtr = safePtr<ffi_gen.Tox>();
-      when(mockFfi.tox_new(any, any)).thenReturn(toxPtr);
-      when(mockFfi.tox_iteration_interval(toxPtr)).thenReturn(50);
-
-      // ignore: argument_type_not_assignable
-      final toxcore = Toxcore(lib, const api_opts.ToxOptions());
-      expect(toxcore.iterationInterval, 50);
-    });
-
-    test('getFriendPublicKey returns the key written by toxcore', () {
+    test('reads a key toxcore writes into a buffer', () {
       final toxPtr = safePtr<ffi_gen.Tox>();
       when(mockFfi.tox_new(any, any)).thenReturn(toxPtr);
       when(mockFfi.tox_friend_get_public_key(toxPtr, 7, any, any))
@@ -170,10 +90,10 @@ void main() {
       // ignore: argument_type_not_assignable
       final toxcore = Toxcore(lib, const api_opts.ToxOptions());
 
-      expect(toxcore.getFriendPublicKey(7).bytes, List.generate(32, (i) => i));
+      expect(toxcore.friendGetPublicKey(7).bytes, List.generate(32, (i) => i));
     });
 
-    test('getFriendPublicKey throws ApiException for unknown friends', () {
+    test('turns toxcore errors into ApiException', () {
       final toxPtr = safePtr<ffi_gen.Tox>();
       when(mockFfi.tox_new(any, any)).thenReturn(toxPtr);
       when(mockFfi.tox_friend_get_public_key(any, any, any, any))
@@ -191,30 +111,12 @@ void main() {
       final toxcore = Toxcore(lib, const api_opts.ToxOptions());
 
       expect(
-        () => toxcore.getFriendPublicKey(3),
+        () => toxcore.friendGetPublicKey(3),
         throwsA(isA<api.ApiException>()),
       );
     });
 
-    test('adds and deletes friends', () {
-      final toxPtr = safePtr<ffi_gen.Tox>();
-      when(mockFfi.tox_new(any, any)).thenReturn(toxPtr);
-      when(mockFfi.tox_friend_add(toxPtr, any, any, any, any)).thenReturn(4);
-      when(mockFfi.tox_friend_add_norequest(toxPtr, any, any)).thenReturn(2);
-
-      // ignore: argument_type_not_assignable
-      final toxcore = Toxcore(lib, const api_opts.ToxOptions());
-      final address = ToxAddress.fromString('${'1' * 72}0000');
-
-      expect(toxcore.addFriend(address, 'Hi!'), 4);
-      verify(mockFfi.tox_friend_add(toxPtr, any, any, 3, any)).called(1);
-      expect(toxcore.addFriendNorequest(address.publicKey), 2);
-
-      toxcore.deleteFriend(2);
-      verify(mockFfi.tox_friend_delete(toxPtr, 2, any)).called(1);
-    });
-
-    test('sendFriendMessage sends a normal message', () {
+    test('passes bytes with their length', () {
       final toxPtr = safePtr<ffi_gen.Tox>();
       when(mockFfi.tox_new(any, any)).thenReturn(toxPtr);
       when(
@@ -231,35 +133,24 @@ void main() {
       // ignore: argument_type_not_assignable
       final toxcore = Toxcore(lib, const api_opts.ToxOptions());
 
-      expect(toxcore.sendFriendMessage(5, 'Grüße'), 9);
+      expect(
+        toxcore.friendSendMessage(
+          5,
+          // ignore: argument_type_not_assignable
+          ffi_gen.Tox_Message_Type.TOX_MESSAGE_TYPE_NORMAL,
+          utf8.encode('Grüße'),
+        ),
+        9,
+      );
       verify(mockFfi.tox_friend_send_message(toxPtr, 5, any, any, 7, any))
           .called(1);
     });
 
-    test('throws ApiException on error', () {
-      final toxPtr = safePtr<ffi_gen.Tox>();
-      when(mockFfi.tox_new(any, any)).thenReturn(toxPtr);
-
-      // Mock an error in tox_self_set_name
-      when(mockFfi.tox_self_set_name(any, any, any, any))
-          .thenAnswer((invocation) {
-            final errPtr =
-                invocation.positionalArguments[3] as ffi.Pointer<tox_lib.CEnum>;
-            errPtr.value = ffi_gen.Tox_Err_Set_Info.TOX_ERR_SET_INFO_NULL.value;
-            return false;
-          });
-
-      // ignore: argument_type_not_assignable
-      final toxcore = Toxcore(lib, const api_opts.ToxOptions());
-      expect(
-        () => toxcore.name = 'fail',
-        throwsA(isA<api.ApiException<Enum>>()),
-      );
-    });
-
-    test('ToxOptions.withNative sets options correctly', () {
+    test('ToxOptions sets the given options, owning their data', () {
       final optionsPtr = safePtr<ffi_gen.Tox_Options>();
       when(mockFfi.tox_options_new(any)).thenReturn(optionsPtr);
+      when(mockFfi.tox_options_set_savedata_data(any, any, any))
+          .thenReturn(true);
 
       final toxOptions = api_opts.ToxOptions(
         ipv6Enabled: true,
@@ -272,6 +163,8 @@ void main() {
       // ignore: argument_type_not_assignable
       Toxcore(lib, toxOptions);
 
+      verify(mockFfi.tox_options_set_experimental_owned_data(optionsPtr, true))
+          .called(1);
       verify(mockFfi.tox_options_set_ipv6_enabled(optionsPtr, true)).called(1);
       verify(mockFfi.tox_options_set_udp_enabled(optionsPtr, false)).called(1);
       verify(mockFfi.tox_options_set_local_discovery_enabled(optionsPtr, true))
@@ -292,16 +185,13 @@ void main() {
 
       final eventsHandle = safePtr<ffi_gen.Tox_Events>();
 
-      const event = ToxEventSelfConnectionStatus(
-        connectionStatus: Tox_Connection.TOX_CONNECTION_UDP,
-      );
       final packer = Packer();
       packer.packListLength(1);
       packer.packListLength(2);
       packer.packInt(
         ffi_gen.Tox_Event_Type.TOX_EVENT_SELF_CONNECTION_STATUS.value,
       );
-      event.pack(packer);
+      packer.packInt(Tox_Connection.TOX_CONNECTION_UDP.value);
       final bytes = packer.takeBytes();
 
       when(mockFfi.tox_iterate_options_new(any))
@@ -324,7 +214,11 @@ void main() {
       final events = toxcore.iterate();
 
       expect(events.length, 1);
-      expect(events[0], isA<ToxEventSelfConnectionStatus>());
+      expect(events, [
+        const ToxEventSelfConnectionStatus(
+          connectionStatus: Tox_Connection.TOX_CONNECTION_UDP,
+        ),
+      ]);
 
       verify(mockFfi.tox_events_free(eventsHandle)).called(1);
     });

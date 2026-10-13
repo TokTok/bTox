@@ -1,4 +1,7 @@
-import 'package:btox/db/database.steps.dart';
+import 'dart:convert';
+
+import 'package:btox/models/app_defaults.dart';
+import 'package:btox/models/bootstrap_nodes.dart';
 import 'package:btox/models/content.dart';
 import 'package:btox/models/crypto.dart';
 import 'package:btox/models/id.dart';
@@ -10,36 +13,22 @@ export 'package:drift/drift.dart' show Value;
 
 part 'database.g.dart';
 
-@DriftDatabase(tables: [Contacts, FriendRequests, Messages, Profiles])
+@DriftDatabase(
+  tables: [
+    AppSettings,
+    CachedBootstrapNodes,
+    Contacts,
+    FriendRequests,
+    Messages,
+    Profiles,
+  ],
+)
 final class Database extends _$Database {
   Database(super.e);
 
   // Bump with every schema change, then run `tools/prepare`.
   @override
-  int get schemaVersion => 4;
-
-  @override
-  MigrationStrategy get migration => MigrationStrategy(
-    onUpgrade: stepByStep(
-      from1To2: (m, schema) async {
-        await m.addColumn(
-          schema.contacts,
-          schema.contacts.friendRequestAddress,
-        );
-        await m.addColumn(
-          schema.contacts,
-          schema.contacts.friendRequestMessage,
-        );
-        await m.addColumn(schema.messages, schema.messages.delivered);
-      },
-      from2To3: (m, schema) async {
-        await m.createTable(schema.friendRequests);
-      },
-      from3To4: (m, schema) async {
-        await m.addColumn(schema.contacts, schema.contacts.online);
-      },
-    ),
-  );
+  int get schemaVersion => 1;
 
   Future<Id<Contacts>> acceptFriendRequest(FriendRequest request) =>
       transaction(() async {
@@ -51,15 +40,6 @@ final class Database extends _$Database {
           ),
         );
       });
-
-  Future<void> activateProfile(Id<Profiles> id) async {
-    // Currently we only support 1 active profile at a time.
-    await deactivateProfiles();
-
-    await (update(profiles)..where((p) => p.id.equals(id.value))).write(
-      ProfilesCompanion(active: Value(true)),
-    );
-  }
 
   Future<Id<Contacts>> addContact(ContactsCompanion entry) async =>
       Id(await into(contacts).insert(entry));
@@ -80,6 +60,26 @@ final class Database extends _$Database {
   Future<Id<Profiles>> addProfile(ProfilesCompanion entry) async =>
       Id(await into(profiles).insert(entry));
 
+  Future<void> cacheBootstrapNodes(BootstrapNodeList nodes) async {
+    await into(cachedBootstrapNodes).insertOnConflictUpdate(
+      CachedBootstrapNodesCompanion.insert(
+        id: const Value(0),
+        json: jsonEncode(nodes.toJson()),
+      ),
+    );
+  }
+
+  /// Toxcore forgets unfinished incoming files when it stops.
+  Future<void> cancelIncomingFiles(Id<Profiles> profileId) async {
+    await (update(messages)..where(
+          (m) =>
+              m.delivered.isNull() &
+              m.fileState.isInValues([FileState.offered, FileState.active]) &
+              m.contactId.isInQuery(_contactsOf(profileId)),
+        ))
+        .write(MessagesCompanion(fileState: Value(FileState.cancelled)));
+  }
+
   Future<void> clearContactsOnline(Id<Profiles> profileId) async {
     await (update(contacts)..where((c) => c.profileId.equals(profileId.value)))
         .write(const ContactsCompanion(online: Value(false)));
@@ -92,10 +92,6 @@ final class Database extends _$Database {
         friendRequestMessage: Value(null),
       ),
     );
-  }
-
-  Future<void> deactivateProfiles() async {
-    await update(profiles).write(ProfilesCompanion(active: Value(false)));
   }
 
   Future<void> deleteContact(Id<Contacts> id) async {
@@ -111,19 +107,10 @@ final class Database extends _$Database {
 
   Future<void> deleteProfile(Id<Profiles> id) async {
     await transaction(() async {
-      // Find all the contacts for the profile.
-      final contactsForProfile = await (select(
-        contacts,
-      )..where((c) => c.profileId.equals(id.value))).get();
       // Delete all their messages.
-      batch((batch) {
-        for (final contact in contactsForProfile) {
-          batch.deleteWhere(
-            messages,
-            (m) => m.contactId.equals(contact.id.value),
-          );
-        }
-      });
+      await (delete(
+        messages,
+      )..where((m) => m.contactId.isInQuery(_contactsOf(id)))).go();
       // Delete the friend requests.
       await (delete(
         friendRequests,
@@ -135,12 +122,68 @@ final class Database extends _$Database {
     });
   }
 
+  Future<BootstrapNodeList?> getCachedBootstrapNodes() async {
+    final row = await select(cachedBootstrapNodes).getSingleOrNull();
+    return row == null
+        ? null
+        : BootstrapNodeList.fromJson(jsonDecode(row.json));
+  }
+
   Future<Message> getMessage(Id<Messages> id) async =>
       (select(messages)..where((m) => m.id.equals(id.value))).getSingle();
+
+  Future<void> markContactRead(Id<Contacts> id) async {
+    await customUpdate(
+      'UPDATE contacts SET last_read_message = '
+      '(SELECT MAX(id) FROM messages WHERE contact_id = ?1) WHERE id = ?1',
+      variables: [Variable(id.value)],
+      updates: {contacts},
+    );
+  }
 
   Future<void> markMessageDelivered(Id<Messages> id) async {
     await (update(messages)..where((m) => m.id.equals(id.value))).write(
       const MessagesCompanion(delivered: Value(true)),
+    );
+  }
+
+  Future<void> setFileState(
+    Id<Messages> id,
+    FileState state, {
+    int? transferred,
+  }) async {
+    await (update(messages)..where((m) => m.id.equals(id.value))).write(
+      MessagesCompanion(
+        fileState: Value(state),
+        fileTransferred: Value.absentIfNull(transferred),
+      ),
+    );
+  }
+
+  Future<void> setFileTransferred(Id<Messages> id, int transferred) async {
+    await (update(messages)..where((m) => m.id.equals(id.value))).write(
+      MessagesCompanion(fileTransferred: Value(transferred)),
+    );
+  }
+
+  /// Signs the profile in and shows it.
+  Future<void> signIn(Id<Profiles> id) => transaction(() async {
+    await (update(profiles)..where((p) => p.id.equals(id.value))).write(
+      ProfilesCompanion(signedIn: Value(true)),
+    );
+    await updateAppSettings(AppSettingsCompanion(currentProfile: Value(id)));
+  });
+
+  Future<void> signOut(Id<Profiles> id) async {
+    await (update(profiles)..where((p) => p.id.equals(id.value))).write(
+      ProfilesCompanion(signedIn: Value(false)),
+    );
+  }
+
+  Future<void> updateAppSettings(AppSettingsCompanion settings) async {
+    await into(appSettings).insert(
+      settings.copyWith(id: const Value(0)),
+      onConflict: DoUpdate((_) => settings),
     );
   }
 
@@ -179,6 +222,17 @@ final class Database extends _$Database {
     );
   }
 
+  Stream<AppSetting> watchAppSettings() =>
+      select(appSettings).watchSingleOrNull().map(
+        (settings) =>
+            settings ??
+            const AppSetting(
+              id: 0,
+              stayOnline: true,
+              autoAcceptFileSize: defaultAutoAcceptFileSize,
+            ),
+      );
+
   Stream<Contact> watchContact(Id<Contacts> id) =>
       (select(contacts)..where((c) => c.id.equals(id.value))).watchSingle();
 
@@ -194,6 +248,16 @@ final class Database extends _$Database {
             ..orderBy([(r) => OrderingTerm(expression: r.timestamp)]))
           .watch();
 
+  /// Files offered to us or being received, with their state.
+  Stream<List<Message>> watchIncomingFilesFor(Id<Profiles> id) =>
+      (select(messages)..where(
+            (m) =>
+                m.delivered.isNull() &
+                m.fileState.isNotNull() &
+                m.contactId.isInQuery(_contactsOf(id)),
+          ))
+          .watch();
+
   Stream<List<Message>> watchMessagesFor(Id<Contacts> id) =>
       (select(messages)..where((m) => m.contactId.equals(id.value))).watch();
 
@@ -202,15 +266,41 @@ final class Database extends _$Database {
 
   Stream<List<Profile>> watchProfiles() => select(profiles).watch();
 
+  Stream<Map<Id<Contacts>, int>> watchUnreadCountsFor(Id<Profiles> id) {
+    final unread = messages.id.count();
+    final query =
+        selectOnly(messages).join([
+            innerJoin(contacts, contacts.id.equalsExp(messages.contactId)),
+            innerJoin(profiles, profiles.id.equalsExp(contacts.profileId)),
+          ])
+          ..addColumns([contacts.id, unread])
+          ..where(
+            contacts.profileId.equals(id.value) &
+                messages.author.equalsExp(profiles.publicKey).not() &
+                messages.id.isBiggerThan(
+                  coalesce([contacts.lastReadMessage, const Constant(0)]),
+                ),
+          )
+          ..groupBy([contacts.id]);
+    return query.watch().map(
+      (rows) => {
+        for (final row in rows)
+          row.readWithConverter(contacts.id)!: row.read(unread)!,
+      },
+    );
+  }
+
   Stream<List<Message>> watchUndeliveredMessagesFor(Id<Profiles> id) =>
-      (select(messages).join([
-              innerJoin(contacts, contacts.id.equalsExp(messages.contactId)),
-            ])
+      (select(messages)
             ..where(
-              messages.delivered.equals(false) &
-                  contacts.profileId.equals(id.value),
+              (m) =>
+                  m.delivered.equals(false) &
+                  m.contactId.isInQuery(_contactsOf(id)),
             )
-            ..orderBy([OrderingTerm(expression: messages.id)]))
-          .map((row) => row.readTable(messages))
+            ..orderBy([(m) => OrderingTerm(expression: m.id)]))
           .watch();
+
+  BaseSelectStatement _contactsOf(Id<Profiles> id) => selectOnly(contacts)
+    ..addColumns([contacts.id])
+    ..where(contacts.profileId.equals(id.value));
 }

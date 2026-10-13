@@ -12,29 +12,8 @@ final class ChatContextMenu {
     required void Function() onInfo,
     required void Function() onDelete,
   }) {
-    final menu = _build(
-      position,
-      onReply: onReply,
-      onForward: onForward,
-      onCopy: onCopy,
-      onSelect: onSelect,
-      onInfo: onInfo,
-      onDelete: onDelete,
-    );
-
-    return menu.show(context);
-  }
-
-  static ContextMenu _build(
-    Offset position, {
-    required void Function() onReply,
-    required void Function() onForward,
-    required void Function() onCopy,
-    required void Function() onSelect,
-    required void Function() onInfo,
-    required void Function() onDelete,
-  }) {
-    final entries = [
+    // The package finds its menu by the raw type, so it must be dynamic.
+    final entries = <ContextMenuEntry<dynamic>>[
       MenuItem(
         label: const Text('Reply'),
         icon: const Icon(Icons.reply_outlined),
@@ -71,6 +50,6 @@ final class ChatContextMenu {
       entries: entries,
       position: position,
       padding: const EdgeInsets.all(8.0),
-    );
+    ).show(context);
   }
 }

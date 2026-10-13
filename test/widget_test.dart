@@ -14,7 +14,6 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'mocks/fake_bootstrap_nodes.dart';
 import 'mocks/fake_sodium.dart';
-import 'mocks/fake_tox_constants.dart';
 import 'mocks/fake_toxcore.dart';
 
 void main() {
@@ -50,7 +49,6 @@ void main() {
               bootstrapNodesProvider.overrideWith(fakeBootstrapNodesProvider),
               databaseProvider.overrideWith((ref) => db),
               sodiumProvider.overrideWith((ref) => FakeSodium()),
-              toxConstantsProvider.overrideWith((ref) => fakeToxcoreConstants),
               toxProvider(
                 mySecretKey,
                 myToxId.nospam,

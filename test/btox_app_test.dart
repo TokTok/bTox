@@ -13,7 +13,6 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'mocks/fake_bootstrap_nodes.dart';
 import 'mocks/fake_sodium.dart';
-import 'mocks/fake_tox_constants.dart';
 import 'mocks/fake_toxcore.dart';
 
 // The database can't be constructed/torn down in the Flutter test framework
@@ -36,7 +35,7 @@ void main() {
     final Database db = Database(NativeDatabase.memory());
     final profileId = await db.addProfile(
       ProfilesCompanion.insert(
-        active: Value(true),
+        signedIn: Value(true),
         settings: ProfileSettings(
           nickname: 'Yeetman',
           statusMessage: 'Yeeting everyone',
@@ -55,7 +54,6 @@ void main() {
           bootstrapNodesProvider.overrideWith(fakeBootstrapNodesProvider),
           databaseProvider.overrideWith((ref) => db),
           sodiumProvider.overrideWith((ref) => FakeSodium()),
-          toxConstantsProvider.overrideWith((ref) => fakeToxcoreConstants),
           toxProvider(mySecretKey, myToxId.nospam).overrideWith((ref) => tox),
         ],
         child: const BtoxApp(),

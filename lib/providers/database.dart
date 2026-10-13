@@ -43,3 +43,8 @@ Future<Database> hostedDatabase(Ref ref) async {
   _logger.d('Database opened: schema version ${db.schemaVersion}');
   return db;
 }
+
+/// Streams [query] once the database is open.
+Stream<T> watchDb<T>(Ref ref, Stream<T> Function(Database db) query) async* {
+  yield* query(await ref.watch(databaseProvider.future));
+}

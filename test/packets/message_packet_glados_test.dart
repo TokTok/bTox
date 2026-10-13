@@ -1,12 +1,18 @@
+import 'dart:typed_data';
+
 import 'package:btox/models/content.dart';
 import 'package:btox/models/crypto.dart';
 import 'package:btox/packets/messagepack.dart';
 import 'package:btox/packets/message_packet.dart';
 import 'package:glados/glados.dart';
 
-import '../api/toxcore/tox_events_glados_test.dart';
-
 extension MessagePacketAny on Any {
+  Generator<Uint8List> uint8ListWithLength(int length) =>
+      listWithLength(length, uint8).map(Uint8List.fromList);
+
+  Generator<PublicKey> get publicKey =>
+      uint8ListWithLength(32).map(PublicKey.new);
+
   Generator<Sha256> get sha256 => uint8ListWithLength(32).map(Sha256.new);
 
   Generator<TextContent> get textContent =>
@@ -19,7 +25,7 @@ extension MessagePacketAny on Any {
       combine2(sha256, letters, (s, t) => EditContent(message: s, text: t));
 
   Generator<FileContent> get fileContent =>
-      letters.map((u) => FileContent(url: u));
+      letters.map((u) => FileContent(name: u, size: u.length, path: u));
 
   Generator<MediaContent> get mediaContent =>
       letters.map((u) => MediaContent(url: u));

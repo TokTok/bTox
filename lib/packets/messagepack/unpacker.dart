@@ -22,21 +22,52 @@ int _getInt64(ByteData d, int offset) =>
 /// so other unpackXXX methods can be called after that.
 final class Unpacker {
   /// Manipulates with provided [Uint8List] to sequentially unpack values.
-  /// Use [Unpacker.fromList()] to unpack raw `List<int>` bytes.
-  Unpacker(this._list) : _d = ByteData.view(_list.buffer, _list.offsetInBytes);
-
-  ///Convenient
-  Unpacker.fromList(List<int> l) : this(Uint8List.fromList(l));
+  Unpacker(this._list) : _d = ByteData.sublistView(_list);
 
   final Uint8List _list;
   final ByteData _d;
   int _offset = 0;
 
-  bool get hasNull => _d.getUint8(_offset) == kTagNil;
+  int get _tag => _d.getUint8(_offset);
+
+  /// Reads the [size] bytes after the tag with [get] and moves past both.
+  T _read<T>(int size, T Function(int offset) get) {
+    final v = get(_offset + 1);
+    _offset += 1 + size;
+    return v;
+  }
+
+  /// Reads a length header, `null` for nil. See [Packer] for the layout.
+  int? _length(
+    String type, {
+    int? fix,
+    int fixMask = 0,
+    int? tag8,
+    required int tag16,
+    required int tag32,
+  }) => switch (_tag) {
+    kTagNil => _read(0, (_) => null),
+    final b when fix != null && b & ~fixMask == fix => _read(
+      0,
+      (_) => b & fixMask,
+    ),
+    final b when b == tag8 => _read(1, _d.getUint8),
+    final b when b == tag16 => _read(2, _d.getUint16),
+    final b when b == tag32 => _read(4, _d.getUint32),
+    final b => throw _formatException(type, b),
+  };
+
+  Uint8List _take(int length) {
+    final data = Uint8List.sublistView(_list, _offset, _offset + length);
+    _offset += length;
+    return data;
+  }
+
+  bool get hasNull => _tag == kTagNil;
 
   void unpackNull() {
     if (!hasNull) {
-      throw _formatException('null', _d.getUint8(_offset));
+      throw _formatException('null', _tag);
     }
     _offset += 1;
   }
@@ -44,259 +75,125 @@ final class Unpacker {
   /// Unpack value if it exist. Otherwise returns `null`.
   ///
   /// Throws [FormatException] if value is not a bool,
-  bool? unpackBool() {
-    final b = _d.getUint8(_offset);
-    bool? v;
-    if (b == kTagFalse) {
-      v = false;
-      _offset += 1;
-    } else if (b == kTagTrue) {
-      v = true;
-      _offset += 1;
-    } else if (b == kTagNil) {
-      v = null;
-      _offset += 1;
-    } else {
-      throw _formatException('bool', b);
-    }
-    return v;
-  }
+  bool? unpackBool() => switch (_tag) {
+    kTagFalse => _read(0, (_) => false),
+    kTagTrue => _read(0, (_) => true),
+    kTagNil => _read(0, (_) => null),
+    final b => throw _formatException('bool', b),
+  };
 
   /// Unpack value if it exist. Otherwise returns `null`.
   ///
   /// Throws [FormatException] if value is not an integer,
-  int? unpackInt() {
-    final b = _d.getUint8(_offset);
-    int? v;
-    if (b <= 0x7f || b >= 0xe0) {
-      /// Int value in fixnum range [-32..127] encoded in header 1 byte
-      v = _d.getInt8(_offset);
-      _offset += 1;
-    } else if (b == kTagUint8) {
-      v = _d.getUint8(++_offset);
-      _offset += 1;
-    } else if (b == kTagUint16) {
-      v = _d.getUint16(++_offset);
-      _offset += 2;
-    } else if (b == kTagUint32) {
-      v = _d.getUint32(++_offset);
-      _offset += 4;
-    } else if (b == kTagUint64) {
-      v = _getUint64(_d, ++_offset);
-      _offset += 8;
-    } else if (b == kTagInt8) {
-      v = _d.getInt8(++_offset);
-      _offset += 1;
-    } else if (b == kTagInt16) {
-      v = _d.getInt16(++_offset);
-      _offset += 2;
-    } else if (b == kTagInt32) {
-      v = _d.getInt32(++_offset);
-      _offset += 4;
-    } else if (b == kTagInt64) {
-      v = _getInt64(_d, ++_offset);
-      _offset += 8;
-    } else if (b == kTagNil) {
-      v = null;
-      _offset += 1;
-    } else {
-      throw _formatException('integer', b);
-    }
-    return v;
-  }
+  int? unpackInt() => switch (_tag) {
+    /// Int value in fixnum range [-32..127] encoded in header 1 byte
+    final b when b <= 0x7f || b >= 0xe0 => _read(0, (_) => b.toSigned(8)),
+    kTagUint8 => _read(1, _d.getUint8),
+    kTagUint16 => _read(2, _d.getUint16),
+    kTagUint32 => _read(4, _d.getUint32),
+    kTagUint64 => _read(8, (o) => _getUint64(_d, o)),
+    kTagInt8 => _read(1, _d.getInt8),
+    kTagInt16 => _read(2, _d.getInt16),
+    kTagInt32 => _read(4, _d.getInt32),
+    kTagInt64 => _read(8, (o) => _getInt64(_d, o)),
+    kTagNil => _read(0, (_) => null),
+    final b => throw _formatException('integer', b),
+  };
 
   /// Unpack value if it exist. Otherwise returns `null`.
   ///
   /// Throws [FormatException] if value is not a Double.
-  double? unpackDouble() {
-    final b = _d.getUint8(_offset);
-    double? v;
-    if (b == kTagFloat32) {
-      v = _d.getFloat32(++_offset);
-      _offset += 4;
-    } else if (b == kTagFloat64) {
-      v = _d.getFloat64(++_offset);
-      _offset += 8;
-    } else if (b == kTagNil) {
-      v = null;
-      _offset += 1;
-    } else {
-      throw _formatException('double', b);
-    }
-    return v;
-  }
+  double? unpackDouble() => switch (_tag) {
+    kTagFloat32 => _read(4, _d.getFloat32),
+    kTagFloat64 => _read(8, _d.getFloat64),
+    kTagNil => _read(0, (_) => null),
+    final b => throw _formatException('double', b),
+  };
 
   /// Unpack value if it exist. Otherwise returns `null`.
   ///
-  /// Empty
   /// Throws [FormatException] if value is not a String.
-  String? unpackString() {
-    final b = _d.getUint8(_offset);
-    if (b == kTagNil) {
-      _offset += 1;
-      return null;
-    }
-    int len;
-
-    /// fixstr 101XXXXX stores a byte array whose len is up to 31 bytes:
-    if (b & 0xE0 == 0xA0) {
-      len = b & 0x1F;
-      _offset += 1;
-    } else if (b == kTagNil) {
-      _offset += 1;
-      return null;
-    } else if (b == kTagStr8) {
-      len = _d.getUint8(++_offset);
-      _offset += 1;
-    } else if (b == kTagStr16) {
-      len = _d.getUint16(++_offset);
-      _offset += 2;
-    } else if (b == kTagStr32) {
-      len = _d.getUint32(++_offset);
-      _offset += 4;
-    } else {
-      throw _formatException('String', b);
-    }
-    final data = Uint8List.view(
-      _list.buffer,
-      _list.offsetInBytes + _offset,
-      len,
-    );
-    _offset += len;
-    return utf8.decode(data);
-  }
+  String? unpackString() => switch (_length(
+    'String',
+    fix: 0xA0,
+    fixMask: 0x1F,
+    tag8: kTagStr8,
+    tag16: kTagStr16,
+    tag32: kTagStr32,
+  )) {
+    final length? => utf8.decode(_take(length)),
+    null => null,
+  };
 
   /// Unpack [List.length] if packed value is an [List] or `null`.
   ///
   /// Encoded in msgpack packet null or 0 length unpacks to 0 for convenience.
   /// Items of the [List] must be unpacked manually with respect to returned `length`
   /// Throws [FormatException] if value is not an [List].
-  int unpackListLength() {
-    final b = _d.getUint8(_offset);
-    int len;
-    if (b & 0xF0 == 0x90) {
-      /// fixarray 1001XXXX stores an array whose length is up to 15 elements:
-      len = b & 0xF;
-      _offset += 1;
-    } else if (b == kTagNil) {
-      len = 0;
-      _offset += 1;
-    } else if (b == kTagArray16) {
-      len = _d.getUint16(++_offset);
-      _offset += 2;
-    } else if (b == kTagArray32) {
-      len = _d.getUint32(++_offset);
-      _offset += 4;
-    } else {
-      throw _formatException('List length', b);
-    }
-    return len;
-  }
+  int unpackListLength() =>
+      _length(
+        'List length',
+        fix: 0x90,
+        fixMask: 0xF,
+        tag16: kTagArray16,
+        tag32: kTagArray32,
+      ) ??
+      0;
 
   /// Unpack [Map.length] if packed value is an [Map] or `null`.
   ///
   /// Encoded in msgpack packet null or 0 length unpacks to 0 for convenience.
   /// Items of the [Map] must be unpacked manually with respect to returned `length`
   /// Throws [FormatException] if value is not an [Map].
-  int unpackMapLength() {
-    final b = _d.getUint8(_offset);
-    int len;
-    if (b & 0xF0 == 0x80) {
-      /// fixmap 1000XXXX stores a map whose length is up to 15 elements
-      len = b & 0xF;
-      _offset += 1;
-    } else if (b == kTagNil) {
-      len = 0;
-      _offset += 1;
-    } else if (b == kTagMap16) {
-      len = _d.getUint16(++_offset);
-      _offset += 2;
-    } else if (b == kTagMap32) {
-      len = _d.getUint32(++_offset);
-      _offset += 4;
-    } else {
-      throw _formatException('Map length', b);
-    }
-    return len;
-  }
+  int unpackMapLength() =>
+      _length(
+        'Map length',
+        fix: 0x80,
+        fixMask: 0xF,
+        tag16: kTagMap16,
+        tag32: kTagMap32,
+      ) ??
+      0;
 
   /// Unpack value if packed value is binary or `null`.
   ///
-  /// Encoded in msgpack packet null unpacks to [List] with 0 length for convenience.
   /// Throws [FormatException] if value is not a binary.
-  Uint8List? unpackBinary() {
-    final b = _d.getUint8(_offset);
-    int len;
-    if (b == kTagNil) {
-      _offset += 1;
-      return null;
-    } else if (b == kTagBin8) {
-      len = _d.getUint8(++_offset);
-      _offset += 1;
-    } else if (b == kTagBin16) {
-      len = _d.getUint16(++_offset);
-      _offset += 2;
-    } else if (b == kTagBin32) {
-      len = _d.getUint32(++_offset);
-      _offset += 4;
-    } else {
-      throw _formatException('Binary', b);
-    }
-    final data = Uint8List.view(
-      _list.buffer,
-      _list.offsetInBytes + _offset,
-      len,
-    );
-    _offset += len;
-    return data.asUnmodifiableView();
-  }
+  Uint8List? unpackBinary() => switch (_length(
+    'Binary',
+    tag8: kTagBin8,
+    tag16: kTagBin16,
+    tag32: kTagBin32,
+  )) {
+    final length? => _take(length).asUnmodifiableView(),
+    null => null,
+  };
 
-  MessageData unpack() {
-    final b = _d.getUint8(_offset);
-    if (b == kTagNil) {
-      unpackNull();
-      return const MessageDataNull();
-    } else if (b <= 0x7f ||
-        b >= 0xe0 ||
-        b == kTagUint8 ||
-        b == kTagUint16 ||
-        b == kTagUint32 ||
-        b == kTagUint64 ||
-        b == kTagInt8 ||
-        b == kTagInt16 ||
-        b == kTagInt32 ||
-        b == kTagInt64) {
-      return MessageDataInt(unpackInt()!);
-    } else if (b == kTagFalse || b == kTagTrue) {
-      return MessageDataBool(unpackBool()!);
-    } else if (b == kTagFloat32 || b == kTagFloat64) {
-      return MessageDataDouble(unpackDouble()!);
-    } else if ((b & 0xE0) == 0xA0 ||
-        b == kTagNil ||
-        b == kTagStr8 ||
-        b == kTagStr16 ||
-        b == kTagStr32) {
-      return MessageDataString(unpackString()!);
-    } else if (b == kTagBin8 || b == kTagBin16 || b == kTagBin32) {
-      return MessageDataBinary(unpackBinary()!);
-    } else if ((b & 0xF0) == 0x90 || b == kTagArray16 || b == kTagArray32) {
-      return MessageDataList(unpackList());
-    } else if ((b & 0xF0) == 0x80 || b == kTagMap16 || b == kTagMap32) {
-      return MessageDataMap(unpackMap());
-    } else {
-      throw _formatException('Unknown', b);
-    }
-  }
+  MessageData unpack() => switch (_tag) {
+    kTagNil => _read(0, (_) => const MessageDataNull()),
+    <= 0x7f ||
+    >= 0xe0 ||
+    >= kTagUint8 && <= kTagInt64 => MessageDataInt(unpackInt()!),
+    kTagFalse || kTagTrue => MessageDataBool(unpackBool()!),
+    kTagFloat32 || kTagFloat64 => MessageDataDouble(unpackDouble()!),
+    >= 0xa0 && <= 0xbf ||
+    kTagStr8 ||
+    kTagStr16 ||
+    kTagStr32 => MessageDataString(unpackString()!),
+    kTagBin8 || kTagBin16 || kTagBin32 => MessageDataBinary(unpackBinary()!),
+    >= 0x90 && <= 0x9f ||
+    kTagArray16 ||
+    kTagArray32 => MessageDataList(unpackList()),
+    >= 0x80 && <= 0x8f || kTagMap16 || kTagMap32 => MessageDataMap(unpackMap()),
+    final b => throw _formatException('Unknown', b),
+  };
 
   /// Automatically unpacks `bytes` to [List] where items has corresponding data types.
   ///
   /// Return types declared as [MessageData] instead of `dynamic` for safety reasons.
   /// This limits the number of valid types that can be cast to, and since [MessageData]
   /// is a sealed type, a switch over it can be checked for completeness at compile time.
-  List<MessageData> unpackList() {
-    final length = unpackListLength();
-    return List.generate(length, (_) => unpack());
-  }
+  List<MessageData> unpackList() =>
+      List.generate(unpackListLength(), (_) => unpack());
 
   /// Automatically unpacks `bytes` to [Map] where key and values has corresponding data types.
   ///

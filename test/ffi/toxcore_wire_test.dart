@@ -30,7 +30,13 @@ void main() {
     // ignore: argument_type_not_assignable
     final tox = Toxcore(lib, const ToxOptions(localDiscoveryEnabled: false));
     addTearDown(tox.kill);
-    expect(ToxAddress.of(tox.address.publicKey, tox.nospam), tox.address);
+    expect(
+      ToxAddress.of(
+        tox.selfGetPublicKey(),
+        ToxAddressNospam(tox.selfGetNospam()),
+      ),
+      tox.selfGetAddress(),
+    );
 
     Uint8List read(void Function(Pointer<Uint8>) get) {
       final ptr = malloc<Uint8>(PublicKey.kLength);
@@ -70,7 +76,7 @@ void main() {
       read((ptr) => f.tox_self_get_public_key(friend, ptr)),
     );
 
-    withBytes(tox.address.bytes, (address, _) {
+    withBytes(tox.selfGetAddress().bytes, (address, _) {
       withBytes(utf8.encode('Add me'), (message, length) {
         f.tox_friend_add(friend, address, message, length, err);
       });
@@ -79,11 +85,11 @@ void main() {
     expect(request.publicKey, friendKey);
     expect(utf8.decode(request.message), 'Add me');
 
-    tox.name = 'Me';
+    tox.selfSetName(utf8.encode('Me'));
     withBytes(utf8.encode('Friend'), (name, length) {
       f.tox_self_set_name(friend, name, length, err);
     });
-    final friendNumber = tox.addFriendNorequest(request.publicKey);
+    final friendNumber = tox.friendAddNorequest(request.publicKey);
     final connection = await next<ToxEventFriendConnectionStatus>();
     expect(connection.friendNumber, friendNumber);
     expect(

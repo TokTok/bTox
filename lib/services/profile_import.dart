@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:btox/api/toxcore/tox_options.dart';
@@ -46,14 +47,14 @@ ToxSaveProfile readToxSave(ToxLibrary lib, Uint8List save) {
   );
   try {
     return ToxSaveProfile(
-      secretKey: tox.secretKey,
-      publicKey: tox.address.publicKey,
-      nospam: tox.nospam,
-      name: tox.name,
-      statusMessage: tox.statusMessage,
+      secretKey: tox.selfGetSecretKey(),
+      publicKey: tox.selfGetPublicKey(),
+      nospam: ToxAddressNospam(tox.selfGetNospam()),
+      name: _text(tox.selfGetName()),
+      statusMessage: _text(tox.selfGetStatusMessage()),
       friends: [
-        for (final friend in tox.friendList)
-          (tox.getFriendPublicKey(friend), tox.getFriendName(friend)),
+        for (final friend in tox.selfGetFriendList())
+          (tox.friendGetPublicKey(friend), _text(tox.friendGetName(friend))),
       ],
     );
   } finally {
@@ -61,7 +62,7 @@ ToxSaveProfile readToxSave(ToxLibrary lib, Uint8List save) {
   }
 }
 
-/// Adds [profile] as the active profile, with its friends as contacts.
+/// Adds [profile], signed in, with its friends as contacts.
 Future<Id<Profiles>> importProfile(Database db, ToxSaveProfile profile) {
   return db.transaction(() async {
     final existing = await (db.select(
@@ -90,7 +91,9 @@ Future<Id<Profiles>> importProfile(Database db, ToxSaveProfile profile) {
         ),
       );
     }
-    await db.activateProfile(id);
+    await db.signIn(id);
     return id;
   });
 }
+
+String _text(Uint8List bytes) => utf8.decode(bytes, allowMalformed: true);

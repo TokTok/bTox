@@ -1,6 +1,7 @@
 import 'package:btox/background_service.dart';
 import 'package:btox/db/database.dart';
 import 'package:btox/l10n/generated/app_localizations.dart';
+import 'package:btox/models/content.dart';
 import 'package:btox/models/id.dart';
 import 'package:btox/models/messaging.dart';
 import 'package:btox/models/persistence.dart';
@@ -40,10 +41,34 @@ final class ChatPage extends HookConsumerWidget {
     );
     final contactAsync = ref.watch(contactProvider(contactId));
     final messagesAsync = ref.watch(messagesForContactProvider(contactId));
-    final profile = ref.watch(activeProfileProvider);
+    final lifecycle = useAppLifecycleState();
+    final messageCount = messagesAsync.value?.length;
+    useEffect(() {
+      if (messageCount != null &&
+          (lifecycle == null || lifecycle == AppLifecycleState.resumed)) {
+        ref.read(databaseProvider).value?.markContactRead(contactId);
+      }
+      return null;
+    }, [messageCount, lifecycle]);
+
+    // Opening a chat, e.g. from a notification, switches to its account.
+    final profileId = contactAsync.value?.profileId;
+    useEffect(() {
+      if (profileId != null &&
+          ref.read(currentProfileProvider)?.id != profileId) {
+        ref
+            .read(databaseProvider)
+            .value
+            ?.updateAppSettings(
+              AppSettingsCompanion(currentProfile: Value(profileId)),
+            );
+      }
+      return null;
+    }, [profileId]);
 
     return contactAsync.when(
       data: (contact) {
+        final profile = ref.watch(profileProvider(contact.profileId)).value;
         return Scaffold(
           appBar: AppBar(
             title: Row(
@@ -112,14 +137,19 @@ final class ChatPage extends HookConsumerWidget {
                               author: profile.publicKey,
                               timestamp: clock.now().toUtc(),
                               content: content,
-                            ).copyWith(delivered: const Value(false)),
+                            ).copyWith(
+                              delivered: const Value(false),
+                              fileState: Value.absentIfNull(
+                                content is FileContent
+                                    ? FileState.active
+                                    : null,
+                              ),
+                            ),
                           );
                         }
                         replyingTo.value = null;
                       },
-                      onTapCloseReply: () {
-                        replyingTo.value = null;
-                      },
+                      onTapCloseReply: () => replyingTo.value = null,
                     ),
                   ),
                 ],

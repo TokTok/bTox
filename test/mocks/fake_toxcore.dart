@@ -1,4 +1,5 @@
 // Fake implementation of the Tox class for testing purposes.
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:btox/api/toxcore/tox.dart' as api;
@@ -9,28 +10,20 @@ import 'package:btox/models/crypto.dart';
 
 const _logger = Logger(['FakeToxcore']);
 
+final _address = ToxAddress.fromString(
+  '52602D8D81573725A77F602A53CD1CD8C2156595E8C3310EAC3552E99B7FB50D897BC532A375',
+);
+
+/// Implements the parts of toxcore that tests use; the rest throws.
 final class FakeToxcore extends api.Tox {
-  @override
   String name = 'Yanciman';
 
-  @override
   String statusMessage = 'Producing works of art in Kannywood';
-
-  @override
-  ToxAddress get address {
-    return ToxAddress.fromString(
-      '52602D8D81573725A77F602A53CD1CD8C2156595E8C3310EAC3552E99B7FB50D897BC532A375',
-    );
-  }
 
   @override
   bool isAlive = true;
 
-  @override
-  int get iterationInterval => 20;
-
   bool throwOnBootstrap = false;
-  final Set<int> missingFriendNumbers = {};
   final List<Event> _events = [];
 
   final List<PublicKey> friends = [];
@@ -44,6 +37,10 @@ final class FakeToxcore extends api.Tox {
 
   final Set<int> unreachableFriends = {};
 
+  final List<(int, int, ffi.Tox_File_Control)> fileControls = [];
+  final List<(int, int, String)> fileSends = [];
+  final List<(int, int, int, Uint8List)> fileChunks = [];
+
   int _nextMessageId = 0;
 
   void pushEvent(Event event) {
@@ -51,14 +48,34 @@ final class FakeToxcore extends api.Tox {
   }
 
   @override
-  int addFriend(ToxAddress address, String message) {
-    final friendNumber = addFriendNorequest(address.publicKey);
-    friendRequests.add((address, message));
+  dynamic noSuchMethod(Invocation invocation) =>
+      throw UnimplementedError('${invocation.memberName}');
+
+  @override
+  int iterationInterval() => 20;
+
+  @override
+  ToxAddress selfGetAddress() => _address;
+
+  @override
+  void selfSetNospam(int nospam) {}
+
+  @override
+  void selfSetName(Uint8List name) => this.name = utf8.decode(name);
+
+  @override
+  void selfSetStatusMessage(Uint8List statusMessage) =>
+      this.statusMessage = utf8.decode(statusMessage);
+
+  @override
+  int friendAdd(ToxAddress address, Uint8List message) {
+    final friendNumber = friendAddNorequest(address.publicKey);
+    friendRequests.add((address, utf8.decode(message)));
     return friendNumber;
   }
 
   @override
-  int addFriendNorequest(PublicKey publicKey) {
+  int friendAddNorequest(PublicKey publicKey) {
     if (friends.contains(publicKey)) {
       throw api.ApiException(
         ffi.Tox_Err_Friend_Add.TOX_ERR_FRIEND_ADD_ALREADY_SENT,
@@ -83,26 +100,10 @@ final class FakeToxcore extends api.Tox {
   }
 
   @override
-  void deleteFriend(int friendNumber) => deletedFriends.add(friendNumber);
+  void friendDelete(int friendNumber) => deletedFriends.add(friendNumber);
 
   @override
-  List<int> get friendList => List.generate(friends.length, (i) => i);
-
-  @override
-  SecretKey get secretKey => SecretKey(Uint8List(32));
-
-  @override
-  String getFriendName(int friendNumber) => '';
-
-  @override
-  PublicKey getFriendPublicKey(int friendNumber) {
-    if (missingFriendNumbers.contains(friendNumber)) {
-      throw api.ApiException(
-        ffi
-            .Tox_Err_Friend_Get_Public_Key
-            .TOX_ERR_FRIEND_GET_PUBLIC_KEY_FRIEND_NOT_FOUND,
-      );
-    }
+  PublicKey friendGetPublicKey(int friendNumber) {
     if (friendNumber < friends.length) {
       return friends[friendNumber];
     }
@@ -123,7 +124,11 @@ final class FakeToxcore extends api.Tox {
   }
 
   @override
-  int sendFriendMessage(int friendNumber, String message) {
+  int friendSendMessage(
+    int friendNumber,
+    ffi.Tox_Message_Type type,
+    Uint8List message,
+  ) {
     if (friendNumber >= friends.length) {
       throw api.ApiException(
         ffi
@@ -139,13 +144,34 @@ final class FakeToxcore extends api.Tox {
       );
     }
     final messageId = _nextMessageId++;
-    sentMessages.add((friendNumber, messageId, message));
+    sentMessages.add((friendNumber, messageId, utf8.decode(message)));
     return messageId;
   }
 
   @override
-  ToxAddressNospam get nospam => address.nospam;
+  void fileControl(
+    int friendNumber,
+    int fileNumber,
+    ffi.Tox_File_Control control,
+  ) => fileControls.add((friendNumber, fileNumber, control));
 
   @override
-  set nospam(ToxAddressNospam value) {}
+  int fileSend(
+    int friendNumber,
+    int kind,
+    int fileSize,
+    Uint8List fileId,
+    Uint8List filename,
+  ) {
+    fileSends.add((friendNumber, fileSize, utf8.decode(filename)));
+    return fileSends.length - 1;
+  }
+
+  @override
+  void fileSendChunk(
+    int friendNumber,
+    int fileNumber,
+    int position,
+    Uint8List data,
+  ) => fileChunks.add((friendNumber, fileNumber, position, data));
 }

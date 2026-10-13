@@ -5,11 +5,11 @@ import 'package:btox/models/crypto.dart';
 import 'package:btox/models/id.dart';
 import 'package:btox/models/persistence.dart';
 import 'package:btox/models/profile_settings.dart';
+import 'package:btox/widgets/import_profile.dart';
 import 'package:btox/widgets/nickname_field.dart';
 import 'package:btox/widgets/status_message_field.dart';
 import 'package:btox/providers/database.dart';
 import 'package:btox/providers/sodium.dart';
-import 'package:btox/providers/tox.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -21,24 +21,30 @@ final class CreateProfilePage extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final constants = ref.watch(toxConstantsProvider).asData?.value;
     final sodium = ref.watch(sodiumProvider).asData?.value;
     final database = ref.watch(databaseProvider).asData?.value;
-
-    if (constants == null || sodium == null || database == null) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
-
     final nicknameController = useTextEditingController(text: 'Yanciman');
     final statusMessageController = useTextEditingController(
       text: 'Producing works of art in Kannywood',
     );
     final creating = useState(false);
 
+    if (sodium == null || database == null) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
     return Scaffold(
-      appBar: AppBar(title: Text(AppLocalizations.of(context)!.newProfile)),
+      appBar: AppBar(
+        title: Text(AppLocalizations.of(context)!.newProfile),
+        actions: [
+          IconButton(
+            tooltip: AppLocalizations.of(context)!.importProfile,
+            onPressed: () => importProfileFile(context, ref, database),
+            icon: const Icon(Icons.file_open),
+          ),
+        ],
+      ),
       body: Column(
-        mainAxisAlignment: MainAxisAlignment.start,
         children: [
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 24),
@@ -48,12 +54,9 @@ final class CreateProfilePage extends HookConsumerWidget {
               height: 200,
             ),
           ),
-          NicknameField(constants: constants, controller: nicknameController),
+          NicknameField(controller: nicknameController),
           const Padding(padding: EdgeInsets.all(8)),
-          StatusMessageField(
-            constants: constants,
-            controller: statusMessageController,
-          ),
+          StatusMessageField(controller: statusMessageController),
           const Padding(padding: EdgeInsets.all(8)),
           ElevatedButton(
             key: const Key('createProfileButton'),
@@ -82,7 +85,7 @@ final class CreateProfilePage extends HookConsumerWidget {
                             nospam: ToxAddressNospam(0),
                           ),
                         );
-                        await database.activateProfile(id);
+                        await database.signIn(id);
                         return id;
                       });
                     } catch (e) {
@@ -92,8 +95,8 @@ final class CreateProfilePage extends HookConsumerWidget {
                     }
                     _logger.d('Created new profile with ID $id');
                     // On first start, this page is the home page instead.
-                    if (context.mounted && Navigator.canPop(context)) {
-                      Navigator.pop(context);
+                    if (context.mounted) {
+                      Navigator.popUntil(context, (route) => route.isFirst);
                     }
                   },
             child: Text(AppLocalizations.of(context)!.create),

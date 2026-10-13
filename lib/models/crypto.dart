@@ -20,103 +20,65 @@ final class NospamConverter extends TypeConverter<ToxAddressNospam, int>
   int toSql(ToxAddressNospam value) => toJson(value);
 }
 
-final class PublicKey extends _CryptoBytes with Packet {
+/// Stores keys and hashes as hex strings.
+final class HexConverter<T extends CryptoBytes> extends TypeConverter<T, String>
+    with JsonTypeConverter2<T, String, String> {
+  final T Function(String) _fromJson;
+
+  const HexConverter(this._fromJson);
+
+  @override
+  T fromJson(String json) => _fromJson(json);
+  @override
+  T fromSql(String fromDb) => fromJson(fromDb);
+  @override
+  String toJson(T value) => value.toJson();
+  @override
+  String toSql(T value) => toJson(value);
+}
+
+final class PublicKey extends CryptoBytes {
   static const kLength = 32;
 
   PublicKey(super.bytes);
 
-  factory PublicKey.fromJson(String value) {
-    return PublicKey(Uint8List.fromList(hex.decode(value)));
-  }
+  factory PublicKey.fromJson(String value) =>
+      PublicKey(Uint8List.fromList(hex.decode(value)));
 
-  factory PublicKey.unpack(Unpacker unpacker) {
-    return PublicKey(unpacker.unpackBinary()!);
-  }
+  factory PublicKey.unpack(Unpacker unpacker) =>
+      PublicKey(unpacker.unpackBinary()!);
 
   @override
   int get length => PublicKey.kLength;
-
-  @override
-  void pack(Packer packer) {
-    packer.packBinary(bytes);
-  }
 }
 
-final class PublicKeyConverter extends TypeConverter<PublicKey, String>
-    with JsonTypeConverter2<PublicKey, String, String> {
-  const PublicKeyConverter();
-
-  @override
-  PublicKey fromJson(String json) => PublicKey.fromJson(json);
-  @override
-  PublicKey fromSql(String fromDb) => fromJson(fromDb);
-  @override
-  String toJson(PublicKey value) => value.toJson();
-  @override
-  String toSql(PublicKey value) => toJson(value);
-}
-
-final class SecretKey extends _CryptoBytes {
+final class SecretKey extends CryptoBytes {
   static const kLength = 32;
 
   SecretKey(super.bytes);
 
-  factory SecretKey.fromJson(String value) {
-    return SecretKey(Uint8List.fromList(hex.decode(value)));
-  }
+  factory SecretKey.fromJson(String value) =>
+      SecretKey(Uint8List.fromList(hex.decode(value)));
 
-  factory SecretKey.fromSodium(SecureKey value) {
-    return SecretKey(Uint8List.fromList(value.extractBytes()));
-  }
+  factory SecretKey.fromSodium(SecureKey value) =>
+      SecretKey(Uint8List.fromList(value.extractBytes()));
 
   @override
   int get length => SecretKey.kLength;
 }
 
-final class ToxAddressConverter extends TypeConverter<ToxAddress, String>
-    with JsonTypeConverter2<ToxAddress, String, String> {
-  const ToxAddressConverter();
-
-  @override
-  ToxAddress fromJson(String json) => ToxAddress.fromString(json);
-  @override
-  ToxAddress fromSql(String fromDb) => fromJson(fromDb);
-  @override
-  String toJson(ToxAddress value) => value.toJson();
-  @override
-  String toSql(ToxAddress value) => toJson(value);
-}
-
-final class SecretKeyConverter extends TypeConverter<SecretKey, String>
-    with JsonTypeConverter2<SecretKey, String, String> {
-  const SecretKeyConverter();
-
-  @override
-  SecretKey fromJson(String json) => SecretKey.fromJson(json);
-  @override
-  SecretKey fromSql(String fromDb) => fromJson(fromDb);
-  @override
-  String toJson(SecretKey value) => value.toJson();
-  @override
-  String toSql(SecretKey value) => toJson(value);
-}
-
-final class Sha256 extends _CryptoBytes with Packet {
+final class Sha256 extends CryptoBytes with Packet {
   static const kLength = 32;
 
   Sha256(super.bytes);
 
-  factory Sha256.fromDigest(Digest digest) {
-    return Sha256(Uint8List.fromList(digest.bytes));
-  }
+  factory Sha256.fromDigest(Digest digest) =>
+      Sha256(Uint8List.fromList(digest.bytes));
 
-  factory Sha256.fromJson(String value) {
-    return Sha256(Uint8List.fromList(hex.decode(value)));
-  }
+  factory Sha256.fromJson(String value) =>
+      Sha256(Uint8List.fromList(hex.decode(value)));
 
-  factory Sha256.unpack(Unpacker unpacker) {
-    return Sha256(unpacker.unpackBinary()!);
-  }
+  factory Sha256.unpack(Unpacker unpacker) => Sha256(unpacker.unpackBinary()!);
 
   @override
   int get length => Sha256.kLength;
@@ -127,39 +89,25 @@ final class Sha256 extends _CryptoBytes with Packet {
   }
 }
 
-final class Sha256Converter extends TypeConverter<Sha256, String>
-    with JsonTypeConverter2<Sha256, String, String> {
-  const Sha256Converter();
-
-  @override
-  Sha256 fromJson(String json) => Sha256.fromJson(json);
-  @override
-  Sha256 fromSql(String fromDb) => fromJson(fromDb);
-  @override
-  String toJson(Sha256 value) => value.toJson();
-  @override
-  String toSql(Sha256 value) => toJson(value);
-}
-
-final class ToxAddress extends _CryptoBytes {
+final class ToxAddress extends CryptoBytes {
   static const kLength = 38;
+  static const kChecksumLength = 2;
 
   ToxAddress(super.bytes);
 
-  factory ToxAddress.fromString(String value) {
-    return ToxAddress(Uint8List.fromList(hex.decode(value)));
-  }
+  factory ToxAddress.fromString(String value) =>
+      ToxAddress(Uint8List.fromList(hex.decode(value)));
 
   factory ToxAddress.of(PublicKey publicKey, ToxAddressNospam nospam) {
     final bytes = Uint8List(kLength)..setAll(0, publicKey.bytes);
     bytes.buffer.asByteData().setUint32(PublicKey.kLength, nospam.value);
-    bytes.setAll(kLength - ToxAddressHash.kLength, _checksum(bytes));
+    bytes.setAll(kLength - kChecksumLength, _checksum(bytes));
     return ToxAddress(bytes);
   }
 
   bool get hasValidChecksum {
     final checksum = _checksum(bytes);
-    final end = kLength - ToxAddressHash.kLength;
+    final end = kLength - kChecksumLength;
     return bytes[end] == checksum[0] && bytes[end + 1] == checksum[1];
   }
 
@@ -171,12 +119,6 @@ final class ToxAddress extends _CryptoBytes {
     return checksum;
   }
 
-  ToxAddressHash get hash => ToxAddressHash(
-    bytes.buffer.asByteData().getUint16(
-      PublicKey.kLength + ToxAddressNospam.kLength,
-    ),
-  );
-
   @override
   int get length => ToxAddress.kLength;
   ToxAddressNospam get nospam =>
@@ -185,30 +127,32 @@ final class ToxAddress extends _CryptoBytes {
       PublicKey(Uint8List.view(bytes.buffer, 0, PublicKey.kLength));
 }
 
-final class ToxAddressHash extends _CryptoNumber {
-  static const kLength = 2;
-
-  ToxAddressHash(super.value) {
-    if (value < 0 || value > 0xFFFF) {
-      throw ArgumentError('Tox address hash must be a 16-bit unsigned integer');
-    }
-  }
-}
-
-final class ToxAddressNospam extends _CryptoNumber {
+final class ToxAddressNospam {
   static const kLength = 4;
 
-  ToxAddressNospam(super.value) {
+  final int value;
+
+  ToxAddressNospam(this.value) {
     if (value < 0 || value > 0xFFFFFFFF) {
       throw ArgumentError('Nospam must be a 32-bit unsigned integer');
     }
   }
+
+  @override
+  int get hashCode => value;
+
+  @override
+  bool operator ==(Object other) =>
+      other is ToxAddressNospam && other.value == value;
+
+  @override
+  String toString() => 'ToxAddressNospam($value)';
 }
 
-sealed class _CryptoBytes {
+sealed class CryptoBytes {
   Uint8List _bytes;
 
-  _CryptoBytes(Uint8List bytes) : _bytes = bytes.asUnmodifiableView() {
+  CryptoBytes(Uint8List bytes) : _bytes = bytes.asUnmodifiableView() {
     if (_bytes.length != length) {
       throw ArgumentError('Invalid $runtimeType length: ${_bytes.length}');
     }
@@ -223,7 +167,7 @@ sealed class _CryptoBytes {
 
   @override
   bool operator ==(Object other) {
-    if (other is _CryptoBytes &&
+    if (other is CryptoBytes &&
         other.runtimeType == runtimeType &&
         memEquals(_bytes, other._bytes)) {
       // Speed up future comparisons by making equality a pointer comparison.
@@ -233,33 +177,8 @@ sealed class _CryptoBytes {
     return false;
   }
 
-  String toJson() {
-    return hex.encode(_bytes).toUpperCase();
-  }
+  String toJson() => hex.encode(_bytes).toUpperCase();
 
   @override
-  String toString() {
-    return '$runtimeType(${toJson()})';
-  }
-}
-
-sealed class _CryptoNumber {
-  final int value;
-
-  const _CryptoNumber(this.value);
-
-  @override
-  int get hashCode => value;
-
-  @override
-  bool operator ==(Object other) {
-    return other is _CryptoNumber &&
-        other.runtimeType == runtimeType &&
-        other.value == value;
-  }
-
-  @override
-  String toString() {
-    return '$runtimeType($value)';
-  }
+  String toString() => '$runtimeType(${toJson()})';
 }

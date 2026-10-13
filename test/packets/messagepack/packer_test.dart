@@ -139,12 +139,6 @@ void main() {
       check(65536, kTagMap32, 4);
     });
 
-    test('Packer buffer resizing', () {
-      final p = Packer(4);
-      p.packBinary(Uint8List(10));
-      expect(p.takeBytes().length, 12);
-    });
-
     test('packBool', () {
       expect(
         (Packer()..packBool(true)).takeBytes(),

@@ -7,12 +7,14 @@ final class ContactListItem extends StatelessWidget {
   final Contact contact;
   final Function(Contact) onTap;
   final Function(Contact)? onLongPress;
+  final int unread;
 
   const ContactListItem({
     super.key,
     required this.contact,
     required this.onTap,
     this.onLongPress,
+    this.unread = 0,
   });
 
   @override
@@ -25,7 +27,11 @@ final class ContactListItem extends StatelessWidget {
         contact.publicKey.toJson(),
         overflow: TextOverflow.ellipsis,
       ),
-      trailing: ContactAvatar(contact: contact),
+      trailing: Badge(
+        isLabelVisible: unread > 0,
+        label: Text('$unread'),
+        child: ContactAvatar(contact: contact),
+      ),
       onTap: () => onTap(contact),
       onLongPress: () => onLongPress?.call(contact),
     );

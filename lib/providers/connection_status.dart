@@ -1,28 +1,25 @@
-import 'package:btox/ffi/toxcore.dart';
+import 'package:btox/models/connection_status.dart';
 import 'package:btox/platform/any_platform.dart';
 import 'package:btox/providers/profiles.dart';
-import 'package:btox/providers/tox.dart';
 import 'package:btox/services/connection_status_channel.dart';
+import 'package:btox/services/tox_session.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Watching this runs Tox, so only the Tox owner may watch it.
-final ownConnectionStatusProvider = Provider<Tox_Connection?>((ref) {
-  final profile = ref.watch(activeProfileProvider);
-  if (profile == null) {
-    return null;
+final _publishedConnectionStatusesProvider =
+    StreamProvider<ConnectionStatuses?>((ref) => watchConnectionStatuses());
+
+/// Null while the background service isn't running.
+final connectionStatusesProvider = Provider<ConnectionStatuses?>((ref) {
+  if (AnyPlatform.instance.isMobile) {
+    return ref.watch(_publishedConnectionStatusesProvider).value;
   }
-  return ref.watch(
-    selfConnectionStatusProvider(profile.secretKey, profile.nospam),
-  );
+  return ref.watch(toxSessionsProvider);
 });
 
-final _publishedConnectionStatusProvider = StreamProvider<Tox_Connection?>(
-  (ref) => watchConnectionStatus(),
-);
-
-final connectionStatusProvider = Provider<Tox_Connection?>((ref) {
-  if (AnyPlatform.instance.isMobile) {
-    return ref.watch(_publishedConnectionStatusProvider).value;
-  }
-  return ref.watch(ownConnectionStatusProvider);
+/// The status of the profile the UI shows.
+final connectionStatusProvider = Provider<ConnectionStatus?>((ref) {
+  final profile = ref.watch(currentProfileProvider);
+  return profile == null
+      ? null
+      : ref.watch(connectionStatusesProvider)?[profile.id];
 });

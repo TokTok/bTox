@@ -1,8 +1,4 @@
-import 'dart:typed_data';
-
 import 'package:btox/db/database.dart';
-import 'package:btox/models/crypto.dart';
-import 'package:btox/models/profile_settings.dart';
 import 'package:btox/providers/database.dart';
 import 'package:btox/providers/profiles.dart';
 import 'package:btox/services/stay_online_policy.dart';
@@ -80,28 +76,18 @@ void main() {
 
     Future<bool?> settled() async {
       container.listen(stayOnlineProvider, (_, _) {});
-      await container.read(profilesProvider.future);
+      await container.read(appSettingsProvider.future);
       return container.read(stayOnlineProvider);
     }
 
-    Future<void> addProfile(ProfileSettings settings) => db.addProfile(
-      ProfilesCompanion.insert(
-        active: const Value(true),
-        settings: settings,
-        secretKey: SecretKey(Uint8List(32)),
-        publicKey: PublicKey(Uint8List(32)),
-        nospam: ToxAddressNospam(0),
-      ),
-    );
-
-    test('is unknown while loading, then false without a profile', () async {
+    test('is unknown while loading, then on by default', () async {
       expect(container.read(stayOnlineProvider), isNull);
-      expect(await settled(), isFalse);
+      expect(await settled(), isTrue);
     });
 
-    test("follows the active profile's setting", () async {
-      await addProfile(
-        ProfileSettings(nickname: 'Me', statusMessage: '', stayOnline: false),
+    test('follows the app setting', () async {
+      await db.updateAppSettings(
+        const AppSettingsCompanion(stayOnline: Value(false)),
       );
       expect(await settled(), isFalse);
     });

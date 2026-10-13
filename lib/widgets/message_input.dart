@@ -1,14 +1,14 @@
+import 'package:btox/attachments/attachments.dart';
 import 'package:btox/l10n/generated/app_localizations.dart';
 import 'package:btox/logger.dart';
 import 'package:btox/models/content.dart';
 import 'package:btox/widgets/attachment_selector.dart';
+import 'package:btox/widgets/chat_location_bubble.dart';
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 
 const _logger = Logger(['MessageInput']);
-
-enum _SendMode { text, attachment }
 
 enum _EditMode { text, attachment, emoji }
 
@@ -34,36 +34,48 @@ final class MessageInput extends HookWidget {
   Widget build(BuildContext context) {
     final messageInputController = useTextEditingController();
     final messageInputFocus = useFocusNode();
-    final sendMode = useState(_SendMode.attachment);
+    final hasText = useValueListenable(messageInputController).text.isNotEmpty;
+    final drafts = useState(const <Content>[]);
     final editMode = useState(_EditMode.text);
+    final theme = Theme.of(context);
+    final canSend = hasText || drafts.value.isNotEmpty;
 
-    useEffect(() {
-      void updateSendMode() {
-        sendMode.value = messageInputController.text.isEmpty
-            ? _SendMode.attachment
-            : _SendMode.text;
+    void reset() {
+      messageInputController.text = '';
+      drafts.value = const [];
+      messageInputFocus.requestFocus();
+      editMode.value = _EditMode.text;
+    }
+
+    void toggle(_EditMode mode) =>
+        editMode.value = editMode.value == mode ? _EditMode.text : mode;
+
+    void send() {
+      final text = messageInputController.text;
+      if (text.isEmpty && drafts.value.isEmpty) {
+        return;
       }
+      drafts.value.forEach(onSend);
+      if (text.isNotEmpty) {
+        onSend(TextContent(text: text));
+      }
+      reset();
+    }
 
-      messageInputController.addListener(updateSendMode);
-      return () => messageInputController.removeListener(updateSendMode);
-    }, []);
-
-    void send([String? message]) {
-      message ??= messageInputController.text;
-      if (message.isNotEmpty) {
-        onSend(TextContent(text: message));
-        messageInputController.text = '';
-        messageInputFocus.requestFocus();
-        editMode.value = _EditMode.text;
+    void remove(Content draft) {
+      drafts.value = [...drafts.value]..remove(draft);
+      if (draft case FileContent(:final path)) {
+        deleteAttachment(path)
+            .catchError((Object e) => _logger.w('Failed to delete $path: $e'));
       }
     }
 
     return Column(
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
-        if (replyingTo != null) ...[
+        if (replyingTo case final reply?) ...[
           Container(
-            color: Theme.of(context).primaryColor,
+            color: theme.primaryColor,
             padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
             child: Row(
               children: [
@@ -72,7 +84,7 @@ final class MessageInput extends HookWidget {
                   child: Padding(
                     padding: const EdgeInsets.only(left: 8),
                     child: Text(
-                      AppLocalizations.of(context)!.re(replyingTo.toString()),
+                      AppLocalizations.of(context)!.re(reply.plainText),
                       overflow: TextOverflow.ellipsis,
                       maxLines: 3,
                     ),
@@ -80,10 +92,7 @@ final class MessageInput extends HookWidget {
                 ),
                 InkWell(
                   onTap: onTapCloseReply,
-                  child: Icon(
-                    Icons.close,
-                    color: Theme.of(context).primaryColorLight,
-                  ),
+                  child: Icon(Icons.close, color: theme.primaryColorLight),
                 ),
               ],
             ),
@@ -93,28 +102,40 @@ final class MessageInput extends HookWidget {
             child: Divider(height: 1),
           ),
         ],
+        if (drafts.value.isNotEmpty)
+          SizedBox(
+            height: 72,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              children: [
+                for (final draft in drafts.value)
+                  _Draft(draft, onRemove: () => remove(draft)),
+              ],
+            ),
+          ),
         if (editMode.value == _EditMode.emoji)
           EmojiPicker(
             key: const Key('emojiPicker'),
             textEditingController: messageInputController,
             config: Config(
               categoryViewConfig: CategoryViewConfig(
-                backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+                backgroundColor: theme.scaffoldBackgroundColor,
                 recentTabBehavior: recentEmojis
                     ? RecentTabBehavior.RECENT
                     : RecentTabBehavior.NONE,
               ),
               emojiViewConfig: EmojiViewConfig(
-                backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+                backgroundColor: theme.scaffoldBackgroundColor,
                 emojiSizeMax: 24,
               ),
               bottomActionBarConfig: BottomActionBarConfig(
-                backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-                buttonIconColor: Theme.of(context).iconTheme.color!,
+                backgroundColor: theme.scaffoldBackgroundColor,
+                buttonIconColor: theme.iconTheme.color!,
               ),
               searchViewConfig: SearchViewConfig(
-                backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-                buttonIconColor: Theme.of(context).iconTheme.color!,
+                backgroundColor: theme.scaffoldBackgroundColor,
+                buttonIconColor: theme.iconTheme.color!,
               ),
             ),
           ),
@@ -153,7 +174,7 @@ final class MessageInput extends HookWidget {
                         top: 8,
                         bottom: 8,
                       ),
-                      fillColor: Theme.of(context).splashColor,
+                      fillColor: theme.splashColor,
                       filled: true,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(20),
@@ -166,47 +187,24 @@ final class MessageInput extends HookWidget {
                     visualDensity: VisualDensity.compact,
                     padding: EdgeInsets.zero,
                     iconSize: 24,
-                    onPressed: () {
-                      if (editMode.value == _EditMode.emoji) {
-                        editMode.value = _EditMode.text;
-                      } else {
-                        editMode.value = _EditMode.emoji;
-                      }
-                    },
+                    onPressed: () => toggle(_EditMode.emoji),
                   ),
                 ],
               ),
             ),
             IconButton(
               color: buttonColor,
-              icon: switch (sendMode.value) {
-                _SendMode.text => const Icon(Icons.send),
-                _SendMode.attachment => const Icon(Icons.add_circle),
-              },
+              icon: Icon(canSend ? Icons.send : Icons.add_circle),
               iconSize: 42,
               padding: EdgeInsets.zero,
-              onPressed: () {
-                switch (sendMode.value) {
-                  case _SendMode.text:
-                    send();
-                    break;
-                  case _SendMode.attachment:
-                    editMode.value = switch (editMode.value) {
-                      _EditMode.attachment => _EditMode.text,
-                      _ => _EditMode.attachment,
-                    };
-                    break;
-                }
-              },
+              onPressed: canSend ? send : () => toggle(_EditMode.attachment),
             ),
           ],
         ),
         if (editMode.value == _EditMode.attachment)
           AttachmentSelector(
             onSelected: (attachments) {
-              onSend(_contentAttachments(attachments));
-              messageInputController.text = '';
-              messageInputFocus.requestFocus();
+              drafts.value = [...drafts.value, ...attachments];
               editMode.value = _EditMode.text;
             },
           ),
@@ -215,7 +213,62 @@ final class MessageInput extends HookWidget {
   }
 }
 
-Content _contentAttachments(List<Content> attachments) {
-  // TODO: Implement merging attachments.
-  return attachments.single;
+/// An attachment waiting to be sent.
+final class _Draft extends StatelessWidget {
+  final Content content;
+  final void Function() onRemove;
+
+  const _Draft(this.content, {required this.onRemove});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    Widget iconLabel(IconData icon, String label) => Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(icon),
+        Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.labelSmall,
+        ),
+      ],
+    );
+
+    final preview = switch (content) {
+      FileContent(:final path, :final name) =>
+        imagePreview(path) ?? iconLabel(Icons.insert_drive_file, name),
+      LocationContent(:final latitude, :final longitude) => LocationMap(
+        latitude: latitude,
+        longitude: longitude,
+      ),
+      _ => iconLabel(Icons.attach_file, content.plainText),
+    };
+    return Padding(
+      padding: const EdgeInsets.all(4),
+      child: Stack(
+        children: [
+          Container(
+            width: 64,
+            height: 64,
+            clipBehavior: Clip.antiAlias,
+            decoration: BoxDecoration(
+              color: theme.splashColor,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: preview,
+          ),
+          Positioned(
+            top: 0,
+            right: 0,
+            child: InkWell(
+              onTap: onRemove,
+              child: const Icon(Icons.cancel, size: 20),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

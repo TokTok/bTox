@@ -6,10 +6,6 @@ import 'package:flutter/material.dart';
 /// Matches one single emoji.
 final _emojiRegex = RegExp('^(?:${emojiRegex().pattern})\$');
 
-bool _isEmoji(String s) {
-  return _emojiRegex.hasMatch(s);
-}
-
 final class ChatText extends StatelessWidget {
   final Positioned? stateIcon;
   final String text;
@@ -28,7 +24,7 @@ final class ChatText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (_isEmoji(text)) {
+    if (_emojiRegex.hasMatch(text)) {
       return ChatTextEmoji(
         stateIcon: stateIcon,
         emoji: text,

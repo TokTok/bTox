@@ -18,7 +18,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   final profile = Profile(
     id: Id(0),
-    active: true,
+    signedIn: true,
     settings: ProfileSettings(
       nickname: 'Yeetman',
       statusMessage: 'Yeeting everyone.',
@@ -50,7 +50,9 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          activeProfileProvider.overrideWithValue(profile),
+          currentProfileProvider.overrideWithValue(profile),
+          profileProvider(profile.id)
+              .overrideWith((ref) => Stream.value(profile)),
           contactProvider(contact.id)
               .overrideWith((ref) => Stream.value(contact)),
           messagesForContactProvider(contact.id)
@@ -104,7 +106,9 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          activeProfileProvider.overrideWithValue(profile),
+          currentProfileProvider.overrideWithValue(profile),
+          profileProvider(profile.id)
+              .overrideWith((ref) => Stream.value(profile)),
           contactProvider(contact.id)
               .overrideWith((ref) => Stream.value(contact)),
           messagesForContactProvider(contact.id)
@@ -147,7 +151,9 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          activeProfileProvider.overrideWithValue(profile),
+          currentProfileProvider.overrideWithValue(profile),
+          profileProvider(profile.id)
+              .overrideWith((ref) => Stream.value(profile)),
           contactProvider(contact.id)
               .overrideWith((ref) => Stream.value(contact)),
           messagesForContactProvider(contact.id)
@@ -188,7 +194,9 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          activeProfileProvider.overrideWithValue(profile),
+          currentProfileProvider.overrideWithValue(profile),
+          profileProvider(profile.id)
+              .overrideWith((ref) => Stream.value(profile)),
           contactProvider(contact.id)
               .overrideWith((ref) => Stream.value(contact)),
           messagesForContactProvider(contact.id)
@@ -224,7 +232,9 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          activeProfileProvider.overrideWithValue(profile),
+          currentProfileProvider.overrideWithValue(profile),
+          profileProvider(profile.id)
+              .overrideWith((ref) => Stream.value(profile)),
           contactProvider(contact.id)
               .overrideWith((ref) => Stream.value(contact)),
           messagesForContactProvider(contact.id)
@@ -266,7 +276,9 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            activeProfileProvider.overrideWithValue(profile),
+            currentProfileProvider.overrideWithValue(profile),
+            profileProvider(profile.id)
+                .overrideWith((ref) => Stream.value(profile)),
             contactProvider(contact.id)
                 .overrideWith((ref) => Stream.value(contact)),
             messagesForContactProvider(contact.id)
@@ -316,7 +328,9 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          activeProfileProvider.overrideWithValue(profile),
+          currentProfileProvider.overrideWithValue(profile),
+          profileProvider(profile.id)
+              .overrideWith((ref) => Stream.value(profile)),
           contactProvider(contact.id)
               .overrideWith((ref) => Stream.value(contact)),
           messagesForContactProvider(contact.id)
@@ -359,7 +373,9 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          activeProfileProvider.overrideWithValue(profile),
+          currentProfileProvider.overrideWithValue(profile),
+          profileProvider(profile.id)
+              .overrideWith((ref) => Stream.value(profile)),
           contactProvider(contact.id)
               .overrideWith((ref) => Stream.value(contact)),
           messagesForContactProvider(contact.id)

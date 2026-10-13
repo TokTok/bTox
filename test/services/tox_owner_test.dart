@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:btox/api/toxcore/tox_events.dart';
@@ -5,18 +6,19 @@ import 'package:btox/db/database.dart';
 import 'package:btox/ffi/toxcore.dart';
 import 'package:btox/models/content.dart';
 import 'package:btox/models/crypto.dart';
+import 'package:btox/models/id.dart';
 import 'package:btox/models/messaging.dart';
+import 'package:btox/models/persistence.dart';
 import 'package:btox/models/profile_settings.dart';
 import 'package:btox/providers/bootstrap_nodes.dart';
 import 'package:btox/providers/database.dart';
 import 'package:btox/providers/tox.dart';
-import 'package:btox/services/tox_owner.dart';
+import 'package:btox/services/tox_session.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../mocks/fake_bootstrap_nodes.dart';
-import '../mocks/fake_tox_constants.dart';
 import '../mocks/fake_toxcore.dart';
 
 Future<void> _until(bool Function() condition) async {
@@ -30,6 +32,7 @@ void main() {
   late Database db;
   late FakeToxcore tox;
   late List<Tox_Connection?> statuses;
+  late Id<Profiles> profileId;
 
   setUp(() async {
     db = Database(NativeDatabase.memory());
@@ -41,7 +44,6 @@ void main() {
       overrides: [
         databaseProvider.overrideWith((ref) => db),
         bootstrapNodesProvider.overrideWith(fakeBootstrapNodesProvider),
-        toxConstantsProvider.overrideWith((ref) => fakeToxcoreConstants),
         toxProvider.overrideWith((ref, args) {
           ref.onDispose(tox.kill);
           return tox;
@@ -50,9 +52,9 @@ void main() {
     );
     addTearDown(container.dispose);
 
-    final profileId = await db.addProfile(
+    profileId = await db.addProfile(
       ProfilesCompanion.insert(
-        active: const Value(true),
+        signedIn: const Value(true),
         settings: ProfileSettings(nickname: 'Me', statusMessage: ''),
         secretKey: SecretKey(Uint8List(32)),
         publicKey: PublicKey(Uint8List(32)),
@@ -63,14 +65,18 @@ void main() {
       ContactsCompanion.insert(
         profileId: profileId,
         name: Value('Friend'),
-        publicKey: tox.getFriendPublicKey(0),
+        publicKey: tox.friendGetPublicKey(0),
       ),
     );
 
-    runToxOwner(container, statuses.add);
+    container.listen(
+      toxSessionsProvider,
+      (_, sessions) => statuses.add(sessions[profileId]?.connection),
+      fireImmediately: true,
+    );
   });
 
-  test('runs Tox for the active profile and reports its status', () async {
+  test('runs Tox for the signed-in profile and reports its status', () async {
     await _until(() => statuses.contains(Tox_Connection.TOX_CONNECTION_NONE));
 
     tox.pushEvent(
@@ -116,11 +122,34 @@ void main() {
     expect((await db.getMessage(id)).delivered, isTrue);
   });
 
-  test('stops Tox when no profile is active', () async {
+  test('stops Tox when the profile signs out', () async {
     await _until(() => statuses.contains(Tox_Connection.TOX_CONNECTION_NONE));
 
-    await db.deactivateProfiles();
+    await db.signOut(profileId);
     await _until(() => statuses.last == null);
     await _until(() => !tox.isAlive);
+  });
+
+  // Riverpod drops a state equal to the last one unless told otherwise.
+  test('saves repeated identical messages', () async {
+    await _until(() => tox.friends.isNotEmpty);
+    final contact = (await db.select(db.contacts).get()).single;
+
+    for (var i = 0; i < 2; i++) {
+      tox.pushEvent(
+        ToxEventFriendMessage(
+          friendNumber: 0,
+          type: Tox_Message_Type.TOX_MESSAGE_TYPE_NORMAL,
+          message: utf8.encode('hi'),
+        ),
+      );
+    }
+    final messages = await db
+        .watchMessagesFor(contact.id)
+        .firstWhere((messages) => messages.length == 2);
+    expect(
+      [for (final m in messages) (m.content as TextContent).text],
+      ['hi', 'hi'],
+    );
   });
 }
