@@ -7,7 +7,6 @@ import 'package:btox/models/messaging.dart';
 import 'package:btox/models/persistence.dart';
 import 'package:btox/providers/contacts.dart';
 import 'package:btox/providers/database.dart';
-import 'package:btox/providers/keyboard_height.dart';
 import 'package:btox/providers/messages.dart';
 import 'package:btox/providers/profiles.dart';
 import 'package:btox/widgets/chat_item.dart';
@@ -94,6 +93,8 @@ final class ChatPage extends HookConsumerWidget {
                   Expanded(
                     child: ListView.builder(
                       reverse: true,
+                      // The input below keeps clear of the system UI.
+                      padding: EdgeInsets.zero,
                       itemCount: messages.length,
                       itemBuilder: (context, index) {
                         final reversedIndex = messages.length - index - 1;
@@ -106,50 +107,42 @@ final class ChatPage extends HookConsumerWidget {
                       },
                     ),
                   ),
-                  Padding(
-                    padding: EdgeInsets.only(
-                      left: 16,
-                      top: 4,
-                      right: 8,
-                      bottom: ref
-                          .watch(keyboardHeightProvider)
-                          .when(
-                            data: (height) => height == 0 ? 24 : 4,
-                            error: (_, _) => 12,
-                            loading: () => 12,
-                          ),
-                    ),
-                    child: MessageInput(
-                      hintText: AppLocalizations.of(context)!.messageInput,
-                      replyingTo: replyingTo.value?.content,
-                      recentEmojis: recentEmojis,
-                      onSend: (content) {
-                        final database = ref
-                            .read(databaseProvider)
-                            .asData
-                            ?.value;
-                        if (database != null && profile != null) {
-                          database.addMessage(
-                            newMessage(
-                              contactId: contactId,
-                              parent: messages.lastOrNull,
-                              merged: null,
-                              author: profile.publicKey,
-                              timestamp: clock.now().toUtc(),
-                              content: content,
-                            ).copyWith(
-                              delivered: const Value(false),
-                              fileState: Value.absentIfNull(
-                                content is FileContent
-                                    ? FileState.active
-                                    : null,
+                  SafeArea(
+                    top: false,
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 4, 8, 4),
+                      child: MessageInput(
+                        hintText: AppLocalizations.of(context)!.messageInput,
+                        replyingTo: replyingTo.value?.content,
+                        recentEmojis: recentEmojis,
+                        onSend: (content) {
+                          final database = ref
+                              .read(databaseProvider)
+                              .asData
+                              ?.value;
+                          if (database != null && profile != null) {
+                            database.addMessage(
+                              newMessage(
+                                contactId: contactId,
+                                parent: messages.lastOrNull,
+                                merged: null,
+                                author: profile.publicKey,
+                                timestamp: clock.now().toUtc(),
+                                content: content,
+                              ).copyWith(
+                                delivered: const Value(false),
+                                fileState: Value.absentIfNull(
+                                  content is FileContent
+                                      ? FileState.active
+                                      : null,
+                                ),
                               ),
-                            ),
-                          );
-                        }
-                        replyingTo.value = null;
-                      },
-                      onTapCloseReply: () => replyingTo.value = null,
+                            );
+                          }
+                          replyingTo.value = null;
+                        },
+                        onTapCloseReply: () => replyingTo.value = null,
+                      ),
                     ),
                   ),
                 ],

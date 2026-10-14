@@ -869,14 +869,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "6.11.2"
-  keyboard_height_plugin:
-    dependency: "direct main"
-    description:
-      name: keyboard_height_plugin
-      sha256: "633df6e561d20b8d54fe1d4525124882e4c50c40974c42997cd647736e428380"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.2.0"
   latlong2:
     dependency: "direct main"
     description:
