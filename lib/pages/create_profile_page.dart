@@ -57,7 +57,7 @@ final class CreateProfilePage extends HookConsumerWidget {
           const Padding(padding: EdgeInsets.all(8)),
           StatusMessageField(controller: statusMessageController),
           const Padding(padding: EdgeInsets.all(8)),
-          ElevatedButton(
+          FilledButton(
             key: const Key('createProfileButton'),
             onPressed: creating.value
                 ? null

@@ -45,7 +45,7 @@ final class AddContactPage extends HookWidget {
                 alignment: Alignment.topRight,
                 child: Padding(
                   padding: const EdgeInsets.all(16),
-                  child: ElevatedButton(
+                  child: FilledButton(
                     onPressed: submit,
                     child: Text(AppLocalizations.of(context)!.add),
                   ),

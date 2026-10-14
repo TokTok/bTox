@@ -84,20 +84,16 @@ final class _ProfileForm extends HookConsumerWidget {
                 controller: statusMessageInputController,
                 onChanged: (value) => applyButtonPressed.value = false,
               ),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: applyButtonPressed.value
-                      ? Colors.green
-                      : Colors.blue,
-                  foregroundColor: Colors.white,
+              if (applyButtonPressed.value)
+                FilledButton.tonal(
+                  onPressed: onValidate,
+                  child: Text(AppLocalizations.of(context)!.applied),
+                )
+              else
+                FilledButton(
+                  onPressed: onValidate,
+                  child: Text(AppLocalizations.of(context)!.applyChanges),
                 ),
-                onPressed: onValidate,
-                child: Text(
-                  applyButtonPressed.value
-                      ? AppLocalizations.of(context)!.applied
-                      : AppLocalizations.of(context)!.applyChanges,
-                ),
-              ),
               const Padding(padding: EdgeInsets.all(8)),
               ToxIdView(
                 address: ToxAddress.of(profile.publicKey, profile.nospam),
