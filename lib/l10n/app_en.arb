@@ -372,5 +372,21 @@
         "example": "Alice"
       }
     }
+  },
+  "attachCamera": "Camera",
+  "@attachCamera": {
+    "description": "Button to take a photo to send"
+  },
+  "attachGallery": "Gallery",
+  "@attachGallery": {
+    "description": "Button to choose images to send"
+  },
+  "attachFile": "File",
+  "@attachFile": {
+    "description": "Button to choose files to send"
+  },
+  "attachLocation": "Location",
+  "@attachLocation": {
+    "description": "Button to send the current location"
   }
 }

@@ -35,7 +35,6 @@ final class MainMenu extends ConsumerWidget {
     return NavigationDrawer(
       children: [
         DrawerHeader(
-          decoration: const BoxDecoration(color: Colors.blue),
           child: ListTile(
             title: Text(
               profile.settings.nickname,

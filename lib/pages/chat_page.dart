@@ -69,6 +69,8 @@ final class ChatPage extends HookConsumerWidget {
       data: (contact) {
         final profile = ref.watch(profileProvider(contact.profileId)).value;
         return Scaffold(
+          // The input makes room for the keyboard, or a panel in its place.
+          resizeToAvoidBottomInset: false,
           appBar: AppBar(
             title: Row(
               children: [
@@ -107,43 +109,32 @@ final class ChatPage extends HookConsumerWidget {
                       },
                     ),
                   ),
-                  SafeArea(
-                    top: false,
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 4, 8, 4),
-                      child: MessageInput(
-                        hintText: AppLocalizations.of(context)!.messageInput,
-                        replyingTo: replyingTo.value?.content,
-                        recentEmojis: recentEmojis,
-                        onSend: (content) {
-                          final database = ref
-                              .read(databaseProvider)
-                              .asData
-                              ?.value;
-                          if (database != null && profile != null) {
-                            database.addMessage(
-                              newMessage(
-                                contactId: contactId,
-                                parent: messages.lastOrNull,
-                                merged: null,
-                                author: profile.publicKey,
-                                timestamp: clock.now().toUtc(),
-                                content: content,
-                              ).copyWith(
-                                delivered: const Value(false),
-                                fileState: Value.absentIfNull(
-                                  content is FileContent
-                                      ? FileState.active
-                                      : null,
-                                ),
-                              ),
-                            );
-                          }
-                          replyingTo.value = null;
-                        },
-                        onTapCloseReply: () => replyingTo.value = null,
-                      ),
-                    ),
+                  MessageInput(
+                    hintText: AppLocalizations.of(context)!.messageInput,
+                    replyingTo: replyingTo.value?.content,
+                    recentEmojis: recentEmojis,
+                    onSend: (content) {
+                      final database = ref.read(databaseProvider).asData?.value;
+                      if (database != null && profile != null) {
+                        database.addMessage(
+                          newMessage(
+                            contactId: contactId,
+                            parent: messages.lastOrNull,
+                            merged: null,
+                            author: profile.publicKey,
+                            timestamp: clock.now().toUtc(),
+                            content: content,
+                          ).copyWith(
+                            delivered: const Value(false),
+                            fileState: Value.absentIfNull(
+                              content is FileContent ? FileState.active : null,
+                            ),
+                          ),
+                        );
+                      }
+                      replyingTo.value = null;
+                    },
+                    onTapCloseReply: () => replyingTo.value = null,
                   ),
                 ],
               );

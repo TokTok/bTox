@@ -18,7 +18,17 @@ const _kBubbleDragActivation = 0.8;
 const _kMaxBubbleDrag = 48.0;
 
 Color _bubbleColor(bool isSender, ThemeData theme) {
-  return isSender ? Colors.blue[900]! : theme.splashColor;
+  return isSender
+      ? theme.colorScheme.primaryContainer
+      : theme.colorScheme.surfaceContainerHighest;
+}
+
+TextStyle _textStyle(bool isSender, ThemeData theme) {
+  return theme.textTheme.bodyLarge!.copyWith(
+    color: isSender
+        ? theme.colorScheme.onPrimaryContainer
+        : theme.colorScheme.onSurface,
+  );
 }
 
 final class ChatItem extends HookWidget {
@@ -102,7 +112,7 @@ final class ChatItem extends HookWidget {
                         message: message,
                         isSender: isSender,
                         color: _bubbleColor(isSender, Theme.of(context)),
-                        textStyle: Theme.of(context).textTheme.bodyLarge!,
+                        textStyle: _textStyle(isSender, Theme.of(context)),
                       )
                     : ChatContent(
                         content: message.content,
@@ -116,7 +126,7 @@ final class ChatItem extends HookWidget {
                           true => ChatContentState.delivered,
                           null => ChatContentState.none,
                         },
-                        textStyle: Theme.of(context).textTheme.bodyLarge!,
+                        textStyle: _textStyle(isSender, Theme.of(context)),
                         onTap: () => showTime.value = !showTime.value,
                       ),
               ),

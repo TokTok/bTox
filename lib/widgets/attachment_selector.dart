@@ -1,4 +1,5 @@
 import 'package:btox/attachments/attachments.dart';
+import 'package:btox/l10n/generated/app_localizations.dart';
 import 'package:btox/logger.dart';
 import 'package:btox/models/content.dart';
 import 'package:btox/platform/any_platform.dart';
@@ -19,6 +20,7 @@ final class AttachmentSelector extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     Future<void> save(Iterable<XFile> files) async {
       final directory = await ref.read(attachmentsDirectoryProvider.future);
       onSelected(
@@ -45,7 +47,7 @@ final class AttachmentSelector extends ConsumerWidget {
               if (filesSupported && AnyPlatform.instance.isMobile)
                 AttachmentButton(
                   icon: Icons.camera_alt,
-                  text: 'Camera',
+                  text: l10n.attachCamera,
                   onPressed: () async {
                     final image = await ImagePicker().pickImage(
                       source: ImageSource.camera,
@@ -58,18 +60,18 @@ final class AttachmentSelector extends ConsumerWidget {
               if (filesSupported)
                 AttachmentButton(
                   icon: Icons.photo,
-                  text: 'Gallery',
+                  text: l10n.attachGallery,
                   onPressed: () => pick(FileType.image),
                 ),
               if (filesSupported)
                 AttachmentButton(
                   icon: Icons.file_copy,
-                  text: 'File',
+                  text: l10n.attachFile,
                   onPressed: pick,
                 ),
               AttachmentButton(
                 icon: Icons.location_on,
-                text: 'Location',
+                text: l10n.attachLocation,
                 onPressed: () async {
                   try {
                     final location = await geolocation();

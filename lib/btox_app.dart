@@ -19,7 +19,12 @@ final class BtoxApp extends ConsumerWidget {
       title: 'bTox',
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
-      theme: ThemeData(brightness: Brightness.dark, primarySwatch: Colors.blue),
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.blue,
+          brightness: Brightness.dark,
+        ),
+      ),
       home: _appContent(ref),
     );
   }
