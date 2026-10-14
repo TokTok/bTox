@@ -12,7 +12,7 @@ class MockPathProvider extends Fake
   MockPathProvider(this._path);
 
   @override
-  Future<String?> getApplicationDocumentsPath() async {
+  Future<String?> getApplicationSupportPath() async {
     return _path;
   }
 }

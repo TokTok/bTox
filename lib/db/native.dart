@@ -35,7 +35,8 @@ Future<Database> constructHostedDb(String databaseKey) async =>
 
 Future<QueryExecutor> _openFile(String databaseKey) async {
   WidgetsFlutterBinding.ensureInitialized();
-  final dbFolder = await getApplicationDocumentsDirectory();
+  final dbFolder = await getApplicationSupportDirectory();
+  await dbFolder.create(recursive: true);
   final file = File(path.join(dbFolder.path, 'bTox.sqlite'));
   _logger.d('Database file: ${file.path}');
 
@@ -59,6 +60,25 @@ Future<QueryExecutor> _openFile(String databaseKey) async {
       database.config.doubleQuotedStringLiterals = false;
     },
   );
+}
+
+Future<File> _keyFile() async => File(
+  path.join((await getApplicationSupportDirectory()).path, 'databaseKey'),
+);
+
+Future<String?> readDatabaseKeyFile() async {
+  final file = await _keyFile();
+  return file.existsSync() ? file.readAsString() : null;
+}
+
+Future<void> writeDatabaseKeyFile(String key) async {
+  final file = await _keyFile();
+  await file.create(recursive: true, exclusive: true);
+  final chmod = await Process.run('chmod', ['600', file.path]);
+  if (chmod.exitCode != 0) {
+    throw FileSystemException('chmod failed: ${chmod.stderr}', file.path);
+  }
+  await file.writeAsString(key);
 }
 
 DriftIsolate? _server;

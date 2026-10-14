@@ -21,6 +21,7 @@ Future<Uint8List> exportBackup(Database db, Set<Id<Profiles>> profiles) {
     return utf8.encode(
       jsonEncode({
         'format': _format,
+        'schema': db.schemaVersion,
         'tables': {
           'app_settings': await rows('app_settings'),
           'cached_bootstrap_nodes': await rows('cached_bootstrap_nodes'),

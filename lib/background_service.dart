@@ -8,6 +8,7 @@ import 'package:btox/models/persistence.dart';
 import 'package:btox/platform/any_platform.dart';
 import 'package:btox/providers/database.dart';
 import 'package:btox/providers/profiles.dart';
+import 'package:btox/providers/provider_error_logger.dart';
 import 'package:btox/services/connection_status_channel.dart';
 import 'package:btox/services/message_notifier.dart';
 import 'package:btox/services/stay_online_policy.dart';
@@ -138,6 +139,7 @@ final class _BackgroundService {
       },
     );
     final container = _container = ProviderContainer(
+      observers: const [ProviderErrorLogger()],
       overrides: [
         databaseProvider.overrideWith(hostedDatabase),
         messageNotifierProvider.overrideWithValue(notifier),

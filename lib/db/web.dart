@@ -17,3 +17,9 @@ Future<void> unhostDatabase() async {}
 
 Future<Database> connectToHostedDatabase() async =>
     throw UnimplementedError('Database hosting not supported on this platform');
+
+Future<String?> readDatabaseKeyFile() async => null;
+
+Future<void> writeDatabaseKeyFile(String key) async => throw UnimplementedError(
+  'Database key files not supported on this platform',
+);
