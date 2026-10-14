@@ -57,6 +57,19 @@ Future<Tox> tox(Ref ref, SecretKey secretKey, ToxAddressNospam nospam) async {
 }
 
 @riverpod
+Future<(SecretKey, PublicKey)> newKeyPair(Ref ref) async {
+  // Offline, since only the key is needed.
+  const options = ToxOptions(udpEnabled: false, localDiscoveryEnabled: false);
+  // ignore: argument_type_not_assignable
+  final tox = ffi.Toxcore(await ref.read(ffi.toxFfiProvider.future), options);
+  try {
+    return (tox.selfGetSecretKey(), tox.selfGetPublicKey());
+  } finally {
+    tox.kill();
+  }
+}
+
+@riverpod
 class ToxEvents extends _$ToxEvents {
   @override
   Stream<Event> build(SecretKey secretKey, ToxAddressNospam nospam) async* {

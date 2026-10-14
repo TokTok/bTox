@@ -1,22 +1,27 @@
+// The analyzer resolves ToxLibrary's conditional export to the stub.
+// ignore_for_file: argument_type_not_assignable
+
+import 'dart:ffi';
 import 'dart:typed_data';
 
 import 'package:btox/btox_app.dart';
 import 'package:btox/db/database.dart';
+import 'package:btox/ffi/generated/toxcore.ffi.dart' as gen;
+import 'package:btox/ffi/tox_library.ffi.dart' as tox_lib;
 import 'package:btox/models/crypto.dart';
 import 'package:btox/models/profile_settings.dart';
 import 'package:btox/pages/contact_list_page.dart';
 import 'package:btox/pages/create_profile_page.dart';
 import 'package:btox/providers/bootstrap_nodes.dart';
 import 'package:btox/providers/database.dart';
-import 'package:btox/providers/sodium.dart';
 import 'package:btox/providers/tox.dart';
 import 'package:drift/native.dart';
+import 'package:ffi/ffi.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'mocks/fake_bootstrap_nodes.dart';
-import 'mocks/fake_sodium.dart';
 import 'mocks/fake_toxcore.dart';
 
 void main() {
@@ -42,7 +47,12 @@ void main() {
         overrides: [
           bootstrapNodesProvider.overrideWith(fakeBootstrapNodesProvider),
           databaseProvider.overrideWith((ref) => db),
-          sodiumProvider.overrideWith((ref) => FakeSodium()),
+          tox_lib.toxFfiProvider.overrideWith(
+            (ref) => tox_lib.ToxLibrary(
+              malloc,
+              gen.ToxFfi(DynamicLibrary.open('linux/vendored/libtoxcore.so')),
+            ),
+          ),
           toxProvider.overrideWith((ref, args) => tox),
         ],
         child: const BtoxApp(),
@@ -63,6 +73,7 @@ void main() {
       ('Old', false),
       ('Yanciman', true),
     ]);
+    expect(profiles.last.publicKey, isNot(profiles.first.publicKey));
 
     tox.kill();
     await tester.pumpWidget(const SizedBox());

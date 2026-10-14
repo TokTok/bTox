@@ -19,7 +19,6 @@ import 'package:btox/pages/settings_page.dart';
 import 'package:btox/providers/bootstrap_nodes.dart';
 import 'package:btox/providers/connection_status.dart';
 import 'package:btox/providers/database.dart';
-import 'package:btox/providers/sodium.dart';
 import 'package:btox/providers/tox.dart';
 import 'package:btox/services/profile_import.dart';
 import 'package:drift/native.dart';
@@ -30,7 +29,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../mocks/fake_bootstrap_nodes.dart';
-import '../mocks/fake_sodium.dart';
 import '../mocks/fake_toxcore.dart';
 
 final _lib = tox_lib.ToxLibrary(
@@ -176,7 +174,6 @@ void main() {
         overrides: [
           bootstrapNodesProvider.overrideWith(fakeBootstrapNodesProvider),
           databaseProvider.overrideWith((ref) => db),
-          sodiumProvider.overrideWith((ref) => FakeSodium()),
           tox_lib.toxFfiProvider.overrideWith((ref) => _lib),
           toxProvider.overrideWith((ref, args) => tox),
         ],
@@ -254,7 +251,6 @@ void main() {
         overrides: [
           bootstrapNodesProvider.overrideWith(fakeBootstrapNodesProvider),
           databaseProvider.overrideWith((ref) => target),
-          sodiumProvider.overrideWith((ref) => FakeSodium()),
           tox_lib.toxFfiProvider.overrideWith((ref) => _lib),
           toxProvider.overrideWith((ref, args) => tox),
         ],

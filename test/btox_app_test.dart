@@ -4,7 +4,6 @@ import 'package:btox/models/crypto.dart';
 import 'package:btox/models/profile_settings.dart';
 import 'package:btox/providers/bootstrap_nodes.dart';
 import 'package:btox/providers/database.dart';
-import 'package:btox/providers/sodium.dart';
 import 'package:btox/providers/tox.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -12,7 +11,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'mocks/fake_bootstrap_nodes.dart';
-import 'mocks/fake_sodium.dart';
 import 'mocks/fake_toxcore.dart';
 
 // The database can't be constructed/torn down in the Flutter test framework
@@ -53,7 +51,6 @@ void main() {
         overrides: [
           bootstrapNodesProvider.overrideWith(fakeBootstrapNodesProvider),
           databaseProvider.overrideWith((ref) => db),
-          sodiumProvider.overrideWith((ref) => FakeSodium()),
           toxProvider(mySecretKey, myToxId.nospam).overrideWith((ref) => tox),
         ],
         child: const BtoxApp(),

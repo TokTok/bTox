@@ -9,7 +9,7 @@ import 'package:btox/widgets/import_profile.dart';
 import 'package:btox/widgets/nickname_field.dart';
 import 'package:btox/widgets/status_message_field.dart';
 import 'package:btox/providers/database.dart';
-import 'package:btox/providers/sodium.dart';
+import 'package:btox/providers/tox.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -21,7 +21,6 @@ final class CreateProfilePage extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final sodium = ref.watch(sodiumProvider).asData?.value;
     final database = ref.watch(databaseProvider).asData?.value;
     final nicknameController = useTextEditingController(text: 'Yanciman');
     final statusMessageController = useTextEditingController(
@@ -29,7 +28,7 @@ final class CreateProfilePage extends HookConsumerWidget {
     );
     final creating = useState(false);
 
-    if (sodium == null || database == null) {
+    if (database == null) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
@@ -69,10 +68,11 @@ final class CreateProfilePage extends HookConsumerWidget {
                     }
                     creating.value = true;
                     _logger.d('Creating new profile');
-                    final keyPair = sodium.crypto.box.keyPair();
-
                     final Id<Profiles> id;
                     try {
+                      final (secretKey, publicKey) = await ref.read(
+                        newKeyPairProvider.future,
+                      );
                       id = await database.transaction(() async {
                         final id = await database.addProfile(
                           ProfilesCompanion.insert(
@@ -80,8 +80,8 @@ final class CreateProfilePage extends HookConsumerWidget {
                               nickname: nicknameController.text,
                               statusMessage: statusMessageController.text,
                             ),
-                            secretKey: SecretKey.fromSodium(keyPair.secretKey),
-                            publicKey: PublicKey(keyPair.publicKey),
+                            secretKey: secretKey,
+                            publicKey: publicKey,
                             nospam: ToxAddressNospam(0),
                           ),
                         );

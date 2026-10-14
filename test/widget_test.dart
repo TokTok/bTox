@@ -3,7 +3,6 @@ import 'package:btox/db/database.dart';
 import 'package:btox/models/crypto.dart';
 import 'package:btox/providers/bootstrap_nodes.dart';
 import 'package:btox/providers/database.dart';
-import 'package:btox/providers/sodium.dart';
 import 'package:btox/providers/tox.dart';
 import 'package:clock/clock.dart';
 import 'package:drift/native.dart';
@@ -13,13 +12,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'mocks/fake_bootstrap_nodes.dart';
-import 'mocks/fake_sodium.dart';
 import 'mocks/fake_toxcore.dart';
 
 void main() {
-  final mySecretKey = SecretKey.fromSodium(
-    FakeSodium().crypto.box.keyPair().secretKey,
-  );
+  final mySecretKey = SecretKey(Uint8List.fromList(List.filled(32, 0x7a)));
+  final myPublicKey = PublicKey(Uint8List.fromList(List.filled(32, 0x61)));
   final myToxId = ToxAddress.fromString(
     String.fromCharCodes(Iterable.generate(76, (_) => '0'.codeUnits.first)),
   );
@@ -48,7 +45,9 @@ void main() {
             overrides: [
               bootstrapNodesProvider.overrideWith(fakeBootstrapNodesProvider),
               databaseProvider.overrideWith((ref) => db),
-              sodiumProvider.overrideWith((ref) => FakeSodium()),
+              newKeyPairProvider.overrideWith(
+                (ref) => (mySecretKey, myPublicKey),
+              ),
               toxProvider(
                 mySecretKey,
                 myToxId.nospam,

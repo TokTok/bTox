@@ -4,7 +4,6 @@ import 'package:btox/packets/packet.dart';
 import 'package:convert/convert.dart';
 import 'package:crypto/crypto.dart';
 import 'package:drift/drift.dart';
-import 'package:sodium/sodium.dart';
 
 final class NospamConverter extends TypeConverter<ToxAddressNospam, int>
     with JsonTypeConverter2<ToxAddressNospam, int, int> {
@@ -59,9 +58,6 @@ final class SecretKey extends CryptoBytes {
 
   factory SecretKey.fromJson(String value) =>
       SecretKey(Uint8List.fromList(hex.decode(value)));
-
-  factory SecretKey.fromSodium(SecureKey value) =>
-      SecretKey(Uint8List.fromList(value.extractBytes()));
 
   @override
   int get length => SecretKey.kLength;
