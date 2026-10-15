@@ -1,40 +1,49 @@
-import 'package:geolocator/geolocator.dart';
+import 'package:geolocator_platform_interface/geolocator_platform_interface.dart';
 
-/// Determine the current position of the device.
-///
-/// When the location services are not enabled or permissions
-/// are denied the `Future` will return an error.
-Future<Position> geolocation() async {
-  // Test if location services are enabled.
-  final serviceEnabled = await Geolocator.isLocationServiceEnabled();
-  if (!serviceEnabled) {
-    // Location services are not enabled don't continue
-    // accessing the position and request users of the
-    // App to enable the location services.
-    return Future.error('Location services are disabled.');
-  }
+/// Why the device's position isn't available.
+enum LocationProblem {
+  /// Location is turned off on the device.
+  off,
 
-  var permission = await Geolocator.checkPermission();
-  if (permission == LocationPermission.denied) {
-    permission = await Geolocator.requestPermission();
-    if (permission == LocationPermission.denied) {
-      // Permissions are denied, next time you could try
-      // requesting permissions again (this is also where
-      // Android's shouldShowRequestPermissionRationale
-      // returned true. According to Android guidelines
-      // your App should show an explanatory UI now.
-      return Future.error('Location permissions are denied');
-    }
-  }
+  /// bTox may not use location, and asking again won't help.
+  denied,
 
-  if (permission == LocationPermission.deniedForever) {
-    // Permissions are denied forever, handle appropriately.
-    return Future.error(
-      'Location permissions are permanently denied, we cannot request permissions.',
-    );
-  }
-
-  // When we reach here, permissions are granted and we can
-  // continue accessing the position of the device.
-  return await Geolocator.getCurrentPosition();
+  /// The user said no this time.
+  refused,
 }
+
+final class LocationUnavailable implements Exception {
+  final LocationProblem problem;
+
+  const LocationUnavailable(this.problem);
+
+  @override
+  String toString() => 'Location unavailable: ${problem.name}';
+}
+
+/// The device's current position, asking for permission if needed.
+Future<Position> geolocation() async {
+  final location = GeolocatorPlatform.instance;
+  if (!await location.isLocationServiceEnabled()) {
+    throw const LocationUnavailable(LocationProblem.off);
+  }
+  var permission = await location.checkPermission();
+  if (permission == LocationPermission.denied) {
+    permission = await location.requestPermission();
+  }
+  switch (permission) {
+    case LocationPermission.denied:
+      throw const LocationUnavailable(LocationProblem.refused);
+    case LocationPermission.deniedForever:
+      throw const LocationUnavailable(LocationProblem.denied);
+    case _:
+      return location.getCurrentPosition();
+  }
+}
+
+/// Opens where the user can fix [problem].
+Future<void> fixLocation(LocationProblem problem) => switch (problem) {
+  LocationProblem.off => GeolocatorPlatform.instance.openLocationSettings(),
+  LocationProblem.denied => GeolocatorPlatform.instance.openAppSettings(),
+  LocationProblem.refused => Future.value(),
+};

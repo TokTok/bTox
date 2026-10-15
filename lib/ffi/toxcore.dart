@@ -3,7 +3,9 @@ import 'dart:typed_data';
 
 import 'package:btox/api/toxcore/tox.dart' as api;
 import 'package:btox/api/toxcore/tox_events.dart';
+import 'package:btox/api/toxcore/tox_av.dart' as api;
 import 'package:btox/api/toxcore/tox_options.dart' as api;
+import 'package:btox/ffi/tox_av.dart';
 import 'package:btox/ffi/tox_library.dart';
 import 'package:btox/logger.dart';
 import 'package:btox/packets/messagepack.dart';
@@ -74,6 +76,8 @@ final class Toxcore extends api.Tox with api.ToxFfiApi {
     );
   }
 
+  ToxAvFfi? _av;
+
   Toxcore._(this.lib, this._pointer);
 
   @override
@@ -116,8 +120,13 @@ final class Toxcore extends api.Tox with api.ToxFfiApi {
   }
 
   @override
+  api.ToxAv startAv() => _av ??= ToxAvFfi(lib, pointer);
+
+  @override
   void kill() {
     _logger.d('Killing Tox instance: ${selfGetAddress()}');
+    _av?.kill();
+    _av = null;
     final ptr = pointer;
     _pointer = nullptr;
     lib.ffi.tox_kill(ptr);

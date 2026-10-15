@@ -1,3 +1,4 @@
+import 'package:btox/models/chat_merge.dart';
 import 'package:btox/models/chat_view.dart';
 import 'package:btox/models/crypto.dart';
 import 'package:btox/sync/account.dart';
@@ -34,16 +35,19 @@ abstract class ChatDetails with _$ChatDetails {
     // Who else is in it, while Tox says. Null for friend chats, and where the
     // account's Tox isn't running.
     List<ChatMember>? members,
+    // Who its relay bot has relayed, where it has one.
+    RelayedNames? relayed,
   }) = _ChatDetails;
 
   /// From what the [account] keeps and what its Tox says now, in [live], if
-  /// it's running.
+  /// it's running, and who its relay bot has [relayed].
   factory ChatDetails.of(
     ChatSummary summary,
     PublicKey selfKey,
     AccountState account,
-    Facts? live,
-  ) {
+    Facts? live, {
+    RelayedNames? relayed,
+  }) {
     T? fact<T>(Facts? facts, Subject subject, T? Function(FactValue) pick) =>
         facts?.find(subject, pick);
     String? topicOf(FactValue v) => v is TopicValue ? v.topic : null;
@@ -99,6 +103,7 @@ abstract class ChatDetails with _$ChatDetails {
                   ),
             ]..sort(_byRoleThenName))
           : null,
+      relayed: relayed,
     );
   }
 }

@@ -245,6 +245,8 @@ final class ChatLog {
             ),
           ),
         );
+      case final CallEnded end:
+        update(end.call, (e) => endedAs(e, end));
       case FileAnswered(:final file, :final accepted):
         update(
           file,
@@ -261,6 +263,17 @@ final class ChatLog {
     }
   }
 }
+
+ChatEntry endedAs(ChatEntry entry, CallEnded end) => switch (entry.content) {
+  final CallContent content => entry.copyWith(
+    content: content.copyWith(
+      ended: true,
+      duration: end.duration,
+      declined: end.declined,
+    ),
+  ),
+  _ => entry,
+};
 
 DateTime _timeOf(SyncEvent event) =>
     DateTime.fromMillisecondsSinceEpoch(event.time, isUtc: true);
@@ -293,6 +306,13 @@ ChatEntry? entryOf(EventId id, SyncEvent event, MessageFormats formats) {
       mine: false,
       notice: true,
       content: TextContent(text: text),
+      timestamp: timestamp,
+    ),
+    Call(:final incoming, :final video) => ChatEntry(
+      event: id,
+      mine: !incoming,
+      notice: true,
+      content: CallContent(incoming: incoming, video: video),
       timestamp: timestamp,
     ),
     FileStarted(:final name, :final size, :final incoming) => ChatEntry(

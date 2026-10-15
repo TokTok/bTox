@@ -5,6 +5,8 @@ import 'package:btox/attachments/attachments.dart';
 import 'package:btox/l10n/generated/app_localizations.dart';
 import 'package:btox/logger.dart';
 import 'package:btox/models/content.dart';
+import 'package:btox/models/id.dart';
+import 'package:btox/models/persistence.dart' show Profiles;
 import 'package:btox/platform/any_platform.dart';
 import 'package:btox/providers/drafts.dart';
 import 'package:btox/widgets/attachment_selector.dart';
@@ -32,21 +34,25 @@ const _keyboard = MethodChannel('btox/keyboard');
 enum _EditMode { text, attachment, emoji }
 
 final class MessageInput extends HookWidget {
+  final Id<Profiles> profile;
   final String hintText;
   final ChatDraft draft;
   final bool recentEmojis;
   // Tox only sends files to friends.
   final bool files;
+  final bool picturesAsQoi;
 
   /// Whether [Content] was sent. What wasn't comes back to the draft.
   final Future<bool> Function(Content) onSend;
 
   const MessageInput({
     super.key,
+    required this.profile,
     required this.hintText,
     required this.draft,
     required this.recentEmojis,
     this.files = true,
+    this.picturesAsQoi = false,
     required this.onSend,
   });
 
@@ -216,6 +222,7 @@ final class MessageInput extends HookWidget {
       ),
       _EditMode.attachment => AttachmentSelector(
         files: files,
+        picturesAsQoi: picturesAsQoi,
         onSelected: (attachments) {
           drafts.value = [...drafts.value, ...attachments];
           editMode.value = _EditMode.text;
@@ -295,7 +302,11 @@ final class MessageInput extends HookWidget {
                             padding: const EdgeInsets.symmetric(horizontal: 4),
                             children: [
                               for (final draft in drafts.value)
-                                _Draft(draft, onRemove: () => remove(draft)),
+                                _Draft(
+                                  draft,
+                                  profile: profile,
+                                  onRemove: () => remove(draft),
+                                ),
                             ],
                           ),
                         ),
@@ -415,9 +426,10 @@ double? _useKeyboardHeight(double inset) {
 /// An attachment waiting to be sent.
 final class _Draft extends StatelessWidget {
   final Content content;
+  final Id<Profiles> profile;
   final void Function() onRemove;
 
-  const _Draft(this.content, {required this.onRemove});
+  const _Draft(this.content, {required this.profile, required this.onRemove});
 
   @override
   Widget build(BuildContext context) {
@@ -445,6 +457,7 @@ final class _Draft extends StatelessWidget {
             ) ??
             iconLabel(Icons.insert_drive_file, name),
       LocationContent(:final latitude, :final longitude) => LocationMap(
+        profile: profile,
         latitude: latitude,
         longitude: longitude,
       ),

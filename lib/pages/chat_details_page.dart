@@ -1,16 +1,27 @@
 import 'package:btox/l10n/generated/app_localizations.dart';
 import 'package:btox/models/chat_details.dart';
+import 'package:btox/models/chat_merge.dart';
 import 'package:btox/models/chat_view.dart';
 import 'package:btox/models/crypto.dart';
 import 'package:btox/providers/chats.dart';
+import 'package:btox/providers/database.dart';
+import 'package:btox/sync/setting.dart';
 import 'package:btox/sync/fact.dart';
 import 'package:btox/widgets/chat_avatar.dart';
 import 'package:btox/widgets/circle_identicon.dart';
 import 'package:btox/widgets/copy_text.dart';
+import 'package:btox/widgets/dates.dart';
 import 'package:btox/widgets/load_failed.dart';
 import 'package:btox/widgets/mute_chat.dart';
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+
+/// How long ago a relayed name was seen to show without asking.
+const _recentlySeen = Duration(days: 30);
+// Where a ListTile's title starts, after its leading widget.
+const _listTileTitleInset = 72.0;
 
 /// Who a chat is with: a friend, or the people in a group or conference.
 final class ChatDetailsPage extends ConsumerWidget {
@@ -44,6 +55,7 @@ final class _Details extends StatelessWidget {
     final summary = details.summary;
     final about = details.topic ?? details.statusMessage;
     final members = details.members;
+    final relayed = details.relayed;
     return ListView(
       padding: const EdgeInsets.only(bottom: 16),
       children: [
@@ -86,6 +98,9 @@ final class _Details extends StatelessWidget {
           ),
         const SizedBox(height: 16),
         if (!summary.closed) _Mute(chat: summary),
+        // Tox only sends files to friends.
+        if (summary.key is PublicKey && !summary.closed)
+          _PicturesAsQoi(chat: summary.ref),
         if (summary.key case final PublicKey pk) _PublicKey(pk: pk),
         if (summary.key is! PublicKey) ...[
           const Divider(),
@@ -115,7 +130,7 @@ final class _Details extends StatelessWidget {
                 _roleText(l10n, details.selfRole),
               ]),
             ),
-            for (final member in members)
+            for (final member in members) ...[
               ListTile(
                 leading: CircleIdenticon(bytes: member.pk),
                 title: Text(member.name ?? l10n.defaultContactName),
@@ -124,8 +139,75 @@ final class _Details extends StatelessWidget {
                   _statusText(l10n, member.status),
                 ]),
               ),
+              if (relayed != null && member.pk == relayed.bot)
+                _SeenNames(relayed: relayed, underBot: true),
+            ],
           ],
+          // From history, where the bot isn't here now to show them under.
+          if (relayed != null &&
+              !(members?.any((m) => m.pk == relayed.bot) ?? false))
+            _SeenNames(relayed: relayed, underBot: false),
         ],
+      ],
+    );
+  }
+}
+
+/// The names a relay bot has relayed, from the chat's history: who has
+/// spoken through it, not who is there now.
+final class _SeenNames extends HookWidget {
+  final RelayedNames relayed;
+  // Shown under the bot's name, past its avatar.
+  final bool underBot;
+
+  const _SeenNames({required this.relayed, required this.underBot});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final all = useState(false);
+    final since = clock.now().subtract(_recentlySeen);
+    final shown = all.value
+        ? relayed.seen
+        : relayed.seen.where((s) => s.last.isAfter(since)).toList();
+    final padding = EdgeInsets.only(
+      left: underBot ? _listTileTitleInset : 16,
+      right: 16,
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: padding,
+          child: Text(
+            l10n.seenThrough(relayed.name),
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+        for (final seen in shown)
+          ListTile(
+            dense: true,
+            visualDensity: VisualDensity.compact,
+            contentPadding: padding,
+            title: Text(seen.name),
+            trailing: Text(
+              recentText(context, seen.last),
+              style: theme.textTheme.bodySmall,
+            ),
+          ),
+        if (shown.length < relayed.seen.length)
+          ListTile(
+            dense: true,
+            contentPadding: padding,
+            title: Text(
+              l10n.showMoreSeen(relayed.seen.length - shown.length),
+              style: TextStyle(color: theme.colorScheme.primary),
+            ),
+            onTap: () => all.value = true,
+          ),
       ],
     );
   }
@@ -152,6 +234,34 @@ final class _Mute extends ConsumerWidget {
         onTap: () => unmuteChat(ref, chat.ref),
       ),
     };
+  }
+}
+
+final class _PicturesAsQoi extends ConsumerWidget {
+  final ChatRef chat;
+
+  const _PicturesAsQoi({required this.chat});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    return SwitchListTile(
+      secondary: const Icon(Icons.image_outlined),
+      title: Text(l10n.sendPicturesAsQoi),
+      subtitle: Text(l10n.sendPicturesAsQoiHint),
+      value: ref.watch(pictureFormatProvider(chat)) == PictureEncoding.qoi,
+      onChanged: (qoi) async {
+        final db = await ref.read(databaseProvider.future);
+        final scope = Scope.conversation(chat.graph);
+        await (qoi
+            ? db.setSetting(
+                chat.profile,
+                scope,
+                const Kept(Setting.pictureFormat(PictureEncoding.qoi)),
+              )
+            : db.clearSetting(chat.profile, scope, Setting.pictureFormatKind));
+      },
+    );
   }
 }
 

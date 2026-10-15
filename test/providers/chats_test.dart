@@ -4,10 +4,12 @@ import 'dart:typed_data';
 import 'package:btox/db/database.dart';
 import 'package:btox/ffi/toxcore.dart' show Tox_Message_Type;
 import 'package:btox/models/chat_view.dart';
+import 'package:btox/models/content.dart';
 import 'package:btox/models/crypto.dart';
 import 'package:btox/models/id.dart';
 import 'package:btox/models/persistence.dart';
 import 'package:btox/models/profile_settings.dart';
+import 'package:btox/providers/calls.dart';
 import 'package:btox/providers/chats.dart';
 import 'package:btox/providers/database.dart';
 import 'package:btox/sync/event.dart';
@@ -89,6 +91,140 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 10));
     }
     expect(names(), expected);
+  });
+
+  test(
+    "the calls tab lists friends' calls as they ended, the latest first",
+    () async {
+      final db = Database(NativeDatabase.memory());
+      addTearDown(db.close);
+      final id = await db.addProfile(
+        ProfilesCompanion.insert(
+          settings: const ProfileSettings(nickname: 'Me', statusMessage: ''),
+          secretKey: SecretKey(Uint8List(32)),
+          publicKey: PublicKey(Uint8List(32)),
+          nospam: ToxAddressNospam(0),
+        ),
+      );
+      final home = await Home.load(db, await db.watchProfile(id).first);
+      final bob = PublicKey(Uint8List(32)..[0] = 1);
+      await home.record(home.account, WantFriend(pk: bob));
+      final chat = home.chatWith(bob);
+      final container = ProviderContainer(
+        overrides: [databaseProvider.overrideWith((ref) => db)],
+      );
+      addTearDown(container.dispose);
+      container.listen(callHistoryProvider(id), (_, _) {});
+      Future<List<(bool, bool)>> calls(int count) async {
+        for (var i = 0; i < 100; i++) {
+          final calls = container.read(callHistoryProvider(id));
+          if (calls.length == count) {
+            return [
+              for (final (chat: _, :entry) in calls)
+                (
+                  (entry.content as CallContent).incoming,
+                  (entry.content as CallContent).ended,
+                ),
+            ];
+          }
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+        }
+        fail('No $count calls');
+      }
+
+      final (first, _, _) = (await withClock(
+        Clock.fixed(DateTime.utc(2026, 1, 1)),
+        () => home.record(
+          chat,
+          const Call(sender: 'Bob', incoming: true, video: false),
+        ),
+      ))!;
+      await home.record(chat, CallEnded(call: first));
+      expect(await calls(1), [(true, true)]);
+      // Messages come and go without changing it.
+      await home.record(
+        chat,
+        Received(
+          sender: 'Bob',
+          message: utf8.encode('hi'),
+          kind: Tox_Message_Type.TOX_MESSAGE_TYPE_NORMAL,
+        ),
+      );
+      await withClock(
+        Clock.fixed(DateTime.utc(2026, 1, 2)),
+        () => home.record(
+          chat,
+          const Call(sender: 'Me', incoming: false, video: true),
+        ),
+      );
+      expect(await calls(2), [(false, false), (true, true)]);
+    },
+  );
+
+  test('merged chats show as one, counting each message once', () async {
+    final db = Database(NativeDatabase.memory());
+    addTearDown(db.close);
+    final id = await db.addProfile(
+      ProfilesCompanion.insert(
+        settings: const ProfileSettings(nickname: 'Me', statusMessage: ''),
+        secretKey: SecretKey(Uint8List(32)),
+        publicKey: PublicKey(Uint8List(32)),
+        nospam: ToxAddressNospam(0),
+      ),
+    );
+    final home = await Home.load(db, await db.watchProfile(id).first);
+    final group = GroupChat(GroupChatId(Uint8List(32)..[0] = 1));
+    final conference = ConferenceChat(ConferenceId(Uint8List(32)..[0] = 2));
+    final bot = PublicKey(Uint8List(32)..[0] = 3);
+    for (final chat in [group, conference]) {
+      await home.record(
+        home.account,
+        FactContent(subject: Subject.chat(chat), value: FactValue.name('Tox')),
+      );
+      await home.record(
+        home.account,
+        FactContent(subject: Subject.chat(chat), value: FactValue.joined(true)),
+      );
+    }
+    await home.record(
+      home.account,
+      MergeChat(
+        chat: conference,
+        bot: bot,
+        into: group,
+        intoBot: bot,
+        merged: true,
+      ),
+    );
+    for (final (chat, from, text) in [
+      (group, PublicKey(Uint8List(32)..[0] = 4), 'hi'),
+      (conference, bot, '<Bob> hi'),
+    ]) {
+      await home.record(
+        chat.graph,
+        Received(
+          from: from,
+          sender: 'Bob',
+          message: utf8.encode(text),
+          kind: Tox_Message_Type.TOX_MESSAGE_TYPE_NORMAL,
+        ),
+      );
+    }
+
+    final container = ProviderContainer(
+      overrides: [databaseProvider.overrideWith((ref) => db)],
+    );
+    addTearDown(container.dispose);
+    container.listen(chatsForProfileProvider(id), (_, _) {});
+    List<(GraphId, int)> chats() => [
+      for (final chat
+          in container.read(chatsForProfileProvider(id)).value ?? [])
+        (chat.ref.graph, chat.unread),
+    ];
+    for (var i = 0; i < 100 && chats().firstOrNull?.$2 != 1; i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+    }
+    expect(chats(), [(group.graph, 1)]);
   });
 
   test("leaving a chat leaves none of the chat's providers alive", () async {

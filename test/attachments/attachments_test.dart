@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:btox/attachments/attachments.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:image_picker/image_picker.dart' show XFile;
 import 'package:path/path.dart' as path;
 
 /// A black PNG picture of [side] by [side] pixels, small as a file.
@@ -53,9 +54,8 @@ void main() {
     expect(utf8.encode(path.basename(odd.path)).length, 255);
   });
 
-  testWidgets('a picture with more pixels than can be shown is missing', (
-    tester,
-  ) async {
+  testWidgets('a picture with more pixels than can be shown is missing, and '
+      'sent as it is', (tester) async {
     final directory = Directory.systemTemp.createTempSync();
     addTearDown(() => directory.deleteSync(recursive: true));
     final big = File('${directory.path}/big.png')..writeAsBytesSync(_png(8193));
@@ -69,13 +69,14 @@ void main() {
               constraints: BoxConstraints.loose(const Size.square(240)),
               child: imagePreview(big.path, size: 240),
             ),
+            Expanded(child: picture(big.path)),
           ],
         ),
       ),
     );
     for (
       var i = 0;
-      i < 50 && find.byIcon(Icons.broken_image).evaluate().isEmpty;
+      i < 50 && find.byIcon(Icons.broken_image).evaluate().length < 2;
       i++
     ) {
       await tester.runAsync(
@@ -83,12 +84,17 @@ void main() {
       );
       await tester.pump();
     }
-    expect(find.byIcon(Icons.broken_image), findsOneWidget);
+    expect(find.byIcon(Icons.broken_image), findsNWidgets(2));
     expect(find.byType(RawImage), findsNothing);
     // The preview keeps its shape.
     expect(
-      tester.getSize(find.byIcon(Icons.broken_image)),
+      tester.getSize(find.byIcon(Icons.broken_image).first),
       const Size.square(240),
     );
+
+    final sent = await tester.runAsync(
+      () => savePictureAsQoi(directory.path, XFile(big.path)),
+    );
+    expect(sent!.name, 'big.png');
   });
 }

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:ui';
 
+import 'package:btox/calls/call_channel.dart';
 import 'package:btox/logger.dart';
 import 'package:btox/models/chat_view.dart';
 import 'package:btox/models/connection_status.dart';
@@ -136,6 +137,7 @@ final class _BackgroundService {
       onStop: onStop,
       onAutoStartOnBoot: onAutoStartOnBoot,
     );
+    CallHost.instance.onBusy = (busy) => policy.inCall = busy;
     final notifier = _notifier = AnyPlatform.instance.isAndroid
         ? await MessageNotifier.android()
         : null;
@@ -178,6 +180,7 @@ final class _BackgroundService {
   set openChat(ChatRef? chat) => _notifier?.openChat = chat;
 
   void stop() {
+    CallHost.instance.onBusy = null;
     _policy?.dispose();
     _policy = null;
     _container?.dispose();

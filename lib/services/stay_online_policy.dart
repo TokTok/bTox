@@ -16,6 +16,7 @@ final class StayOnlinePolicy {
   final Duration grace;
 
   int _uis = 0;
+  bool _inCall = false;
   bool? _stayOnline;
   Timer? _stopTimer;
 
@@ -37,6 +38,12 @@ final class StayOnlinePolicy {
     _update();
   }
 
+  /// A call goes on with the UI closed.
+  set inCall(bool value) {
+    _inCall = value;
+    _update();
+  }
+
   set stayOnline(bool? value) {
     _stayOnline = value;
     _assertAutoStartOnBoot();
@@ -55,7 +62,7 @@ final class StayOnlinePolicy {
   }
 
   void _update() {
-    if (_uis > 0 || _stayOnline == true) {
+    if (_uis > 0 || _inCall || _stayOnline == true) {
       _stopTimer?.cancel();
       _stopTimer = null;
     } else {

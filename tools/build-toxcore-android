@@ -1,0 +1,136 @@
+#!/usr/bin/env bash
+
+# Builds libtoxcore.so for Android from source, with the libraries it needs,
+# into android/app/src/main/jniLibs, and puts toxcore's headers in
+# tools/include. Every download is checked against its SHA-256.
+#
+# Usage: tools/build-toxcore-android [ABI...]
+# Needs ANDROID_NDK_HOME, cmake, ninja, make, pkg-config, perl and yasm.
+
+set -eux
+
+BUILD="$PWD/build/toxcore-android"
+SRC="$BUILD/src"
+NDK="$ANDROID_NDK_HOME"
+TOOLCHAIN="$NDK/toolchains/llvm/prebuilt/linux-x86_64"
+SYSROOT="$TOOLCHAIN/sysroot"
+NDK_API=21
+
+# libvpx picks its own assembler. A host one breaks the x86 builds.
+unset AS
+
+# fetch NAME URL SHA256
+fetch() {
+  if [ -d "$SRC/$1" ]; then
+    return
+  fi
+  mkdir -p "$SRC/$1.tmp"
+  curl -fL -o "$SRC/$1.tar.gz" "$2"
+  echo "$3  $SRC/$1.tar.gz" | sha256sum -c -
+  tar --strip-components=1 -C "$SRC/$1.tmp" -zxf "$SRC/$1.tar.gz"
+  rm "$SRC/$1.tar.gz"
+  mv "$SRC/$1.tmp" "$SRC/$1"
+}
+
+fetch c-toxcore \
+  https://github.com/TokTok/c-toxcore/releases/download/v0.2.24-rc.4/c-toxcore-v0.2.24-rc.4.tar.gz \
+  1d32aba3a909130dd826c5e4a27cce564918b61dc9aefba8f5716a9ff48c1f29
+fetch libsodium \
+  https://github.com/jedisct1/libsodium/releases/download/1.0.20-RELEASE/libsodium-1.0.20.tar.gz \
+  ebb65ef6ca439333c2bb41a0c1990587288da07f6c7fd07cb3a18cc18d30ce19
+fetch opus \
+  https://github.com/xiph/opus/releases/download/v1.5.2/opus-1.5.2.tar.gz \
+  65c1d2f78b9f2fb20082c38cbe47c951ad5839345876e46941612ee87f9a7ce1
+fetch libvpx \
+  https://github.com/webmproject/libvpx/archive/refs/tags/v1.15.0.tar.gz \
+  e935eded7d81631a538bfae703fd1e293aad1c7fd3407ba00440c95105d2011e
+
+# Not every system has /usr/bin/perl, which the armv7 opus build runs.
+sed -i -e '1s|^#!/usr/bin/perl|#!/usr/bin/env perl|' "$SRC/opus/celt/arm/arm2gnu.pl"
+
+build() {
+  local abi="$1" target vpx_target
+  case "$abi" in
+    armeabi-v7a)
+      target=armv7a-linux-androideabi
+      vpx_target=armv7-android-gcc
+      ;;
+    arm64-v8a)
+      target=aarch64-linux-android
+      vpx_target=arm64-android-gcc
+      ;;
+    x86)
+      target=i686-linux-android
+      vpx_target=x86-android-gcc
+      ;;
+    x86_64)
+      target=x86_64-linux-android
+      vpx_target=x86_64-android-gcc
+      ;;
+    *)
+      echo "Unknown ABI: $abi" >&2
+      exit 1
+      ;;
+  esac
+
+  local out="$BUILD/$abi"
+  local prefix="$out/prefix"
+  mkdir -p "$out"
+  export CC="$TOOLCHAIN/bin/$target$NDK_API-clang"
+  export CXX="$TOOLCHAIN/bin/$target$NDK_API-clang++"
+  export LDFLAGS=-static-libstdc++
+  export PKG_CONFIG_PATH="$prefix/lib/pkgconfig"
+
+  if [ ! -f "$prefix/lib/libsodium.a" ]; then
+    mkdir -p "$out/libsodium"
+    (cd "$out/libsodium" &&
+      "$SRC/libsodium/configure" --prefix="$prefix" --host="$target" --with-sysroot="$SYSROOT" --disable-shared --disable-pie &&
+      make -j"$(nproc)" install)
+  fi
+
+  if [ ! -f "$prefix/lib/libopus.a" ]; then
+    mkdir -p "$out/opus"
+    (cd "$out/opus" &&
+      CFLAGS=-fPIC "$SRC/opus/configure" --prefix="$prefix" --host="$target" --with-sysroot="$SYSROOT" --disable-shared &&
+      make -j"$(nproc)" install)
+  fi
+
+  if [ ! -f "$prefix/lib/libvpx.a" ]; then
+    mkdir -p "$out/libvpx"
+    (cd "$out/libvpx" &&
+      "$SRC/libvpx/configure" --prefix="$prefix" --libc="$SYSROOT" --target="$vpx_target" \
+        --disable-examples --disable-unit-tests --enable-pic &&
+      sed -i -e "s!^AS=as!AS=$CC -c!" -e "s!^STRIP=strip!STRIP=$TOOLCHAIN/bin/llvm-strip!" ./*.mk &&
+      make -j"$(nproc)" install)
+  fi
+
+  cmake -S "$SRC/c-toxcore" -B "$out/toxcore" -G Ninja \
+    -DANDROID_ABI="$abi" \
+    -DCMAKE_TOOLCHAIN_FILE="$NDK/build/cmake/android.toolchain.cmake" \
+    -DCMAKE_INSTALL_PREFIX="$out/toxcore-install" \
+    -DCMAKE_PREFIX_PATH="$prefix" \
+    -DCMAKE_SHARED_LINKER_FLAGS="-Wl,-z,max-page-size=16384" \
+    -DENABLE_STATIC=OFF \
+    -DENABLE_SHARED=ON \
+    -DMUST_BUILD_TOXAV=ON \
+    -DDHT_BOOTSTRAP=OFF \
+    -DBOOTSTRAP_DAEMON=OFF \
+    -DUNITTEST=OFF \
+    -DSTRICT_ABI=ON \
+    -DMIN_LOGGER_LEVEL=TRACE \
+    -DEXPERIMENTAL_API=ON
+  cmake --build "$out/toxcore"
+  cmake --install "$out/toxcore"
+
+  mkdir -p "android/app/src/main/jniLibs/$abi"
+  cp "$out/toxcore-install/lib/libtoxcore.so" "android/app/src/main/jniLibs/$abi/"
+  mkdir -p tools/include/tox
+  cp "$out/toxcore-install/include/tox/"*.h tools/include/tox/
+}
+
+if [ "$#" -eq 0 ]; then
+  set -- armeabi-v7a arm64-v8a x86 x86_64
+fi
+for abi in "$@"; do
+  build "$abi"
+done

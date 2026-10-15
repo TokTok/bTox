@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:btox/db/database.dart';
 import 'package:btox/l10n/generated/app_localizations.dart';
@@ -6,14 +7,18 @@ import 'package:btox/models/chat_view.dart';
 import 'package:btox/models/content.dart';
 import 'package:btox/models/crypto.dart';
 import 'package:btox/models/id.dart';
+import 'package:btox/models/persistence.dart' show FileState;
 import 'package:btox/models/profile_settings.dart';
 import 'package:btox/pages/chat_page.dart';
+import 'package:btox/providers/attachments.dart';
 import 'package:btox/providers/chats.dart';
 import 'package:btox/providers/database.dart';
 import 'package:btox/providers/drafts.dart';
 import 'package:btox/providers/map_tile.dart';
 import 'package:btox/providers/profiles.dart';
+import 'package:btox/sync/setting.dart' show PictureEncoding;
 import 'package:btox/widgets/chat_text_bubble.dart';
+import 'package:btox/widgets/message_input.dart';
 import 'package:btox/widgets/system_gestures.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -66,6 +71,7 @@ void main() {
     ),
     chatEntriesProvider(chat).overrideWithValue(AsyncData(entries)),
     newestEventsProvider(chat).overrideWithValue(const {}),
+    pictureFormatProvider(chat).overrideWithValue(PictureEncoding.original),
   ];
 
   testWidgets('Empty chat page should display message entry box', (
@@ -333,6 +339,257 @@ void main() {
     expect(find.text('Not available yet'), findsOneWidget);
   });
 
+  testWidgets('selected messages are copied in order, and back unselects', (
+    tester,
+  ) async {
+    String? copied;
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (call) async {
+        if (call.method == 'Clipboard.setData') {
+          copied = (call.arguments as Map)['text'] as String;
+        }
+        return null;
+      },
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: overrides([
+          ChatEntry(
+            event: _event,
+            mine: false,
+            timestamp: DateTime(2025, 1, 1, 0, 1),
+            content: const TextContent(text: 'First'),
+          ),
+          ChatEntry(
+            event: EventId(Uint8List(32)..[0] = 1),
+            mine: true,
+            timestamp: DateTime(2025, 1, 1, 0, 2),
+            content: const TextContent(text: 'Second'),
+          ),
+        ]),
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          home: ChatPage(chat: chat),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    Finder message(String text) => find.textContaining(text);
+
+    await tester.longPress(message('Second'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Select'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.radio_button_unchecked));
+    await tester.pumpAndSettle();
+    expect(find.text('2 selected'), findsOneWidget);
+    expect(find.byType(MessageInput), findsNothing);
+
+    await tester.tap(find.byTooltip('Copy'));
+    await tester.pumpAndSettle();
+    expect(copied, 'Testman: First\nYeetman: Second');
+    expect(find.text('2 messages copied'), findsOneWidget);
+    expect(find.text('Testman'), findsOneWidget);
+    expect(find.byType(MessageInput), findsOneWidget);
+
+    await tester.longPress(message('Second'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Select'));
+    await tester.pumpAndSettle();
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.text('1 selected'), findsNothing);
+    expect(find.byType(ChatPage), findsOneWidget);
+  });
+
+  testWidgets('message details show its times and sender', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: overrides([
+          ChatEntry(
+            event: _event,
+            mine: true,
+            timestamp: DateTime(2025, 1, 1, 0, 1),
+            content: const TextContent(text: 'Hello'),
+            state: ChatContentState.delivered,
+            delivered: DateTime(2025, 1, 1, 0, 2),
+          ),
+          ChatEntry(
+            event: EventId(Uint8List(32)..[0] = 1),
+            mine: false,
+            timestamp: DateTime(2025, 1, 1, 0, 3),
+            content: const TextContent(text: 'Hi'),
+          ),
+        ]),
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          home: ChatPage(chat: chat),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.longPress(find.textContaining('Hello'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Info'));
+    await tester.pumpAndSettle();
+    expect(find.text('Message details'), findsOneWidget);
+    expect(find.text('Sent'), findsOneWidget);
+    expect(find.text('Delivered'), findsOneWidget);
+
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    await tester.longPress(find.textContaining('Hi'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Info'));
+    await tester.pumpAndSettle();
+    expect(find.text('Received'), findsOneWidget);
+    expect(find.text('Testman\n${contact.toJson()}'), findsOneWidget);
+  });
+
+  testWidgets('a forwarded message goes to the chosen chat', (tester) async {
+    final db = Database(NativeDatabase.memory());
+    final other = ChatRef(
+      profile.id,
+      GraphId.friend(profile.publicKey, PublicKey(Uint8List(32)..[0] = 2)),
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          ...overrides([
+            ChatEntry(
+              event: _event,
+              mine: false,
+              timestamp: DateTime(2025, 1, 1, 0, 1),
+              content: const TextContent(text: 'Pass it on'),
+            ),
+          ]),
+          databaseProvider.overrideWith((ref) => db),
+          chatsForProfileProvider(profile.id).overrideWithValue(
+            AsyncData([
+              ChatSummary(ref: other, name: 'Friendo', key: other.graph),
+            ]),
+          ),
+        ],
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          home: ChatPage(chat: chat),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.longPress(find.byType(ChatTextBubble));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Forward'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Friendo'));
+    await tester.runAsync(
+      () => Future.delayed(const Duration(milliseconds: 50)),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Message forwarded'), findsOneWidget);
+    final sends = await tester.runAsync(() => db.select(db.chatSends).get());
+    expect(
+      [for (final s in sends!) (s.graph, s.message)],
+      [(other.graph, 'Pass it on')],
+    );
+
+    await tester.pumpWidget(const SizedBox());
+    await tester.runAsync(db.close);
+  });
+
+  testWidgets('a forwarded file goes only to friends, as a copy', (
+    tester,
+  ) async {
+    final db = Database(NativeDatabase.memory());
+    final dir = Directory.systemTemp.createTempSync('forward');
+    addTearDown(() => dir.deleteSync(recursive: true));
+    final notes = File('${dir.path}/notes.txt')..writeAsStringSync('notes');
+    final friend = PublicKey(Uint8List(32)..[0] = 2);
+    final other = ChatRef(
+      profile.id,
+      GraphId.friend(profile.publicKey, friend),
+    );
+    final group = ChatRef(
+      profile.id,
+      GraphId.conference(ConferenceId(Uint8List(32))),
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          ...overrides([
+            ChatEntry(
+              event: _event,
+              mine: false,
+              timestamp: DateTime(2025, 1, 1, 0, 1),
+              content: const TextContent(text: 'Look'),
+            ),
+            ChatEntry(
+              event: EventId(Uint8List(32)..[0] = 1),
+              mine: true,
+              timestamp: DateTime(2025, 1, 1, 0, 2),
+              content: FileContent(
+                name: 'notes.txt',
+                size: 5,
+                path: notes.path,
+              ),
+              file: const FileProgress(state: FileState.done),
+            ),
+          ]),
+          databaseProvider.overrideWith((ref) => db),
+          attachmentsDirectoryProvider.overrideWith((ref) => dir.path),
+          chatsForProfileProvider(profile.id).overrideWithValue(
+            AsyncData([
+              ChatSummary(ref: other, name: 'Friendo', key: friend),
+              ChatSummary(ref: group, name: 'Groupies', key: group.graph),
+            ]),
+          ),
+        ],
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          home: ChatPage(chat: chat),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.longPress(find.textContaining('Look'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Select'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.radio_button_unchecked));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Forward'));
+    await tester.pumpAndSettle();
+    expect(find.text('Groupies'), findsNothing);
+    await tester.tap(find.text('Friendo'));
+    await tester.runAsync(
+      () => Future.delayed(const Duration(milliseconds: 200)),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('2 messages forwarded'), findsOneWidget);
+    final (sends, transfers) = (await tester.runAsync(
+      () async => (
+        await db.select(db.chatSends).get(),
+        await db.select(db.transfers).get(),
+      ),
+    ))!;
+    expect(
+      [for (final s in sends) (s.graph, s.message)],
+      [(other.graph, 'Look')],
+    );
+    final [copy] = transfers;
+    expect((copy.graph, copy.name), (other.graph, 'notes.txt'));
+    expect(copy.path, isNot(notes.path));
+    expect(File(copy.path).readAsStringSync(), 'notes');
+
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpAndSettle();
+    await tester.runAsync(db.close);
+  });
+
   testWidgets('a swipe in from the edge, as for going back, keeps the chat '
       'where it was', (tester) async {
     // Where Android's gesture navigation takes swipes, in physical pixels.
@@ -448,7 +705,7 @@ void main() {
         overrides: [
           ...overrides([]),
           databaseProvider.overrideWith((ref) => opened.future),
-          mapTileProvider.overrideWith((ref) => FakeTileProvider()),
+          mapTileProvider.overrideWith((ref, _) => FakeTileProvider()),
         ],
         child: MaterialApp(
           navigatorKey: navigator,
@@ -607,5 +864,41 @@ void main() {
     await tester.pump();
     expect(find.bySemanticsLabel(RegExp('12:02')), findsOneWidget);
     semantics.dispose();
+  });
+
+  testWidgets('calls show among the messages as they went', (tester) async {
+    ChatEntry call(int i, CallContent content) => ChatEntry(
+      event: EventId(Uint8List(32)..[0] = i),
+      mine: !content.incoming,
+      notice: true,
+      timestamp: DateTime(2025, 1, 1, 0, i),
+      content: content,
+    );
+    await show(tester, [
+      call(1, const CallContent(incoming: true, ended: true)),
+      call(2, const CallContent(incoming: true, video: true, ended: true)),
+      call(
+        3,
+        const CallContent(
+          incoming: false,
+          video: true,
+          ended: true,
+          duration: Duration(hours: 1, minutes: 2, seconds: 31),
+        ),
+      ),
+      call(4, const CallContent(incoming: true, ended: true, declined: true)),
+      call(5, const CallContent(incoming: false)),
+    ]);
+    await tester.pumpAndSettle();
+
+    for (final text in [
+      'Missed voice call',
+      'Missed video call',
+      'Outgoing video call · 1:02:31',
+      'Incoming voice call',
+      'Voice call',
+    ]) {
+      expect(find.text(text), findsOneWidget, reason: text);
+    }
   });
 }

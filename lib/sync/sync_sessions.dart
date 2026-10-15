@@ -11,12 +11,14 @@ import 'package:btox/logger.dart';
 import 'package:btox/messages/message_format.dart';
 import 'package:btox/models/app_defaults.dart';
 import 'package:btox/models/chat_log.dart';
+import 'package:btox/models/chat_merge.dart';
 import 'package:btox/models/chat_view.dart';
 import 'package:btox/models/crypto.dart';
 import 'package:btox/models/id.dart';
 import 'package:btox/models/persistence.dart';
 import 'package:btox/sync/account.dart';
 import 'package:btox/sync/event.dart';
+import 'package:btox/sync/fact.dart';
 import 'package:btox/sync/frames.dart';
 import 'package:btox/sync/intents.dart';
 import 'package:btox/sync/linked_files.dart';
@@ -42,7 +44,21 @@ final class SyncSessions {
   Timer? _retry;
 
   /// How friends' messages are read.
-  MessageFormats formats = MessageFormats.none;
+  MessageFormats get formats => _formats;
+  set formats(MessageFormats formats) {
+    if (formats != _formats) {
+      _formats = formats;
+      _echoes.clear();
+    }
+  }
+
+  var _formats = MessageFormats.none;
+  // Each merged chat's messages that repeat another side's.
+  final _echoes = <GraphId, Echoes>{};
+
+  /// Hears the home device's live facts: with `all`, every one there is, as
+  /// none when it goes offline.
+  void Function(List<Fact> facts, {required bool all})? onLiveFacts;
 
   PublicKey? _home;
   Replica? _replica;
@@ -58,6 +74,8 @@ final class SyncSessions {
   var _reads = const <ChatRead>[];
   var _answers = const <FileAnswer>[];
   var _inviteAnswers = const <InviteAnswer>[];
+  var _merges = const <MergeChange>[];
+  var _relayBots = const <RelayBotChange>[];
   var _settings = const <SettingChange>[];
   var _transfers = const <Transfer>[];
 
@@ -107,6 +125,15 @@ final class SyncSessions {
   }
 
   LinkedFiles? get files => _files;
+
+  /// The home device's friend number, while it's online.
+  int? get homeFriend => _homeFriend;
+
+  String? friendName(PublicKey friend) => _replica?.state.friends[friend]?.name;
+
+  String get accountName => _replica?.state.name ?? '';
+
+  void toHome(SessionMessage message) => _toHome([message]);
 
   /// Larger files of a linked account are fetched when asked for.
   set autoAcceptSize(int size) {
@@ -209,6 +236,16 @@ final class SyncSessions {
     _logger.unawaited('write events', _writeEvents());
   }
 
+  void mergesChanged(List<MergeChange> merges) {
+    _merges = merges;
+    _logger.unawaited('write events', _writeEvents());
+  }
+
+  void relayBotsChanged(List<RelayBotChange> changes) {
+    _relayBots = changes;
+    _logger.unawaited('write events', _writeEvents());
+  }
+
   void settingsChanged(List<SettingChange> changes) {
     _settings = changes;
     _logger.unawaited('write events', _writeEvents());
@@ -243,6 +280,14 @@ final class SyncSessions {
         if (replica.canWrite(answer.graph)) answer,
     ]);
     await writer.inviteAnswers(replica.account, _inviteAnswers);
+    await writer.merges(replica.account, [
+      for (final merge in _merges)
+        if (replica.canWrite(merge.chat) && replica.canWrite(merge.into)) merge,
+    ], replica.chatIn);
+    await writer.relayBots(replica.account, [
+      for (final change in _relayBots)
+        if (replica.canWrite(change.chat)) change,
+    ], replica.chatIn);
     await writer.settings(replica.account, [
       for (final change in _settings)
         if (switch (change.scope) {
@@ -286,6 +331,7 @@ final class SyncSessions {
   // Only the home device knows what Tox says now.
   void _forgetLiveFacts() {
     _logger.unawaited('forget live facts', _db.clearLiveFacts(_profileId));
+    onLiveFacts?.call(const [], all: true);
   }
 
   void received(int friendNumber, PublicKey publicKey, Uint8List packet) {
@@ -321,6 +367,7 @@ final class SyncSessions {
         'save live facts',
         _db.updateLiveFacts(_profileId, facts, all: all),
       );
+      onLiveFacts?.call(facts, all: all);
       return;
     }
     if (message case WantBlob() || NoBlob() when replica.inSession) {
@@ -352,13 +399,25 @@ final class SyncSessions {
 
   /// Shows each chat's newest message past both how far it was read and how
   /// far it was notified, so history that syncs again stays quiet. In a chat
-  /// never notified, only messages from after the pairing count.
+  /// never notified, only messages from after the pairing count. Chats shown
+  /// as one notify as one, of a message and its relayed copy only once.
   void _notifyUnread(Replica replica, List<NewEvent> added) {
     final notified = _notified;
     final pairedAt = replica.pairedAt;
     if (notified == null || pairedAt == null) {
       return;
     }
+    final merges = mergedChats(replica.state);
+    final sides = _sidesOf(merges);
+    final repeats = {
+      for (final chat in {
+        for (final (_, event, _) in added) ?sides[event.graph]?.chat,
+      })
+        ...(_echoes[chat] ??= Echoes(formats)).update(merges[chat]!, [
+          for (final side in merges[chat]!.sides)
+            replica.store.eventsIn(side.graph),
+        ]),
+    };
     final unread = <GraphId, List<SyncEvent>>{};
     for (final (id, event, _) in added) {
       final graph = event.graph;
@@ -366,6 +425,7 @@ final class SyncSessions {
       if (isIncoming(event.content) &&
           event.rank > (replica.state.read[graph]?.$1 ?? -1) &&
           (since == null ? event.time >= pairedAt : event.rank > since) &&
+          !repeats.contains(id) &&
           !replica.earlier.repeats(id, event, formats)) {
         (unread[graph] ??= []).add(event);
       }
@@ -378,15 +438,22 @@ final class SyncSessions {
         'save notified',
         _db.setLinkedNotified(_profileId, graph, rank),
       );
-      (shown[graph] ??= []).addAll(events);
+      (shown[sides[graph]?.chat ?? graph] ??= []).addAll(events);
     }
     for (final MapEntry(key: chat, value: events) in shown.entries) {
       events.sort((a, b) => a.time.compareTo(b.time));
       final listed = notifying(
-        [for (final event in events) _listed(event)],
+        [
+          for (final event in events)
+            _listed(event, sides[event.graph]?.side.bots ?? const {}),
+        ],
         replica.state.setting<Mute>(Scope.conversation(chat)),
         clock.now(),
-        [?replica.selfNameIn(chat)],
+        [
+          for (final graph
+              in merges[chat]?.sides.map((side) => side.graph) ?? [chat])
+            ?replica.selfNameIn(graph),
+        ],
       );
       if (listed.isNotEmpty) {
         _notify?.call(
@@ -406,23 +473,34 @@ final class SyncSessions {
     if (notified == null) {
       return;
     }
+    final sides = _sidesOf(mergedChats(replica.state));
     for (final (_, event, _) in added) {
       if (event.content case ReadUpTo(:final graph, :final rank)
           when event.graph == replica.account) {
         if (notified[graph] case final shown? when rank >= shown) {
-          _read?.call(ChatRef(_profileId, graph));
+          _read?.call(ChatRef(_profileId, sides[graph]?.chat ?? graph));
         }
       }
     }
   }
 
-  /// [event] as its notification lists it: a group member's under who
-  /// said it.
-  NotifiedMessage _listed(SyncEvent event) {
+  /// The chat each side of [merges] shows in, and as which side.
+  static Map<GraphId, ({GraphId chat, MergeSide side})> _sidesOf(
+    Map<GraphId, ChatMerge> merges,
+  ) => {
+    for (final MapEntry(key: chat, value: merge) in merges.entries)
+      for (final side in merge.sides) side.graph: (chat: chat, side: side),
+  };
+
+  /// [event] as its notification lists it: a relay bot's under who said it.
+  NotifiedMessage _listed(SyncEvent event, Set<PublicKey> bots) {
     final text = notificationText(event.content, formats);
     final time = DateTime.fromMillisecondsSinceEpoch(event.time);
-    return switch (event.content) {
-      Received(from: _?, :final sender) => (
+    return switch ((event.content, relayed(text))) {
+      (Received(:final from?), (final name, final body))
+          when bots.contains(from) =>
+        (sender: name, text: body, time: time),
+      (Received(from: _?, :final sender), _) => (
         sender: sender,
         text: text,
         time: time,

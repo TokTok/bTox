@@ -6,6 +6,13 @@ import 'package:btox/api/toxcore/tox.dart';
 import 'package:btox/api/toxcore/tox_constants.dart';
 import 'package:btox/api/toxcore/tox_events.dart';
 import 'package:btox/attachments/attachments.dart';
+import 'package:btox/calls/call_audio.dart';
+import 'package:btox/calls/call_channel.dart';
+import 'package:btox/calls/call_video.dart';
+import 'package:btox/calls/calls.dart';
+import 'package:btox/calls/plugin_call_media.dart';
+import 'package:btox/calls/relay_protocol.dart';
+import 'package:btox/calls/toxav_protocol.dart';
 import 'package:btox/db/database.dart';
 import 'package:btox/ffi/toxcore.dart' show Tox_Connection, Tox_Message_Type;
 import 'package:btox/logger.dart';
@@ -17,6 +24,7 @@ import 'package:btox/models/chat_view.dart';
 import 'package:btox/models/crypto.dart';
 import 'package:btox/models/id.dart';
 import 'package:btox/models/persistence.dart';
+import 'package:btox/platform/any_platform.dart';
 import 'package:btox/providers/attachments.dart';
 import 'package:btox/providers/database.dart';
 import 'package:btox/providers/message_formats.dart'
@@ -57,6 +65,8 @@ Future<ToxSync> toxSync(
     notifier: ref.watch(messageNotifierProvider),
     attachmentsDirectory: () => ref.read(attachmentsDirectoryProvider.future),
     knownFormats: ref.watch(knownMessageFormatsProvider),
+    callAudio: AnyPlatform.instance.isWeb ? null : PluginCallAudio(),
+    callVideo: AnyPlatform.instance.isWeb ? null : PluginCallVideo(),
   );
   ref.onDispose(sync.dispose);
   sync.start();
@@ -121,6 +131,11 @@ final class ToxSync {
   late final FileTransfers _files;
   final SyncSessions _syncSessions;
 
+  // Where calls can be made, and once the account runs.
+  final CallAudio? _callAudio;
+  final CallVideo? _callVideo;
+  Calls? _calls;
+
   ToxSync(
     this._db,
     this._tox,
@@ -130,7 +145,11 @@ final class ToxSync {
     MessageNotifier? notifier,
     Future<String> Function()? attachmentsDirectory,
     List<MessageFormat> knownFormats = messageFormats,
+    CallAudio? callAudio,
+    CallVideo? callVideo,
   }) : _maxMessageLength = maxMessageLength,
+       _callAudio = callAudio,
+       _callVideo = callVideo,
        _retryDelay = retryDelay,
        _notifier = notifier,
        _knownFormats = knownFormats,
@@ -176,6 +195,10 @@ final class ToxSync {
 
   void dispose() {
     _disposed = true;
+    _calls?.dispose();
+    if (_calls != null) {
+      CallHost.instance.remove(_profileId);
+    }
     _retry?.cancel();
     for (final subscription in _subscriptions) {
       subscription.cancel();
@@ -217,6 +240,9 @@ final class ToxSync {
         if (!online) {
           _onlineFriends.remove(friendNumber);
           _files.friendOffline(friendNumber);
+          if (publicKey != null) {
+            _calls?.friendOffline(publicKey);
+          }
           _syncSessions.offline(friendNumber);
           // Tox forgets the messages it hasn't delivered yet.
           for (final message in _outgoing.values) {
@@ -421,6 +447,12 @@ final class ToxSync {
               .listen(_syncSessions.inviteAnswersChanged),
         )
         ..add(
+          _db.watchChatMerges(_profileId).listen(_syncSessions.mergesChanged),
+        )
+        ..add(
+          _db.watchRelayBots(_profileId).listen(_syncSessions.relayBotsChanged),
+        )
+        ..add(
           _db
               .watchSettingChanges(_profileId)
               .listen(_syncSessions.settingsChanged),
@@ -433,9 +465,41 @@ final class ToxSync {
         profile.pairingMessage == null ? null : home,
         profile.pairingMessage,
       );
+      _startRelayedCalls(home.publicKey);
     } else {
       _logger.unawaited('load the account', _startHome(profile));
     }
+  }
+
+  /// A linked account's calls, which its home device connects this device
+  /// to, and records.
+  void _startRelayedCalls(PublicKey account) {
+    final audio = _callAudio;
+    if (audio == null) {
+      return;
+    }
+    final relay = RelayProtocol(
+      _tox.startAv(),
+      homeNumber: () => _syncSessions.homeFriend,
+      toHome: _syncSessions.toHome,
+    );
+    _syncSessions.onLiveFacts = relay.facts;
+    final calls = _calls = Calls(
+      _profileId,
+      account,
+      relay,
+      audio,
+      video: _callVideo,
+      notifier: _notifier?.calls,
+      chatOf: (friend) => GraphId.friend(account, friend),
+      nameOf: _syncSessions.friendName,
+      selfName: () => _syncSessions.accountName,
+      record: (_, _) async => null,
+      changed: (call) => CallHost.instance.changed(_profileId, call),
+      busyElsewhere: () => CallHost.instance.busyElsewhere(_profileId),
+      showVideo: CallHost.instance.showVideo,
+    );
+    CallHost.instance.add(_profileId, calls);
   }
 
   Future<void> _startHome(Profile profile) async {
@@ -458,11 +522,46 @@ final class ToxSync {
         await home.record(transfer.graph, FileEnded(file: event, ok: false));
       }
     }
+    // And calls, which ended unrecorded.
+    for (final graph in home.store.graphs) {
+      final events = home.store.eventsIn(graph);
+      final ended = {
+        for (final (_, event) in events)
+          if (event.content case CallEnded(:final call)) call,
+      };
+      for (final (id, event) in events) {
+        if (_disposed) {
+          return;
+        }
+        if (event.content is Call && !ended.contains(id)) {
+          await home.record(graph, CallEnded(call: id));
+        }
+      }
+    }
+    _notifier?.calls?.stopRinging(_profileId);
     await home.profileChanged(profile.settings);
     if (_disposed) {
       return;
     }
     _updateFriends();
+    if (_callAudio case final audio?) {
+      final calls = _calls = Calls(
+        _profileId,
+        home.me,
+        ToxavProtocol(_tox.startAv(), (pk) => _friendNumbers[pk], _publicKeyOf),
+        audio,
+        video: _callVideo,
+        notifier: _notifier?.calls,
+        chatOf: home.chatWith,
+        nameOf: (pk) => home.state.friends[pk]?.name,
+        selfName: () => _nickname,
+        record: home.record,
+        changed: (call) => CallHost.instance.changed(_profileId, call),
+        busyElsewhere: () => CallHost.instance.busyElsewhere(_profileId),
+        showVideo: CallHost.instance.showVideo,
+      );
+      CallHost.instance.add(_profileId, calls);
+    }
     _subscriptions
       ..add(_db.watchFriendChanges(_profileId).listen(_friendChanges))
       ..add(_db.watchSends(_profileId).listen(_sends))
@@ -555,6 +654,7 @@ final class ToxSync {
     final friendNumber = _friendNumbers.remove(publicKey)!;
     _requests.remove(publicKey);
     _onlineFriends.remove(friendNumber);
+    _calls?.friendOffline(publicKey);
     _syncSessions.offline(friendNumber);
     _outgoing.removeWhere((_, message) => message.friendNumber == friendNumber);
     _files.friendOffline(friendNumber);

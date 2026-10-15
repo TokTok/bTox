@@ -448,9 +448,161 @@
   "@linkFailed": {
     "description": "Error when a linked account couldn't be added"
   },
+  "chats": "Chats",
+  "@chats": {
+    "description": "The tab of the main page listing chats"
+  },
+  "calls": "Calls",
+  "@calls": {
+    "description": "The tab of the main page listing calls"
+  },
+  "voiceCall": "Voice call",
+  "@voiceCall": {
+    "description": "A call button's tooltip, and a call still going on in a chat"
+  },
+  "videoCall": "Video call",
+  "@videoCall": {
+    "description": "A video call button's tooltip, and a video call still going on in a chat"
+  },
+  "outgoingVideoCall": "Outgoing video call",
+  "@outgoingVideoCall": {
+    "description": "A video call we made, in a chat"
+  },
+  "incomingVideoCall": "Incoming video call",
+  "@incomingVideoCall": {
+    "description": "A video call the friend made, in a chat and while it rings"
+  },
+  "missedVideoCall": "Missed video call",
+  "@missedVideoCall": {
+    "description": "A video call that rang here and wasn't answered"
+  },
+  "callCamera": "Camera",
+  "@callCamera": {
+    "description": "The button that turns the camera on or off in a call"
+  },
+  "flipCamera": "Switch camera",
+  "@flipCamera": {
+    "description": "The button that switches between the front and back camera in a call"
+  },
+  "cameraNeeded": "bTox may not use the camera, so the call goes on without it",
+  "@cameraNeeded": {
+    "description": "Shown when bTox may not use the camera for a video call, which goes on without video"
+  },
+  "outgoingCall": "Outgoing voice call",
+  "@outgoingCall": {
+    "description": "A call we made, in a chat"
+  },
+  "incomingCall": "Incoming voice call",
+  "@incomingCall": {
+    "description": "A call the friend made, in a chat and while it rings"
+  },
+  "missedCall": "Missed voice call",
+  "@missedCall": {
+    "description": "A call that rang here and wasn't answered"
+  },
+  "callWithDuration": "{call} · {duration}",
+  "@callWithDuration": {
+    "description": "A call in a chat, with how long it was",
+    "placeholders": {
+      "call": {"type": "String"},
+      "duration": {"type": "String"}
+    }
+  },
+  "incomingCalls": "Incoming calls",
+  "@incomingCalls": {
+    "description": "The notification channel that rings"
+  },
+  "missedCalls": "Missed calls",
+  "@missedCalls": {
+    "description": "The notification channel for missed calls"
+  },
+  "callOngoing": "Call in progress",
+  "@callOngoing": {
+    "description": "The notification while a call goes on"
+  },
+  "calling": "Calling…",
+  "@calling": {
+    "description": "Our call, while it rings at the friend's"
+  },
+  "answerCall": "Answer",
+  "@answerCall": {
+    "description": "The button that answers a call"
+  },
+  "declineCall": "Decline",
+  "@declineCall": {
+    "description": "The button that declines a call"
+  },
+  "hangUp": "Hang up",
+  "@hangUp": {
+    "description": "The button that ends a call"
+  },
+  "muteCall": "Mute",
+  "@muteCall": {
+    "description": "The button that mutes the microphone in a call"
+  },
+  "callSpeaker": "Speaker",
+  "@callSpeaker": {
+    "description": "The button that puts a call on the loudspeaker"
+  },
+  "callEarpiece": "Phone",
+  "@callEarpiece": {
+    "description": "Where a call's audio can go: the phone's earpiece"
+  },
+  "callWired": "Headphones",
+  "@callWired": {
+    "description": "Where a call's audio can go: wired headphones"
+  },
+  "callBluetooth": "Bluetooth",
+  "@callBluetooth": {
+    "description": "Where a call's audio can go: a Bluetooth headset"
+  },
+  "hideCall": "Hide the call",
+  "@hideCall": {
+    "description": "The button that shows the chats during a call"
+  },
+  "returnToCall": "Return to the call",
+  "@returnToCall": {
+    "description": "The banner over the chats during a call"
+  },
+  "microphoneNeeded": "Calls need the microphone",
+  "@microphoneNeeded": {
+    "description": "Shown when bTox may not use the microphone"
+  },
+  "ringOverLockScreen": "Calls can't ring over the lock screen",
+  "@ringOverLockScreen": {
+    "description": "Shown on the Calls tab while Android doesn't let bTox show incoming calls full screen"
+  },
+  "allowRingOverLockScreen": "Allow",
+  "@allowRingOverLockScreen": {
+    "description": "The button that opens the setting letting calls ring full screen"
+  },
+  "relayBotNames": "Names from a relay bot",
+  "@relayBotNames": {
+    "description": "The action, and its page, that shows the names a bot relays from another chat in a group chat"
+  },
+  "stopRelayBotNames": "Stop showing names from the relay bot",
+  "@stopRelayBotNames": {
+    "description": "The action that shows a relay bot's messages as its own again"
+  },
+  "showNames": "Show names",
+  "@showNames": {
+    "description": "The button that starts showing the names a relay bot relays"
+  },
+  "noCalls": "No recent calls",
+  "@noCalls": {
+    "description": "Shown on the Calls tab when there are no calls"
+  },
+  "callsNotAvailable": "Calls go through the device this account is linked to, which can't take them now",
+  "@callsNotAvailable": {
+    "description": "Shown on the Calls tab of a linked account while its home device is offline, or doesn't connect calls to its devices"
+  },
   "notImplemented": "Not available yet",
   "@notImplemented": {
     "description": "Shown for a menu item that doesn't work yet"
+  },
+  "openLinkFailed": "No app can open this link",
+  "@openLinkFailed": {
+    "description": "Shown when tapping a link in a message opens nothing"
   },
   "reply": "Reply",
   "@reply": {
@@ -519,6 +671,33 @@
   "@mutedAlways": {
     "description": "A chat muted until it's unmuted"
   },
+  "sendPicturesAsQoi": "Send pictures as QOI",
+  "@sendPicturesAsQoi": {
+    "description": "A friend chat's setting: pictures from the camera or gallery are sent as lossless QOI files"
+  },
+  "sendPicturesAsQoiHint": "Lossless, but larger, and not every app shows QOI",
+  "@sendPicturesAsQoiHint": {
+    "description": "Under the setting to send pictures as QOI"
+  },
+  "seenThrough": "Seen through {bot}",
+  "@seenThrough": {
+    "description": "Heading of the names a relay bot has relayed in the chat's history, under the bot among the people in a chat, though they may not be there now",
+    "placeholders": {
+      "bot": {
+        "type": "String",
+        "example": "EPiG-BrDG"
+      }
+    }
+  },
+  "showMoreSeen": "{count, plural, =1{Show 1 more} other{Show {count} more}}",
+  "@showMoreSeen": {
+    "description": "Shows the names a relay bot relayed longer ago",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "roleFounder": "Founder",
   "@roleFounder": {
     "description": "The role of whoever created a group"
@@ -558,6 +737,52 @@
   "select": "Select",
   "@select": {
     "description": "Message menu item to select messages"
+  },
+  "forwardTo": "Forward to",
+  "@forwardTo": {
+    "description": "The title of the page that picks a chat to forward messages to"
+  },
+  "messagesForwarded": "{count, plural, =1{Message forwarded} other{{count} messages forwarded}}",
+  "@messagesForwarded": {
+    "description": "The message shown after forwarding messages",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "messageInfo": "Message details",
+  "@messageInfo": {
+    "description": "The title of the page a message's Info opens"
+  },
+  "messageSent": "Sent",
+  "@messageSent": {
+    "description": "On a message's details, when ours was sent"
+  },
+  "messageSending": "Sending",
+  "@messageSending": {
+    "description": "On a message's details, in place of messageSent while ours waits to go"
+  },
+  "messageDelivered": "Delivered",
+  "@messageDelivered": {
+    "description": "On a message's details, when ours arrived"
+  },
+  "messageReceived": "Received",
+  "@messageReceived": {
+    "description": "On a message's details, when someone else's came"
+  },
+  "messageFrom": "From",
+  "@messageFrom": {
+    "description": "On a message's details, the heading of who sent someone else's"
+  },
+  "messagesSelected": "{count} selected",
+  "@messagesSelected": {
+    "description": "The chat's title while messages are selected",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "messagesCopied": "{count, plural, =1{Message copied} other{{count} messages copied}}",
   "@messagesCopied": {
@@ -662,6 +887,52 @@
       }
     }
   },
+  "mergeChat": "Merge with another chat",
+  "@mergeChat": {
+    "description": "Action on a group chat to show it together with another that a bot relays messages between"
+  },
+  "unmergeChat": "Show the chats apart",
+  "@unmergeChat": {
+    "description": "Action on merged chats to show them as separate chats again"
+  },
+  "mergeChatTitle": "Merge chats",
+  "@mergeChatTitle": {
+    "description": "Title of the page that merges two chats"
+  },
+  "mergeWith": "Merge with",
+  "@mergeWith": {
+    "description": "Heading of the chats one can merge with"
+  },
+  "relayBotIn": "Bot in {chat}",
+  "@relayBotIn": {
+    "description": "Heading of the members of a chat to pick the bot from that relays messages to the other chat",
+    "placeholders": {
+      "chat": {
+        "type": "String",
+        "example": "Tox"
+      }
+    }
+  },
+  "relayedMessages": "{relayed} of {count} messages relayed",
+  "@relayedMessages": {
+    "description": "How many of a chat member's messages look like a bot relayed them",
+    "placeholders": {
+      "relayed": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "noChatsToMerge": "No other group chats",
+  "@noChatsToMerge": {
+    "description": "Shown when there are no chats to merge with"
+  },
+  "merge": "Merge",
+  "@merge": {
+    "description": "Button that merges the chats"
+  },
   "exported": "Data exported",
   "@exported": {
     "description": "Shown when the backup was saved"
@@ -669,6 +940,22 @@
   "exportFailed": "Couldn't export the data",
   "@exportFailed": {
     "description": "Error when the backup couldn't be made or saved"
+  },
+  "locationOff": "Turn on location to share where you are",
+  "@locationOff": {
+    "description": "Shown when sharing a location while location is off on the device"
+  },
+  "locationDenied": "bTox needs permission to use your location",
+  "@locationDenied": {
+    "description": "Shown when sharing a location without the permission"
+  },
+  "locationFailed": "Couldn't find where you are",
+  "@locationFailed": {
+    "description": "Error when the location couldn't be found"
+  },
+  "openSettings": "Settings",
+  "@openSettings": {
+    "description": "Button opening the device's settings to fix a problem"
   },
   "ownToxIdError": "This is your own Tox ID",
   "@ownToxIdError": {

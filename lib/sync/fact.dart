@@ -28,6 +28,12 @@ const _kindJoined = 12;
 const _kindSelfName = 13;
 const _kindPresent = 14;
 const _kindAddress = 15;
+const _kindCall = 16;
+const _kindCallRelay = 17;
+
+const _callNone = 0;
+const _callRinging = 1;
+const _callAnswered = 2;
 
 /// What a fact is about.
 @freezed
@@ -48,6 +54,18 @@ enum Role { founder, moderator, user, observer }
 enum Privacy { public, private }
 
 enum VoiceState { everyone, moderators, founder }
+
+/// A friend's call, as the home device has it.
+@freezed
+sealed class CallState with _$CallState {
+  const factory CallState.none() = NoCall;
+
+  /// Ringing at the home device, for a device to answer.
+  const factory CallState.ringing({required bool video}) = RingingCall;
+
+  /// Going on, through one of the account's devices.
+  const factory CallState.answered() = AnsweredCall;
+}
 
 /// A subject has at most one value of each kind.
 @freezed
@@ -70,6 +88,10 @@ sealed class FactValue with _$FactValue {
   const factory FactValue.selfName(String name) = SelfNameValue;
   const factory FactValue.present(bool present) = PresentValue;
   const factory FactValue.address(Uint8List address) = AddressValue;
+  const factory FactValue.call(CallState state) = CallValue;
+
+  /// The home device connects devices to the account's calls.
+  const factory FactValue.callRelay(bool relays) = CallRelayValue;
 
   /// From a newer version, or a value this one doesn't know: shows nothing.
   const factory FactValue.unknown(int kind) = UnknownValue;
@@ -93,6 +115,8 @@ sealed class FactValue with _$FactValue {
     SelfNameValue() => _kindSelfName,
     PresentValue() => _kindPresent,
     AddressValue() => _kindAddress,
+    CallValue() => _kindCall,
+    CallRelayValue() => _kindCallRelay,
     UnknownValue(:final kind) => kind,
   };
 }
@@ -189,6 +213,14 @@ ArrayWriter _encodeValue(FactValue value) {
     SelfNameValue(:final name) => f.string(name),
     PresentValue(:final present) => f.flag(present),
     AddressValue(:final address) => f.bin(address),
+    CallValue(:final state) => switch (state) {
+      NoCall() => f.uint(_callNone),
+      RingingCall(:final video) => f.array(
+        ArrayWriter().uint(_callRinging).flag(video),
+      ),
+      AnsweredCall() => f.uint(_callAnswered),
+    },
+    CallRelayValue(:final relays) => f.flag(relays),
     // Never re-encoded: stores keep the bytes they received.
     UnknownValue() => throw StateError('Unknown values are not written'),
   };
@@ -252,9 +284,24 @@ FactValue readValue(Fields f) => f.variant<FactValue>(
     _kindSelfName => FactValue.selfName(v.string()),
     _kindPresent => FactValue.present(v.flag()),
     _kindAddress => FactValue.address(v.bin()),
+    _kindCall => switch (_readCall(v)) {
+      final state? => FactValue.call(state),
+      null => null,
+    },
+    _kindCallRelay => FactValue.callRelay(v.flag()),
     _ => null,
   },
   FactValue.unknown,
+);
+
+/// Null for a state this version doesn't know.
+CallState? _readCall(Fields f) => f.variant<CallState?>(
+  (tag, c) => tag == _callRinging ? CallState.ringing(video: c.flag()) : null,
+  (tag) => switch (tag) {
+    _callNone => const CallState.none(),
+    _callAnswered => const CallState.answered(),
+    _ => null,
+  },
 );
 
 Fact readFact(Fields f) => (readSubject(f), readValue(f));

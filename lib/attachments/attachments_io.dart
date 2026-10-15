@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
 
+import 'package:btox/attachments/qoi.dart';
 import 'package:btox/models/content.dart';
 import 'package:btox/models/crypto.dart';
 import 'package:crypto/crypto.dart' show sha256;
@@ -76,6 +77,52 @@ Future<FileContent> copyAttachment(String directory, FileContent file) async {
   return file.copyWith(path: target);
 }
 
+/// Copies the picture [file] into [directory] as lossless QOI. A file that
+/// isn't a still picture, or has more pixels than QOI pictures shown, is
+/// copied as it is.
+Future<FileContent> savePictureAsQoi(String directory, XFile file) async {
+  ui.Image? image;
+  // Its size first, as decoding it takes all its pixels.
+  if (await _sizeOf(file.path) case final size?
+      when size.width * size.height <= maxQoiPixels) {
+    try {
+      final codec = await ui.instantiateImageCodec(await file.readAsBytes());
+      try {
+        if (codec.frameCount == 1) {
+          image = (await codec.getNextFrame()).image;
+        }
+      } finally {
+        codec.dispose();
+      }
+    } on Exception {
+      image = null;
+    }
+  }
+  if (image == null) {
+    return saveAttachment(directory, file);
+  }
+  final (width, height) = (image.width, image.height);
+  final pixels = await image.toByteData(
+    format: ui.ImageByteFormat.rawStraightRgba,
+  );
+  image.dispose();
+  if (pixels == null) {
+    return saveAttachment(directory, file);
+  }
+  final qoi = await compute(_encodeQoi, (
+    pixels.buffer.asUint8List(),
+    width,
+    height,
+  ));
+  final name = '${path.basenameWithoutExtension(file.name)}.qoi';
+  final target = newAttachmentPath(directory, name);
+  await File(target).writeAsBytes(qoi);
+  return FileContent(name: name, size: qoi.length, path: target);
+}
+
+Uint8List _encodeQoi((Uint8List, int, int) picture) =>
+    encodeQoi(picture.$1, picture.$2, picture.$3);
+
 Future<void> deleteAttachment(String path) => File(path).delete();
 
 bool attachmentExists(String path) => File(path).existsSync();
@@ -88,6 +135,14 @@ Future<BlobId> blobOf(String path) async => BlobId(
 /// photos are far bigger than they're shown.
 Widget? imagePreview(String file, {required int size}) =>
     switch (path.extension(file).toLowerCase()) {
+      '.qoi' => _shaped(
+        file,
+        Image(
+          image: _QoiImage(file, size: size),
+          fit: BoxFit.cover,
+          errorBuilder: _missing,
+        ),
+      ),
       final extension when _imageExtensions.contains(extension) => _shaped(
         file,
         Image(
@@ -119,13 +174,23 @@ Future<Size?> _sizeOf(String file) async {
   }
   try {
     final Size size;
-    final buffer = await ui.ImmutableBuffer.fromFilePath(file);
-    try {
-      final descriptor = await ui.ImageDescriptor.encoded(buffer);
-      size = Size(descriptor.width.toDouble(), descriptor.height.toDouble());
-      descriptor.dispose();
-    } finally {
-      buffer.dispose();
+    if (path.extension(file).toLowerCase() == '.qoi') {
+      final opened = await File(file).open();
+      try {
+        final (:width, :height) = qoiSize(await opened.read(qoiHeaderSize));
+        size = Size(width.toDouble(), height.toDouble());
+      } finally {
+        await opened.close();
+      }
+    } else {
+      final buffer = await ui.ImmutableBuffer.fromFilePath(file);
+      try {
+        final descriptor = await ui.ImageDescriptor.encoded(buffer);
+        size = Size(descriptor.width.toDouble(), descriptor.height.toDouble());
+        descriptor.dispose();
+      } finally {
+        buffer.dispose();
+      }
     }
     return _sizes[file] = size;
   } on Exception {
@@ -175,6 +240,74 @@ Widget _shaped(String file, Widget child) => _Sized(
   waiting: const AspectRatio(aspectRatio: 1),
   missing: const AspectRatio(aspectRatio: 1, child: _broken),
 );
+
+/// [file] as a picture at its own size, to look at closely.
+Widget picture(String file) => _Sized(
+  file: file,
+  shown: (_) => Image(
+    image: path.extension(file).toLowerCase() == '.qoi'
+        ? _QoiImage(file)
+        : FileImage(File(file)),
+    errorBuilder: _missing,
+  ),
+  waiting: const SizedBox.shrink(),
+);
+
+QoiPixels _decodeQoi((Uint8List, int?) picture) =>
+    decodeQoi(picture.$1, fit: picture.$2);
+
+/// A QOI picture, which Flutter can't decode itself, decoded away from the
+/// UI to fit [size] pixels square where given.
+@immutable
+final class _QoiImage extends ImageProvider<_QoiImage> {
+  final String file;
+  final int? size;
+
+  const _QoiImage(this.file, {this.size});
+
+  @override
+  Future<_QoiImage> obtainKey(ImageConfiguration configuration) =>
+      SynchronousFuture(this);
+
+  @override
+  ImageStreamCompleter loadImage(_QoiImage key, ImageDecoderCallback decode) =>
+      OneFrameImageStreamCompleter(_load());
+
+  Future<ImageInfo> _load() async {
+    if (await File(file).length() > maxQoiBytes) {
+      throw const FormatException('Too big for a QOI picture to show');
+    }
+    final (:width, :height, :rgba) = await compute(_decodeQoi, (
+      await File(file).readAsBytes(),
+      size,
+    ));
+    final buffer = await ui.ImmutableBuffer.fromUint8List(rgba);
+    final descriptor = ui.ImageDescriptor.raw(
+      buffer,
+      width: width,
+      height: height,
+      pixelFormat: ui.PixelFormat.rgba8888,
+    );
+    try {
+      final codec = await descriptor.instantiateCodec();
+      try {
+        return ImageInfo(image: (await codec.getNextFrame()).image);
+      } finally {
+        codec.dispose();
+      }
+    } finally {
+      descriptor.dispose();
+      buffer.dispose();
+    }
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      other is _QoiImage && other.file == file && other.size == size;
+
+  @override
+  int get hashCode => Object.hash(file, size);
+}
 
 const _broken = Icon(Icons.broken_image);
 

@@ -3,7 +3,9 @@ import 'dart:math';
 import 'package:btox/l10n/generated/app_localizations.dart';
 import 'package:btox/models/chat_view.dart';
 import 'package:btox/models/content.dart';
+import 'package:btox/pages/message_info_page.dart';
 import 'package:btox/widgets/bubble_footer.dart';
+import 'package:btox/widgets/call_entry.dart';
 import 'package:btox/widgets/chat_context_menu.dart';
 import 'package:btox/widgets/chat_file_bubble.dart';
 import 'package:btox/widgets/chat_location_bubble.dart';
@@ -29,6 +31,8 @@ const _kRunGap = Duration(minutes: 3);
 
 /// Space above a run, beyond the margin of each bubble in it.
 const _kRunSpacing = 6.0;
+
+const _kSelectedOpacity = 0.12;
 
 /// Whether [below] continues the run of [above]. In group chats, authors are
 /// told apart by their keys, or by name where a bot relayed their messages.
@@ -62,7 +66,11 @@ final class ChatItem extends HookWidget {
   // Of a run with the messages above and below: see [inRun].
   final bool joinsAbove;
   final bool joinsBelow;
+  // Null while no messages are selected.
+  final bool? selected;
   final void Function()? onReply;
+  final void Function()? onSelect;
+  final void Function()? onForward;
   // Null for a message without text.
   final void Function()? onCopy;
 
@@ -72,7 +80,10 @@ final class ChatItem extends HookWidget {
     required this.entry,
     this.joinsAbove = false,
     this.joinsBelow = false,
+    this.selected,
     this.onReply,
+    this.onSelect,
+    this.onForward,
     this.onCopy,
   });
 
@@ -124,6 +135,7 @@ final class ChatItem extends HookWidget {
         footer: footer,
       ),
       LocationContent(:final latitude, :final longitude) => ChatLocationBubble(
+        profile: chat.profile,
         latitude: latitude,
         longitude: longitude,
         color: color,
@@ -161,6 +173,43 @@ final class ChatItem extends HookWidget {
         ),
       ),
     );
+    if (selected case final selected?) {
+      return Column(
+        children: [
+          if (!joinsAbove) const SizedBox(height: _kRunSpacing),
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: onSelect,
+            onLongPress: onSelect,
+            child: ColoredBox(
+              color: selected
+                  ? theme.colorScheme.primary.withValues(
+                      alpha: _kSelectedOpacity,
+                    )
+                  : Colors.transparent,
+              child: Row(
+                children: [
+                  Padding(
+                    padding: EdgeInsetsDirectional.only(
+                      start: _kBubbleMargin.left,
+                    ),
+                    child: Icon(
+                      selected
+                          ? Icons.check_circle
+                          : Icons.radio_button_unchecked,
+                      color: selected
+                          ? theme.colorScheme.primary
+                          : theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  Expanded(child: IgnorePointer(child: placed)),
+                ],
+              ),
+            ),
+          ),
+        ],
+      );
+    }
     return Column(
       children: [
         if (!joinsAbove) const SizedBox(height: _kRunSpacing),
@@ -214,10 +263,13 @@ final class ChatItem extends HookWidget {
                   context,
                   details.globalPosition,
                   onReply: () => onReply?.call(),
-                  onForward: notYet,
+                  onForward: onForward,
                   onCopy: onCopy,
-                  onSelect: notYet,
-                  onInfo: notYet,
+                  onSelect: () => onSelect?.call(),
+                  onInfo: () => Navigator.push(
+                    context,
+                    MessageInfoPage.route(chat, entry),
+                  ),
                   onDelete: notYet,
                 );
               },
@@ -237,6 +289,9 @@ final class ChatNotice extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (entry.content case final CallContent call) {
+      return ChatCallNotice(call: call);
+    }
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
       child: Center(

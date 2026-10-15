@@ -23,10 +23,14 @@ const _tagNotice = 4;
 const _tagFileStarted = 5;
 const _tagFileEnded = 6;
 const _tagFileAnswered = 7;
+const _tagCall = 8;
+const _tagCallEnded = 9;
 const _tagWantFriend = 64;
 const _tagUnwantFriend = 65;
 const _tagReadUpTo = 66;
 const _tagFriendRequested = 67;
+const _tagMergeChat = 68;
+const _tagRelayBot = 69;
 const _tagFact = 70;
 const _tagWant = 71;
 const _tagChatInvite = 72;
@@ -78,6 +82,22 @@ sealed class EventContent with _$EventContent {
     required PublicKey pk,
     required String message,
   }) = FriendRequested;
+  // [chat] shows with [into], as [bot] in [chat] and [intoBot] in [into]
+  // relay messages between them, or unmerged where [merged] is false.
+  const factory EventContent.mergeChat({
+    required ChatId chat,
+    required PublicKey bot,
+    required ChatId into,
+    required PublicKey intoBot,
+    required bool merged,
+  }) = MergeChat;
+  // [bot] in [chat] relays messages from another chat as `<name> text`, or
+  // no more where [relays] is false.
+  const factory EventContent.relayBot({
+    required ChatId chat,
+    required PublicKey bot,
+    required bool relays,
+  }) = RelayBot;
   // What Tox says [subject] has.
   const factory EventContent.fact({
     required Subject subject,
@@ -145,6 +165,19 @@ sealed class EventContent with _$EventContent {
     required EventId file,
     required bool accepted,
   }) = FileAnswered;
+  // A call with the friend, ringing.
+  const factory EventContent.call({
+    required String sender,
+    required bool incoming,
+    required bool video,
+  }) = Call;
+  // How long the call was connected, if it was, and [declined] if it rang
+  // here and was declined, so it wasn't missed.
+  const factory EventContent.callEnded({
+    required EventId call,
+    Duration? duration,
+    @Default(false) bool declined,
+  }) = CallEnded;
   // Sets [setting] for [scope]. Per scope and kind, the last writer wins.
   const factory EventContent.setting({
     required Scope scope,
@@ -210,6 +243,26 @@ ArrayWriter _encodeContent(EventContent content) {
     FriendRequested(:final pk, :final message) => of(
       _tagFriendRequested,
       f.bin(pk.bytes).string(message),
+    ),
+    MergeChat(
+      :final chat,
+      :final bot,
+      :final into,
+      :final intoBot,
+      :final merged,
+    ) =>
+      of(
+        _tagMergeChat,
+        f
+            .array(encodeChat(chat))
+            .bin(bot.bytes)
+            .array(encodeChat(into))
+            .bin(intoBot.bytes)
+            .flag(merged),
+      ),
+    RelayBot(:final chat, :final bot, :final relays) => of(
+      _tagRelayBot,
+      f.array(encodeChat(chat)).bin(bot.bytes).flag(relays),
     ),
     FactContent(:final subject, :final value) => of(
       _tagFact,
@@ -279,6 +332,14 @@ ArrayWriter _encodeContent(EventContent content) {
       _tagFileAnswered,
       f.bin(file.bytes).flag(accepted),
     ),
+    Call(:final sender, :final incoming, :final video) => of(
+      _tagCall,
+      f.string(sender).flag(incoming).flag(video),
+    ),
+    CallEnded(:final call, :final duration, :final declined) => of(
+      _tagCallEnded,
+      f.bin(call.bytes).optUint(duration?.inMilliseconds).flag(declined),
+    ),
     SettingContent(:final scope, :final setting) => of(
       _tagSetting,
       addSetting(addScope(f, scope), setting),
@@ -314,6 +375,22 @@ EventContent _decodeContent(Fields event) => event.variant<EventContent>(
     ),
     _tagFriendRequested => c.fields(
       (f) => FriendRequested(pk: PublicKey(f.bin()), message: f.string()),
+    ),
+    _tagMergeChat => c.fields(
+      (f) => MergeChat(
+        chat: decodeChat(f),
+        bot: PublicKey(f.bin()),
+        into: decodeChat(f),
+        intoBot: PublicKey(f.bin()),
+        merged: f.flag(),
+      ),
+    ),
+    _tagRelayBot => c.fields(
+      (f) => RelayBot(
+        chat: decodeChat(f),
+        bot: PublicKey(f.bin()),
+        relays: f.flag(),
+      ),
     ),
     _tagFact => c.fields((f) {
       final (subject, value) = readFact(f);
@@ -384,6 +461,19 @@ EventContent _decodeContent(Fields event) => event.variant<EventContent>(
     ),
     _tagFileAnswered => c.fields(
       (f) => FileAnswered(file: EventId(f.bin()), accepted: f.flag()),
+    ),
+    _tagCall => c.fields(
+      (f) => Call(sender: f.string(), incoming: f.flag(), video: f.flag()),
+    ),
+    _tagCallEnded => c.fields(
+      (f) => CallEnded(
+        call: EventId(f.bin()),
+        duration: switch (f.optUint()) {
+          final ms? => Duration(milliseconds: ms),
+          null => null,
+        },
+        declined: f.laterFlag(),
+      ),
     ),
     _tagSetting => c.fields(
       (f) => SettingContent(scope: readScope(f), setting: readSetting(f)),

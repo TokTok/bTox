@@ -19,6 +19,10 @@ const _tagHistory = 5;
 const _tagWantBlob = 6;
 const _tagNoBlob = 7;
 const _tagFacts = 8;
+const _tagCall = 9;
+
+const _callConnect = 0;
+const _callHangUp = 1;
 
 /// The Tox file kind blobs are sent as. It reuses the sync packet ID.
 const blobFileKind = syncPacketId;
@@ -30,6 +34,17 @@ extension type const Features(int bits) {
   static const accountSync = Features(1);
 
   bool contains(Features other) => bits & other.bits == other.bits;
+}
+
+/// What a device asks of a friend's call.
+@freezed
+sealed class CallAction with _$CallAction {
+  /// Answers it, or places it, and has the home device call this device
+  /// once it's connected.
+  const factory CallAction.connect({required bool video}) = ConnectCall;
+
+  /// Ends it, or declines it while it rings.
+  const factory CallAction.hangUp() = HangUpCall;
 }
 
 @freezed
@@ -63,6 +78,10 @@ sealed class SessionMessage with _$SessionMessage {
   /// Live facts, which aren't stored: with [all], every one there is.
   const factory SessionMessage.facts(List<Fact> facts, {required bool all}) =
       FactsUpdate;
+
+  /// From a device, about the account's call with [friend].
+  const factory SessionMessage.call(PublicKey friend, CallAction action) =
+      CallControl;
 
   const SessionMessage._();
 
@@ -100,6 +119,13 @@ sealed class SessionMessage with _$SessionMessage {
             all: f.flag(),
           ),
         ),
+        _tagCall => m.fields((f) {
+          final friend = PublicKey(f.bin());
+          return switch (_readCallAction(f)) {
+            final action? => CallControl(friend, action),
+            null => null,
+          };
+        }),
         _ => null,
       };
     }, (_) => null),
@@ -161,6 +187,15 @@ sealed class SessionMessage with _$SessionMessage {
         m.uint(_tagWantBlob).bin(blob.bytes);
       case NoBlob(:final blob):
         m.uint(_tagNoBlob).bin(blob.bytes);
+      case CallControl(:final friend, :final action):
+        final fields = ArrayWriter().bin(friend.bytes);
+        switch (action) {
+          case ConnectCall(:final video):
+            fields.array(ArrayWriter().uint(_callConnect).flag(video));
+          case HangUpCall():
+            fields.uint(_callHangUp);
+        }
+        m.uint(_tagCall).array(fields);
       case FactsUpdate(:final facts, :final all):
         m
             .uint(_tagFacts)
@@ -173,3 +208,9 @@ sealed class SessionMessage with _$SessionMessage {
     return m.encode();
   }
 }
+
+/// Null for an action this version doesn't know.
+CallAction? _readCallAction(Fields f) => f.variant<CallAction?>(
+  (tag, a) => tag == _callConnect ? CallAction.connect(video: a.flag()) : null,
+  (tag) => tag == _callHangUp ? const CallAction.hangUp() : null,
+);

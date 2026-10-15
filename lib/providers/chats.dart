@@ -1,8 +1,10 @@
 import 'dart:async';
 
 import 'package:btox/db/database.dart';
+import 'package:btox/messages/message_format.dart';
 import 'package:btox/models/chat_details.dart';
 import 'package:btox/models/chat_log.dart';
+import 'package:btox/models/chat_merge.dart';
 import 'package:btox/models/chat_view.dart';
 import 'package:btox/models/content.dart';
 import 'package:btox/models/crypto.dart';
@@ -46,15 +48,85 @@ Stream<Map<GraphId, List<int>>> _receivedRanks(Ref ref, Id<Profiles> id) {
 @riverpod
 Map<GraphId, (int, EventId)> newestEvents(Ref ref, ChatRef chat) {
   final newest = <GraphId, (int, EventId)>{};
-  for (final (id, event)
-      in ref.watch(_syncEventsProvider(chat.profile, chat.graph)).value ??
-          const <(EventId, SyncEvent)>[]) {
-    if (isAfter((event.rank, id), newest[chat.graph])) {
-      newest[chat.graph] = (event.rank, id);
+  for (final graph in _graphsOf(ref, chat)) {
+    for (final (id, event)
+        in ref.watch(_syncEventsProvider(chat.profile, graph)).value ??
+            const <(EventId, SyncEvent)>[]) {
+      if (isAfter((event.rank, id), newest[graph])) {
+        newest[graph] = (event.rank, id);
+      }
     }
   }
   return newest;
 }
+
+/// The chats [chat] shows with, itself first, where it's merged.
+@riverpod
+ChatMerge? chatMerge(Ref ref, ChatRef chat) => ref.watch(
+  accountProvider(chat.profile).select(
+    (account) => switch (account.value) {
+      final account? => mergedChats(account)[chat.graph],
+      null => null,
+    },
+  ),
+);
+
+@riverpod
+PictureEncoding pictureFormat(Ref ref, ChatRef chat) => ref.watch(
+  accountProvider(chat.profile).select(
+    (account) =>
+        account.value
+            ?.setting<PictureFormat>(Scope.conversation(chat.graph))
+            ?.format ??
+        PictureEncoding.original,
+  ),
+);
+
+typedef ChatSender = ({
+  PublicKey key,
+  String name,
+  int messages,
+  // Of them, those that look like a bot relayed them.
+  int relayed,
+});
+
+/// Who has written in a group chat, by their last name, those whose
+/// messages look relayed first.
+@riverpod
+List<ChatSender> chatSenders(Ref ref, ChatRef chat) {
+  final senders = <PublicKey, ChatSender>{};
+  for (final (_, event)
+      in ref.watch(_syncEventsProvider(chat.profile, chat.graph)).value ??
+          const <(EventId, SyncEvent)>[]) {
+    if (event.content case Received(
+      from: final from?,
+      :final sender,
+      :final message,
+    )) {
+      final known = senders[from];
+      senders[from] = (
+        key: from,
+        name: sender,
+        messages: (known?.messages ?? 0) + 1,
+        relayed:
+            (known?.relayed ?? 0) +
+            (relayed(plainText(message)) == null ? 0 : 1),
+      );
+    }
+  }
+  return senders.values.toList()..sort(
+    (a, b) => a.relayed != b.relayed
+        ? b.relayed.compareTo(a.relayed)
+        : b.messages.compareTo(a.messages),
+  );
+}
+
+List<GraphId> _graphsOf(Ref ref, ChatRef chat) => [
+  for (final side
+      in ref.watch(chatMergeProvider(chat))?.sides ??
+          [MergeSide(graph: chat.graph, bots: const {})])
+    side.graph,
+];
 
 bool isOnline(Facts live, PublicKey pk) =>
     live.find(
@@ -169,6 +241,11 @@ AsyncValue<List<ChatSummary>> chatsForProfile(Ref ref, Id<Profiles> id) {
   final drafts = ref.watch(draftsProvider(id)).value ?? {};
   final account = ref.watch(accountProvider(id));
   final now = ref.watch(_muteClockProvider(id));
+  final merges = mergedChats(account.value ?? AccountState.of(const []));
+  final merged = {
+    for (final graph in merges.keys)
+      graph: ?ref.watch(_mergedEntriesProvider(ChatRef(id, graph))).value,
+  };
   return account.whenData(
     (account) => _chats(
       id,
@@ -179,6 +256,8 @@ AsyncValue<List<ChatSummary>> chatsForProfile(Ref ref, Id<Profiles> id) {
       received,
       latest,
       drafts,
+      merges,
+      merged,
       now,
     ),
   );
@@ -238,6 +317,15 @@ AsyncValue<ChatDetails> chatDetails(Ref ref, ChatRef chat) {
   if (self == null) {
     return const AsyncLoading();
   }
+  // Only a chat with a relay bot, merged with none, has one side.
+  final relayed = switch (ref.watch(chatMergeProvider(chat))?.sides) {
+    [MergeSide(:final bots)] => relayedNames(
+      ref.watch(_syncEventsProvider(chat.profile, chat.graph)).value ??
+          const [],
+      bots.single,
+    ),
+    _ => null,
+  };
   return ref
       .watch(chatProvider(chat))
       .whenData(
@@ -246,6 +334,7 @@ AsyncValue<ChatDetails> chatDetails(Ref ref, ChatRef chat) {
           self,
           account.value ?? AccountState.of(const []),
           live,
+          relayed: relayed,
         ),
       );
 }
@@ -309,10 +398,42 @@ ChatLog _chatLog(Ref ref, ChatRef chat) =>
 
 @riverpod
 AsyncValue<List<ChatEntry>> _eventEntries(Ref ref, ChatRef chat) {
+  if (ref.watch(chatMergeProvider(chat)) != null) {
+    return ref
+        .watch(_mergedEntriesProvider(chat))
+        .whenData((entries) => [for (final e in entries) e.entry]);
+  }
   final log = ref.watch(_chatLogProvider(chat));
   return ref
       .watch(_syncEventsProvider(chat.profile, chat.graph))
       .whenData(log.update);
+}
+
+// One per merged chat, so each of its chats' entries are added to as their
+// events come.
+@riverpod
+MergedLog _mergedLog(Ref ref, ChatRef chat) =>
+    MergedLog(ref.watch(messageFormatsProvider(chat.profile)));
+
+@riverpod
+AsyncValue<List<MergedEntry>> _mergedEntries(Ref ref, ChatRef chat) {
+  final merge = ref.watch(chatMergeProvider(chat));
+  if (merge == null) {
+    return const AsyncData([]);
+  }
+  final log = ref.watch(_mergedLogProvider(chat));
+  final events = <List<(EventId, SyncEvent)>>[];
+  for (final side in merge.sides) {
+    switch (ref.watch(_syncEventsProvider(chat.profile, side.graph))) {
+      case AsyncData(:final value):
+        events.add(value);
+      case AsyncError(:final error, :final stackTrace):
+        return AsyncError(error, stackTrace);
+      case AsyncLoading():
+        return const AsyncLoading();
+    }
+  }
+  return AsyncData(log.update(merge, events));
 }
 
 List<ChatSummary> _chats(
@@ -324,22 +445,35 @@ List<ChatSummary> _chats(
   Map<GraphId, List<int>> received,
   Map<GraphId, ChatEntry> latest,
   Map<GraphId, StoredDraft> drafts,
+  Map<GraphId, ChatMerge> merges,
+  Map<GraphId, List<MergedEntry>> merged,
   DateTime now,
 ) {
-  int unread(GraphId graph) => (received[graph] ?? const [])
-      .where((rank) => rank > (account.read[graph]?.$1 ?? -1))
-      .length;
+  int unread(GraphId graph) => switch (merged[graph]) {
+    final entries? => unreadIn(entries, account.read),
+    null =>
+      (received[graph] ?? const [])
+          .where((rank) => rank > (account.read[graph]?.$1 ?? -1))
+          .length,
+  };
   Mute? muteOf(GraphId graph) =>
       switch (account.setting<Mute>(Scope.conversation(graph))) {
         final mute? when mute.holdsAt(now) => mute,
         _ => null,
       };
+  ChatEntry? last(GraphId graph) =>
+      merged[graph]?.lastOrNull?.entry ?? latest[graph];
   Content? draft(GraphId graph) => switch (drafts[graph]) {
     StoredDraft(:final message) when message.trim().isNotEmpty => TextContent(
       text: message,
     ),
     final draft? => draft.attachments.firstOrNull,
     null => null,
+  };
+  // Shown with the chats they're merged into.
+  final hidden = {
+    for (final merge in merges.values)
+      for (final side in merge.sides.skip(1)) side.graph,
   };
 
   final chats = [
@@ -357,14 +491,14 @@ List<ChatSummary> _chats(
           draft: draft(GraphId.friend(home, pk)),
         ),
     for (final MapEntry(key: chat, value: info) in account.chats.entries)
-      if (info.joined)
+      if (info.joined && !hidden.contains(chat.graph))
         ChatSummary(
           ref: ChatRef(profile, chat.graph),
           name: info.name,
           key: chat.id,
           unread: unread(chat.graph),
           mute: muteOf(chat.graph),
-          last: latest[chat.graph],
+          last: last(chat.graph),
           draft: draft(chat.graph),
         ),
   ];

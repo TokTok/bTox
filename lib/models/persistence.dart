@@ -116,6 +116,35 @@ abstract class InviteAnswers extends Table {
   TextColumn get password => text().nullable()();
 }
 
+/// Chats of a linked account to merge or show apart, until the background
+/// service writes the change as an event.
+@DataClassName('MergeChange')
+abstract class ChatMerges extends Table {
+  IntColumn get id =>
+      integer().autoIncrement().map(const IdConverter<ChatMerges>())();
+  IntColumn get profileId =>
+      integer().references(Profiles, #id).map(const IdConverter<Profiles>())();
+  TextColumn get chat => text().map(const HexConverter(GraphId.fromJson))();
+  TextColumn get bot => text().map(const HexConverter(PublicKey.fromJson))();
+  TextColumn get into => text().map(const HexConverter(GraphId.fromJson))();
+  TextColumn get intoBot =>
+      text().map(const HexConverter(PublicKey.fromJson))();
+  BoolColumn get merged => boolean()();
+}
+
+/// Chats of an account to show a relay bot's names in, or no more, until
+/// the background service writes the change as an event.
+@DataClassName('RelayBotChange')
+abstract class RelayBots extends Table {
+  IntColumn get id =>
+      integer().autoIncrement().map(const IdConverter<RelayBots>())();
+  IntColumn get profileId =>
+      integer().references(Profiles, #id).map(const IdConverter<Profiles>())();
+  TextColumn get chat => text().map(const HexConverter(GraphId.fromJson))();
+  TextColumn get bot => text().map(const HexConverter(PublicKey.fromJson))();
+  BoolColumn get relays => boolean()();
+}
+
 /// Settings of an account to set or clear, until the background service
 /// writes the change as an event.
 @DataClassName('SettingChange')

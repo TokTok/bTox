@@ -1,6 +1,9 @@
 import 'dart:typed_data';
 import 'dart:ui' show PlatformDispatcher;
 
+import 'package:btox/calls/android_calls.dart';
+import 'package:btox/calls/call_channel.dart';
+import 'package:btox/calls/calls.dart';
 import 'package:btox/l10n/generated/app_localizations.dart';
 import 'package:btox/logger.dart';
 import 'package:btox/models/chat_log.dart';
@@ -67,6 +70,9 @@ final class MessageNotifier {
   )?
   request;
 
+  /// Rings, and tells of missed calls.
+  final CallNotifier? calls;
+
   final Future<void> Function(
     Id<Profiles> profile,
     EventId id,
@@ -81,6 +87,7 @@ final class MessageNotifier {
     this._show,
     this._cancel, {
     this.request,
+    this.calls,
     Future<void> Function(
       Id<Profiles> profile,
       EventId id,
@@ -95,7 +102,10 @@ final class MessageNotifier {
 
   static Future<MessageNotifier> android() async {
     final plugin = FlutterLocalNotificationsPlugin();
-    await plugin.initialize(settings: _settings);
+    await plugin.initialize(
+      settings: _settings,
+      onDidReceiveBackgroundNotificationResponse: declineFromNotification,
+    );
     final l10n = lookupAppLocalizations(
       basicLocaleListResolution(
         PlatformDispatcher.instance.locales,
@@ -175,6 +185,7 @@ final class MessageNotifier {
         payload: '${profile.value}',
       ),
       uninvite: (id) => plugin.cancel(id: _idOfKey(id), tag: _inviteTag),
+      calls: AndroidCallNotifier(plugin),
     );
   }
 
@@ -253,10 +264,11 @@ Future<void> showServiceNotification(String summary, List<String> lines) =>
     );
 
 /// Calls [openChat] for tapped notifications, including one that started
-/// the app, and [openRequests] for a friend request or an invite to a
-/// profile.
+/// the app, [answer] for a call answered from its notification, which then
+/// shows, and [openRequests] for a friend request or an invite to a profile.
 Future<void> handleNotificationTaps(
   void Function(ChatRef) openChat, {
+  required void Function(ChatRef) answer,
   required void Function(Id<Profiles>) openRequests,
 }) async {
   if (!AnyPlatform.instance.isAndroid) {
@@ -265,7 +277,12 @@ Future<void> handleNotificationTaps(
   void open(NotificationResponse? response) {
     final payload = response?.payload ?? '';
     if (ChatRef.ofKey(payload) case final chat?) {
-      openChat(chat);
+      switch (response?.actionId) {
+        case answerAction:
+          answer(chat);
+        case null:
+          openChat(chat);
+      }
     } else if (int.tryParse(payload) case final profile?) {
       openRequests(Id(profile));
     }
@@ -275,11 +292,22 @@ Future<void> handleNotificationTaps(
   await plugin.initialize(
     settings: _settings,
     onDidReceiveNotificationResponse: open,
+    onDidReceiveBackgroundNotificationResponse: declineFromNotification,
   );
   final launch = await plugin.getNotificationAppLaunchDetails();
   if (launch != null && launch.didNotificationLaunchApp) {
     WidgetsBinding.instance.addPostFrameCallback(
       (_) => open(launch.notificationResponse),
     );
+  }
+}
+
+/// Declines a call from its notification, without showing the app.
+@pragma('vm:entry-point')
+void declineFromNotification(NotificationResponse response) {
+  if (response.actionId == declineAction) {
+    if (ChatRef.ofKey(response.payload ?? '') case final chat?) {
+      CallCommands.hangUp(chat.profile);
+    }
   }
 }

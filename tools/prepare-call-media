@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+
+# Downloads the libraries the call media plugin builds on iOS, macOS, Linux
+# and Windows into packages/btox_call_media/third_party.
+
+set -eux
+
+THIRD_PARTY=packages/btox_call_media/third_party
+
+# macOS has shasum but no sha256sum.
+if command -v sha256sum >/dev/null; then
+  SHA256=(sha256sum)
+else
+  SHA256=(shasum -a 256)
+fi
+
+# fetch NAME URL SHA256
+fetch() {
+  if [ -d "$THIRD_PARTY/$1" ]; then
+    return
+  fi
+  # Unpacked aside and moved in place, so a failure leaves nothing behind.
+  rm -rf "$THIRD_PARTY/$1.tmp"
+  mkdir -p "$THIRD_PARTY/$1.tmp"
+  curl -fL -o "$THIRD_PARTY/$1.tar.gz" "$2"
+  echo "$3  $THIRD_PARTY/$1.tar.gz" | "${SHA256[@]}" -c -
+  tar --strip-components=1 -C "$THIRD_PARTY/$1.tmp" -zxf "$THIRD_PARTY/$1.tar.gz"
+  rm "$THIRD_PARTY/$1.tar.gz"
+  mv "$THIRD_PARTY/$1.tmp" "$THIRD_PARTY/$1"
+}
+
+fetch miniaudio \
+  https://github.com/mackron/miniaudio/archive/refs/tags/0.11.25.tar.gz \
+  b900edcffe979816e2560a0580b9b1216d674b4f17fbadeca8f777a7f8ab0274
+fetch speexdsp \
+  https://github.com/xiph/speexdsp/archive/refs/tags/SpeexDSP-1.2.1.tar.gz \
+  d17ca363654556a4ff1d02cc13d9eb1fc5a8642c90b40bd54ce266c3807b91a7

@@ -3,10 +3,13 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:btox/api/toxcore/tox.dart' as api;
+import 'package:btox/api/toxcore/tox_av.dart' as api;
 import 'package:btox/api/toxcore/tox_events.dart';
 import 'package:btox/ffi/toxcore.dart' as ffi;
 import 'package:btox/logger.dart';
 import 'package:btox/models/crypto.dart';
+
+import 'fake_tox_av.dart';
 
 const _logger = Logger(['FakeToxcore']);
 
@@ -69,6 +72,11 @@ final class FakeToxcore extends api.Tox {
     }
     _events.add(event);
   }
+
+  final av = FakeToxAv();
+
+  @override
+  api.ToxAv startAv() => av;
 
   @override
   ffi.Tox_Connection selfGetConnectionStatus() => _connection;
