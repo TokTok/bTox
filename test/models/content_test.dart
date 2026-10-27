@@ -8,6 +8,12 @@ void main() {
       FileContent(name: 'file.txt', size: 3, path: '/tmp/file.txt'),
       LocationContent(latitude: 1.2, longitude: 2.3),
       TextContent(text: 'Hello'),
+      CallContent(
+        incoming: true,
+        video: true,
+        ended: true,
+        duration: Duration(seconds: 5),
+      ),
     ]) {
       expect(converter.fromSql(converter.toSql(content)), content);
     }
@@ -33,6 +39,7 @@ void main() {
       const LocationContent(latitude: 1.5, longitude: 2.5).plainText,
       'geo:1.5,2.5',
     );
+    expect(const CallContent(incoming: false).plainText, '');
   }, tags: ['models']);
 
   test('only places on Earth are locations', () {

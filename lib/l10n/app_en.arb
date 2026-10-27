@@ -448,6 +448,134 @@
   "@linkFailed": {
     "description": "Error when a linked account couldn't be added"
   },
+  "chats": "Chats",
+  "@chats": {
+    "description": "The tab of the main page listing chats"
+  },
+  "calls": "Calls",
+  "@calls": {
+    "description": "The tab of the main page listing calls"
+  },
+  "voiceCall": "Voice call",
+  "@voiceCall": {
+    "description": "A call button's tooltip, and a call still going on in a chat"
+  },
+  "videoCall": "Video call",
+  "@videoCall": {
+    "description": "A video call button's tooltip, and a video call still going on in a chat"
+  },
+  "outgoingVideoCall": "Outgoing video call",
+  "@outgoingVideoCall": {
+    "description": "A video call we made, in a chat"
+  },
+  "incomingVideoCall": "Incoming video call",
+  "@incomingVideoCall": {
+    "description": "A video call the friend made, in a chat and while it rings"
+  },
+  "missedVideoCall": "Missed video call",
+  "@missedVideoCall": {
+    "description": "A video call that rang here and wasn't answered"
+  },
+  "callCamera": "Camera",
+  "@callCamera": {
+    "description": "The button that turns the camera on or off in a call"
+  },
+  "flipCamera": "Switch camera",
+  "@flipCamera": {
+    "description": "The button that switches between the front and back camera in a call"
+  },
+  "cameraNeeded": "bTox may not use the camera, so the call goes on without it",
+  "@cameraNeeded": {
+    "description": "Shown when bTox may not use the camera for a video call, which goes on without video"
+  },
+  "outgoingCall": "Outgoing voice call",
+  "@outgoingCall": {
+    "description": "A call we made, in a chat"
+  },
+  "incomingCall": "Incoming voice call",
+  "@incomingCall": {
+    "description": "A call the friend made, in a chat and while it rings"
+  },
+  "missedCall": "Missed voice call",
+  "@missedCall": {
+    "description": "A call that rang here and wasn't answered"
+  },
+  "callWithDuration": "{call} · {duration}",
+  "@callWithDuration": {
+    "description": "A call in a chat, with how long it was",
+    "placeholders": {
+      "call": {"type": "String"},
+      "duration": {"type": "String"}
+    }
+  },
+  "incomingCalls": "Incoming calls",
+  "@incomingCalls": {
+    "description": "The notification channel that rings"
+  },
+  "missedCalls": "Missed calls",
+  "@missedCalls": {
+    "description": "The notification channel for missed calls"
+  },
+  "callOngoing": "Call in progress",
+  "@callOngoing": {
+    "description": "The notification while a call goes on"
+  },
+  "calling": "Calling…",
+  "@calling": {
+    "description": "Our call, while it rings at the friend's"
+  },
+  "answerCall": "Answer",
+  "@answerCall": {
+    "description": "The button that answers a call"
+  },
+  "declineCall": "Decline",
+  "@declineCall": {
+    "description": "The button that declines a call"
+  },
+  "hangUp": "Hang up",
+  "@hangUp": {
+    "description": "The button that ends a call"
+  },
+  "muteCall": "Mute",
+  "@muteCall": {
+    "description": "The button that mutes the microphone in a call"
+  },
+  "callSpeaker": "Speaker",
+  "@callSpeaker": {
+    "description": "The button that puts a call on the loudspeaker"
+  },
+  "callEarpiece": "Phone",
+  "@callEarpiece": {
+    "description": "Where a call's audio can go: the phone's earpiece"
+  },
+  "callWired": "Headphones",
+  "@callWired": {
+    "description": "Where a call's audio can go: wired headphones"
+  },
+  "callBluetooth": "Bluetooth",
+  "@callBluetooth": {
+    "description": "Where a call's audio can go: a Bluetooth headset"
+  },
+  "hideCall": "Hide the call",
+  "@hideCall": {
+    "description": "The button that shows the chats during a call"
+  },
+  "returnToCall": "Return to the call",
+  "@returnToCall": {
+    "description": "The banner over the chats during a call"
+  },
+  "microphoneNeeded": "Calls need the microphone",
+  "@microphoneNeeded": {
+    "description": "Shown when bTox may not use the microphone"
+  },
+  "ringOverLockScreen": "Calls can't ring over the lock screen",
+  "@ringOverLockScreen": {
+    "description": "Shown on the Calls tab while Android doesn't let bTox show incoming calls full screen"
+  },
+  "allowRingOverLockScreen": "Allow",
+  "@allowRingOverLockScreen": {
+    "description": "The button that opens the setting letting calls ring full screen"
+  },
   "relayBotNames": "Names from a relay bot",
   "@relayBotNames": {
     "description": "The action, and its page, that shows the names a bot relays from another chat in a group chat"
@@ -459,6 +587,14 @@
   "showNames": "Show names",
   "@showNames": {
     "description": "The button that starts showing the names a relay bot relays"
+  },
+  "noCalls": "No recent calls",
+  "@noCalls": {
+    "description": "Shown on the Calls tab when there are no calls"
+  },
+  "callsNotAvailable": "Calls go through the device this account is linked to, which can't take them now",
+  "@callsNotAvailable": {
+    "description": "Shown on the Calls tab of a linked account while its home device is offline, or doesn't connect calls to its devices"
   },
   "notImplemented": "Not available yet",
   "@notImplemented": {

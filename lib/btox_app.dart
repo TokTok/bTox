@@ -2,8 +2,10 @@ import 'package:btox/l10n/generated/app_localizations.dart';
 import 'package:btox/pages/contact_list_page.dart';
 import 'package:btox/pages/create_profile_page.dart';
 import 'package:btox/pages/select_profile_page.dart';
+import 'package:btox/platform/any_platform.dart';
 import 'package:btox/providers/connection_status.dart';
 import 'package:btox/providers/profiles.dart';
+import 'package:btox/widgets/call_overlay.dart';
 import 'package:btox/widgets/load_failed.dart';
 import 'package:btox/widgets/system_gestures.dart';
 import 'package:flutter/material.dart';
@@ -27,7 +29,11 @@ final class BtoxApp extends ConsumerWidget {
           brightness: Brightness.dark,
         ),
       ),
-      builder: leaveSystemSwipes,
+      // Browsers have no calls, nor the isolate ports they go through.
+      builder: (context, child) => leaveSystemSwipes(
+        context,
+        AnyPlatform.instance.isWeb ? child : CallOverlay(child: child!),
+      ),
       home: _appContent(ref),
     );
   }

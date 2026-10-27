@@ -75,6 +75,13 @@ const _vectorEditedMute = '92009390c3c3';
 const _vectorFile =
     '920596a24d6590a76361742e706e6703c291c42077af778b51abd4a3c51c5ddd97204a9c'
     '3ae614ebccb75a606c3b6865aed6744e';
+const _vectorCallEnded =
+    '920993c42005050505050505050505050505050505050505050505050505050505050505'
+    '0591ce00024dd8c3';
+// Before `declined`.
+const _vectorCallEndedOld =
+    '920992c42005050505050505050505050505050505050505050505050505050505050505'
+    '0591ce00024dd8';
 const _vectorFact =
     '9246929203929200c4200303030303030303030303030303030303030303030303030303'
     '030303030303c42002020202020202020202020202020202020202020202020202020202'
@@ -102,6 +109,12 @@ const _vectorFacts =
     '0202020202920302929203929201c4200101010101010101010101010101010101010101'
     '010101010101010101010101c42003030303030303030303030303030303030303030303'
     '03030303030303030303920ec2c2';
+const _vectorCall =
+    '920992c42002020202020202020202020202020202020202020202020202020202020202'
+    '029200c3';
+const _vectorCallFacts =
+    '92089292929201c420020202020202020202020202020202020202020202020202020202'
+    '020202020292109201c392009211c3c3';
 const _vectorWantBlob =
     '9206c42077af778b51abd4a3c51c5ddd97204a9c3ae614ebccb75a606c3b6865aed6744e';
 
@@ -326,6 +339,43 @@ void main() {
       (Subject.peer(conference, device), const FactValue.present(false)),
     ], all: false);
     expect(hex.encode(facts.encode()), _vectorFacts);
+    final call = CallControl(_bob, const CallAction.connect(video: true));
+    expect(hex.encode(call.encode()), _vectorCall);
+    expect(SessionMessage.decode(call.encode()), call);
+    final callFacts = FactsUpdate([
+      (
+        Subject.friend(_bob),
+        const FactValue.call(CallState.ringing(video: true)),
+      ),
+      (const Subject.account(), const FactValue.callRelay(true)),
+    ], all: true);
+    expect(hex.encode(callFacts.encode()), _vectorCallFacts);
+    expect(SessionMessage.decode(callFacts.encode()), callFacts);
+    for (final message in [
+      CallControl(_bob, const CallAction.hangUp()),
+      FactsUpdate([
+        (Subject.friend(_bob), const FactValue.call(CallState.answered())),
+        (Subject.friend(device), const FactValue.call(CallState.none())),
+      ], all: false),
+    ]) {
+      expect(SessionMessage.decode(message.encode()), message);
+    }
+    final ended = event.copyWith(
+      content: CallEnded(
+        call: EventId(Uint8List(32)..fillRange(0, 32, 5)),
+        duration: const Duration(seconds: 151),
+        declined: true,
+      ),
+    );
+    expect(hex.encode(ended.encode()), endsWith(_vectorCallEnded));
+    expect(SyncEvent.decode(ended.encode()), ended);
+    final oldEncoding = hex
+        .encode(ended.encode())
+        .replaceAll(_vectorCallEnded, _vectorCallEndedOld);
+    expect(
+      SyncEvent.decode(Uint8List.fromList(hex.decode(oldEncoding))).content,
+      (ended.content as CallEnded).copyWith(declined: false),
+    );
     expect(frames(const Hello(features: Features.accountSync).encode()), [
       _helloPacket,
     ]);
@@ -487,6 +537,8 @@ void main() {
         incoming: true,
       ),
       FileEnded(file: id, ok: true, blob: BlobId(Uint8List(32))),
+      const Call(sender: 'Bob', incoming: true, video: false),
+      CallEnded(call: id),
       const UnknownContent(99),
     ]) {
       final event = SyncEvent(

@@ -57,6 +57,13 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.2"
+  btox_call_media:
+    dependency: "direct main"
+    description:
+      path: "packages/btox_call_media"
+      relative: true
+    source: path
+    version: "0.1.0"
   btox_location:
     dependency: "direct main"
     description:

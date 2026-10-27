@@ -1,4 +1,5 @@
 import 'package:btox/api/toxcore/tox_api.dart';
+import 'package:btox/api/toxcore/tox_av.dart';
 import 'package:btox/api/toxcore/tox_events.dart';
 
 export 'package:btox/api/toxcore/tox_api.dart';
@@ -10,6 +11,9 @@ abstract class Tox implements ToxApi {
   bool get isAlive;
 
   List<Event> iterate();
+
+  /// Started on first use. It ends with this Tox.
+  ToxAv startAv();
 
   void kill();
 }

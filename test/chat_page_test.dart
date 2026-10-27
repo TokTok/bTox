@@ -865,4 +865,40 @@ void main() {
     expect(find.bySemanticsLabel(RegExp('12:02')), findsOneWidget);
     semantics.dispose();
   });
+
+  testWidgets('calls show among the messages as they went', (tester) async {
+    ChatEntry call(int i, CallContent content) => ChatEntry(
+      event: EventId(Uint8List(32)..[0] = i),
+      mine: !content.incoming,
+      notice: true,
+      timestamp: DateTime(2025, 1, 1, 0, i),
+      content: content,
+    );
+    await show(tester, [
+      call(1, const CallContent(incoming: true, ended: true)),
+      call(2, const CallContent(incoming: true, video: true, ended: true)),
+      call(
+        3,
+        const CallContent(
+          incoming: false,
+          video: true,
+          ended: true,
+          duration: Duration(hours: 1, minutes: 2, seconds: 31),
+        ),
+      ),
+      call(4, const CallContent(incoming: true, ended: true, declined: true)),
+      call(5, const CallContent(incoming: false)),
+    ]);
+    await tester.pumpAndSettle();
+
+    for (final text in [
+      'Missed voice call',
+      'Missed video call',
+      'Outgoing video call · 1:02:31',
+      'Incoming voice call',
+      'Voice call',
+    ]) {
+      expect(find.text(text), findsOneWidget, reason: text);
+    }
+  });
 }

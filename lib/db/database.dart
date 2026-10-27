@@ -164,7 +164,7 @@ final class Database extends _$Database {
             }
           }
         }
-        final latest = <GraphId, ChatEntry>{};
+        final latest = <GraphId, (EventId, ChatEntry)>{};
         for (final MapEntry(key: graph, value: entries) in candidates.entries) {
           var last = entries.keys.last;
           if (entries.length > 1) {
@@ -186,10 +186,48 @@ final class Database extends _$Database {
             };
             _lastOfTied[graph] = (ids, count, last);
           }
-          latest[graph] = entries[last]!;
+          latest[graph] = (last, entries[last]!);
         }
-        return latest;
+        return {
+          for (final MapEntry(:key, value: (id, entry)) in latest.entries)
+            key: switch (entry.content) {
+              CallContent(ended: false) => await _callAsEnded(
+                profileId,
+                key,
+                id,
+                entry,
+              ),
+              _ => entry,
+            },
+        };
       });
+
+  /// If it has ended: its end isn't an entry, so it's later than the latest.
+  Future<ChatEntry> _callAsEnded(
+    Id<Profiles> profileId,
+    GraphId graph,
+    EventId call,
+    ChatEntry entry,
+  ) async {
+    final rows = await customSelect(
+      'SELECT id, bytes FROM sync_events WHERE profile_id = ? AND graph = ? '
+      'AND rank > ? AND NOT shown',
+      variables: [
+        Variable<int>(profileId.value),
+        Variable(graph.toJson()),
+        Variable<int>(_decoded[call]?.rank ?? 0),
+      ],
+      readsFrom: {syncEvents},
+    ).get();
+    for (final row in rows) {
+      final id = EventId.fromJson(row.read<String>('id'));
+      final event = _decoded[id] ??= _readable(row.read<Uint8List>('bytes'));
+      if (event?.content case final CallEnded end when end.call == call) {
+        return endedAs(entry, end);
+      }
+    }
+    return entry;
+  }
 
   Future<BootstrapNodeList?> getCachedBootstrapNodes() async {
     final row = await select(cachedBootstrapNodes).getSingleOrNull();
@@ -821,6 +859,18 @@ final class Database extends _$Database {
       (added) =>
           events = added.all ? added.events : [...events, ...added.events],
     );
+  }
+
+  Stream<List<(EventId, SyncEvent)>> watchCalls(Id<Profiles> id) {
+    bool isCall((EventId, SyncEvent) e) =>
+        e.$2.content is Call || e.$2.content is CallEnded;
+    var calls = const <(EventId, SyncEvent)>[];
+    return _addedEvents('profile_id = ?', [
+      Variable<int>(id.value),
+    ]).where((added) => added.all || added.events.any(isCall)).map((added) {
+      final more = added.events.where(isCall);
+      return calls = added.all ? [...more] : [...calls, ...more];
+    });
   }
 
   /// The readable events [where] picks, each read from the database once:

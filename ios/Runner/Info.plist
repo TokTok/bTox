@@ -31,17 +31,18 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
-	<string>Used to take and send photos in chats</string>
+	<string>Used to take and send photos in chats, and for video calls</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Used to send your location to friends</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Used to capture audio to send audio messages</string>
+	<string>Used for calls, and to capture audio to send audio messages</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Used to select images to send in chats</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UIBackgroundModes</key>
 	<array>
+		<string>audio</string>
 		<string>fetch</string>
 	</array>
 	<key>UILaunchStoryboardName</key>

@@ -541,4 +541,23 @@ void main() {
       isA<FileEnded>().having((e) => e.ok, 'ok', false),
     ]);
   });
+
+  test('ends the calls that were going on when it stopped', () async {
+    final call = SyncEvent(
+      graph: _chat,
+      author: _me,
+      parents: const [],
+      rank: 0,
+      time: 0,
+      content: const Call(sender: 'Me', incoming: false, video: false),
+    );
+    final bytes = call.encode();
+    await db.addSyncEvents(profileId, [(EventId.of(bytes), call, bytes)]);
+    sync.start();
+    await _settle();
+    expect(await contents(_chat), [
+      call.content,
+      CallEnded(call: EventId.of(bytes)),
+    ]);
+  });
 }

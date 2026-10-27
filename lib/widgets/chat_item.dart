@@ -5,6 +5,7 @@ import 'package:btox/models/chat_view.dart';
 import 'package:btox/models/content.dart';
 import 'package:btox/pages/message_info_page.dart';
 import 'package:btox/widgets/bubble_footer.dart';
+import 'package:btox/widgets/call_entry.dart';
 import 'package:btox/widgets/chat_context_menu.dart';
 import 'package:btox/widgets/chat_file_bubble.dart';
 import 'package:btox/widgets/chat_location_bubble.dart';
@@ -288,6 +289,9 @@ final class ChatNotice extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (entry.content case final CallContent call) {
+      return ChatCallNotice(call: call);
+    }
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
       child: Center(

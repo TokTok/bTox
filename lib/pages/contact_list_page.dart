@@ -2,35 +2,47 @@ import 'package:btox/l10n/generated/app_localizations.dart';
 import 'package:btox/logger.dart';
 import 'package:btox/models/chat_log.dart';
 import 'package:btox/models/chat_view.dart';
+import 'package:btox/models/content.dart';
 import 'package:btox/models/crypto.dart';
+import 'package:btox/models/id.dart';
+import 'package:btox/models/persistence.dart';
 import 'package:btox/pages/add_contact_page.dart';
+import 'package:btox/pages/call_page.dart';
 import 'package:btox/pages/chat_page.dart';
 import 'package:btox/pages/merge_chat_page.dart';
+import 'package:btox/providers/calls.dart';
 import 'package:btox/providers/chats.dart';
 import 'package:btox/providers/database.dart';
 import 'package:btox/providers/profiles.dart';
 import 'package:btox/sync/account.dart';
 import 'package:btox/sync/event.dart';
+import 'package:btox/widgets/call_entry.dart';
+import 'package:btox/widgets/chat_avatar.dart';
 import 'package:btox/widgets/chat_invite_list_item.dart';
 import 'package:btox/widgets/chat_list_item.dart';
 import 'package:btox/widgets/confirm_dialog.dart';
 import 'package:btox/widgets/connection_status_icon.dart';
+import 'package:btox/widgets/dates.dart';
 import 'package:btox/widgets/friend_request_list_item.dart';
 import 'package:btox/widgets/load_failed.dart';
 import 'package:btox/widgets/main_menu.dart';
 import 'package:btox/widgets/mute_chat.dart';
 import 'package:btox/widgets/passphrase_dialog.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 const _logger = Logger(['ContactListPage']);
 
-final class ContactListPage extends ConsumerWidget {
+enum _Tab { chats, calls }
+
+final class ContactListPage extends HookConsumerWidget {
   const ContactListPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
+    final tab = useState(_Tab.chats);
     final profile = ref.watch(currentProfileProvider);
 
     if (profile == null) {
@@ -90,6 +102,12 @@ final class ContactListPage extends ConsumerWidget {
     }
 
     final chats = ref.watch(chatsForProfileProvider(profile.id));
+    final unread =
+        requests.length +
+        invites.where((i) => i.$2.status == InviteStatus.pending).length +
+        (chats.value ?? const <ChatSummary>[])
+            .where((c) => c.mute == null)
+            .fold(0, (n, c) => n + c.unread);
 
     return Scaffold(
       drawer: MainMenu(profile: profile),
@@ -119,64 +137,91 @@ final class ContactListPage extends ConsumerWidget {
           ],
         ),
       ),
-      body: chats.when(
-        data: (chats) {
-          if (requests.isEmpty && invites.isEmpty && chats.isEmpty) {
-            return _Empty(
-              icon: Icons.chat_bubble_outline,
-              title: AppLocalizations.of(context)!.noChats,
-              hint: local ? AppLocalizations.of(context)!.noChatsHint : null,
-            );
-          }
-          final above = requests.length + invites.length;
-          return ListView.builder(
-            itemCount: above + chats.length,
-            itemBuilder: (context, index) {
-              if (index < requests.length) {
-                final MapEntry(key: pk, value: message) = requests[index];
-                return FriendRequestListItem(
-                  publicKey: pk,
-                  message: message,
-                  onAccept: () => want(pk, wanted: true),
-                  onReject: () => want(pk, wanted: false),
-                );
-              }
-              if (index < above) {
-                final (event, invite) = invites[index - requests.length];
-                return ChatInviteListItem(
-                  invite: invite,
-                  text: inviteText(l10n, invite, friends?[invite.from]?.name),
-                  onAnswer: ({required join}) =>
-                      answer(event, invite, join: join),
-                );
-              }
-              return ChatListItem(
-                chat: chats[index - above],
-                onTap: (chat) {
-                  _logger.d('Opening chat ${chat.ref}');
-                  Navigator.push(context, ChatPage.route(chat.ref));
-                },
-                onLongPress: (chat) => _chatActions(
-                  context,
-                  ref,
-                  chat,
-                  delete: switch (chat.key) {
-                    final PublicKey pk when local => (deleteChat) => want(
-                      pk,
-                      wanted: false,
-                      deleteChat: deleteChat,
-                    ),
-                    _ => null,
-                  },
-                ),
+      body: switch (tab.value) {
+        _Tab.calls => _Calls(profile: profile.id),
+        _Tab.chats => chats.when(
+          data: (chats) {
+            if (requests.isEmpty && invites.isEmpty && chats.isEmpty) {
+              return _Empty(
+                icon: Icons.chat_bubble_outline,
+                title: AppLocalizations.of(context)!.noChats,
+                hint: local ? AppLocalizations.of(context)!.noChatsHint : null,
               );
-            },
-          );
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (_, _) => const LoadFailed(),
+            }
+            final above = requests.length + invites.length;
+            return ListView.builder(
+              itemCount: above + chats.length,
+              itemBuilder: (context, index) {
+                if (index < requests.length) {
+                  final MapEntry(key: pk, value: message) = requests[index];
+                  return FriendRequestListItem(
+                    publicKey: pk,
+                    message: message,
+                    onAccept: () => want(pk, wanted: true),
+                    onReject: () => want(pk, wanted: false),
+                  );
+                }
+                if (index < above) {
+                  final (event, invite) = invites[index - requests.length];
+                  return ChatInviteListItem(
+                    invite: invite,
+                    text: inviteText(l10n, invite, friends?[invite.from]?.name),
+                    onAnswer: ({required join}) =>
+                        answer(event, invite, join: join),
+                  );
+                }
+                return ChatListItem(
+                  chat: chats[index - above],
+                  onTap: (chat) {
+                    _logger.d('Opening chat ${chat.ref}');
+                    Navigator.push(context, ChatPage.route(chat.ref));
+                  },
+                  onLongPress: (chat) => _chatActions(
+                    context,
+                    ref,
+                    chat,
+                    delete: switch (chat.key) {
+                      final PublicKey pk when local => (deleteChat) => want(
+                        pk,
+                        wanted: false,
+                        deleteChat: deleteChat,
+                      ),
+                      _ => null,
+                    },
+                  ),
+                );
+              },
+            );
+          },
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (_, _) => const LoadFailed(),
+        ),
+      },
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: tab.value.index,
+        onDestinationSelected: (index) => tab.value = _Tab.values[index],
+        destinations: [
+          NavigationDestination(
+            icon: Badge(
+              isLabelVisible: unread > 0,
+              label: Text('$unread'),
+              child: const Icon(Icons.chat_bubble_outline),
+            ),
+            selectedIcon: Badge(
+              isLabelVisible: unread > 0,
+              label: Text('$unread'),
+              child: const Icon(Icons.chat_bubble),
+            ),
+            label: l10n.chats,
+          ),
+          NavigationDestination(
+            icon: const Icon(Icons.call_outlined),
+            selectedIcon: const Icon(Icons.call),
+            label: l10n.calls,
+          ),
+        ],
       ),
-      floatingActionButton: !local
+      floatingActionButton: !local || tab.value != _Tab.chats
           ? null
           : FloatingActionButton(
               key: const Key('addContactButton'),
@@ -382,6 +427,76 @@ final class _Empty extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+final class _Calls extends ConsumerWidget {
+  final Id<Profiles> profile;
+
+  const _Calls({required this.profile});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final calls = ref.watch(callHistoryProvider(profile));
+    final canCall = ref.watch(canCallProvider(profile));
+    final Widget list;
+    if (calls.isEmpty) {
+      list = _Empty(
+        icon: Icons.call,
+        title: l10n.noCalls,
+        hint: canCall ? null : l10n.callsNotAvailable,
+      );
+    } else {
+      list = ListView.builder(
+        itemCount: calls.length,
+        itemBuilder: (context, index) {
+          final (:chat, :entry) = calls[index];
+          final call = entry.content as CallContent;
+          final color = call.missed ? theme.colorScheme.error : null;
+          return ListTile(
+            leading: ChatAvatar(bytes: chat.key),
+            title: Text(
+              chat.name ?? l10n.defaultContactName,
+              style: TextStyle(color: color),
+            ),
+            subtitle: Row(
+              children: [
+                Icon(callIcon(call), size: 16, color: color),
+                const SizedBox(width: 4),
+                Flexible(
+                  child: Text(switch (call.duration) {
+                    final duration? => l10n.callWithDuration(
+                      recentText(context, entry.timestamp),
+                      durationText(duration),
+                    ),
+                    null => recentText(context, entry.timestamp),
+                  }),
+                ),
+              ],
+            ),
+            trailing: switch (chat.key) {
+              final PublicKey friend when canCall => IconButton(
+                icon: const Icon(Icons.call),
+                tooltip: l10n.voiceCall,
+                onPressed: chat.online == true
+                    ? () => startCall(context, chat.ref, friend)
+                    : null,
+              ),
+              _ => null,
+            },
+            onTap: () => Navigator.push(context, ChatPage.route(chat.ref)),
+          );
+        },
+      );
+    }
+    return Column(
+      children: [
+        if (canCall) const RingOverLockScreenBanner(),
+        Expanded(child: list),
+      ],
     );
   }
 }

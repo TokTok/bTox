@@ -32,6 +32,8 @@ dependencies:
   flutter_localizations:
     sdk: flutter
 
+  btox_call_media:
+    path: packages/btox_call_media
   # Geolocator's own Android part needs Google Play services.
   btox_location:
     path: packages/btox_location
@@ -119,6 +121,9 @@ flutter:
   assets:
     - assets/fonts/
     - assets/images/
+
+  shaders:
+    - shaders/i420.frag
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware.

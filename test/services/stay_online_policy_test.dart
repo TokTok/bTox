@@ -49,6 +49,16 @@ void main() {
     expect(stops, 1);
   });
 
+  test('stays online through a call', () async {
+    policy.inCall = true;
+    await _pastGrace();
+    expect(stops, 0);
+
+    policy.inCall = false;
+    await _pastGrace();
+    expect(stops, 1);
+  });
+
   test('sets the boot mode once known, and again when a UI opens', () {
     policy
       ..uiCount = 1

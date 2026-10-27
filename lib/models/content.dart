@@ -20,7 +20,7 @@ String? messageTextOf(Content content) => switch (content) {
   TextContent(:final text) => text,
   LocationContent(:final latitude, :final longitude) =>
     'geo:$latitude,$longitude',
-  FileContent() => null,
+  FileContent() || CallContent() => null,
 };
 
 /// [text] as Tox clients quote it: each line after "> ".
@@ -52,6 +52,7 @@ sealed class Content {
     TextContent(:final text) => text,
     FileContent(:final name) => name,
     LocationContent() => messageTextOf(this)!,
+    CallContent() => '',
   };
 }
 
@@ -66,6 +67,7 @@ final class ContentConverter extends TypeConverter<Content, String>
         ContentType.text => TextContent.fromJson(json),
         ContentType.file => FileContent.fromJson(json),
         ContentType.location => LocationContent.fromJson(json),
+        ContentType.call => CallContent.fromJson(json),
         null => throw FormatException('Unknown content ${json['_type']}'),
       };
 
@@ -114,7 +116,7 @@ final class ContentListConverter extends TypeConverter<List<Content>, String> {
   ]);
 }
 
-enum ContentType { text, file, location }
+enum ContentType { text, file, location, call }
 
 @freezed
 sealed class FileContent extends Content with _$FileContent {
@@ -148,6 +150,28 @@ sealed class LocationContent extends Content with _$LocationContent {
 
   @override
   ContentType get type => ContentType.location;
+}
+
+/// Answered if it has a [duration], [declined] where it rang.
+@freezed
+sealed class CallContent extends Content with _$CallContent {
+  const factory CallContent({
+    required bool incoming,
+    @Default(false) bool video,
+    @Default(false) bool ended,
+    Duration? duration,
+    @Default(false) bool declined,
+  }) = _CallContent;
+
+  factory CallContent.fromJson(Map<String, dynamic> json) =>
+      _$CallContentFromJson(json);
+
+  const CallContent._();
+
+  @override
+  ContentType get type => ContentType.call;
+
+  bool get missed => incoming && ended && duration == null && !declined;
 }
 
 @freezed

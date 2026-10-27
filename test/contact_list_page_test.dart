@@ -4,10 +4,13 @@ import 'dart:typed_data';
 import 'package:btox/db/database.dart';
 import 'package:btox/ffi/toxcore.dart' show Tox_Message_Type;
 import 'package:btox/l10n/generated/app_localizations.dart';
+import 'package:btox/models/chat_view.dart';
+import 'package:btox/models/content.dart';
 import 'package:btox/models/crypto.dart';
 import 'package:btox/models/profile_settings.dart';
 import 'package:btox/pages/contact_list_page.dart';
 import 'package:btox/pages/merge_chat_page.dart';
+import 'package:btox/providers/calls.dart';
 import 'package:btox/providers/connection_status.dart';
 import 'package:btox/providers/database.dart';
 import 'package:btox/sync/event.dart';
@@ -15,11 +18,13 @@ import 'package:btox/sync/fact.dart';
 import 'package:btox/sync/home.dart';
 import 'package:btox/sync/setting.dart';
 import 'package:btox/widgets/chat_list_item.dart';
+import 'package:btox_call_media/btox_call_media.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import 'mocks/fake_call_media.dart';
 import 'mocks/settle.dart';
 
 Finder _chatWith(PublicKey pk) =>
@@ -347,6 +352,95 @@ void main() {
     await tester.pageBack();
     await settle(tester, until: () => draft.evaluate().isEmpty);
     expect(await tester.runAsync(() => db.select(db.chatDrafts).get()), []);
+
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpAndSettle();
+    await tester.runAsync(db.close);
+  });
+
+  testWidgets('the calls tab lists calls, the missed ones marked, with a '
+      'button to call friends online back', (tester) async {
+    final db = Database(NativeDatabase.memory());
+    final media = FakeCallMedia()..ringsOverLockScreen = false;
+    final platform = BtoxCallMedia.instance;
+    BtoxCallMedia.instance = media;
+    addTearDown(() => BtoxCallMedia.instance = platform);
+    final alice = PublicKey(Uint8List.fromList(List.filled(32, 1)));
+    final bob = PublicKey(Uint8List.fromList(List.filled(32, 2)));
+    final profileId = (await tester.runAsync(
+      () => db.addProfile(
+        ProfilesCompanion.insert(
+          signedIn: const Value(true),
+          settings: ProfileSettings(nickname: 'Me', statusMessage: ''),
+          secretKey: SecretKey(Uint8List(32)),
+          publicKey: PublicKey(Uint8List(32)),
+          nospam: ToxAddressNospam(0),
+        ),
+      ),
+    ))!;
+    CallRecord call(PublicKey friend, String name, CallContent content) => (
+      chat: ChatSummary(
+        ref: ChatRef(
+          profileId,
+          GraphId.friend(PublicKey(Uint8List(32)), friend),
+        ),
+        name: name,
+        key: friend,
+        online: friend == alice,
+      ),
+      entry: ChatEntry(
+        event: EventId(Uint8List(32)..[0] = name.length),
+        mine: !content.incoming,
+        notice: true,
+        timestamp: DateTime(2025, 1, 1),
+        content: content,
+      ),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          databaseProvider.overrideWith((ref) => db),
+          connectionStatusProvider.overrideWithValue(null),
+          callHistoryProvider(profileId).overrideWithValue([
+            call(
+              alice,
+              'Alice',
+              const CallContent(
+                incoming: false,
+                ended: true,
+                duration: Duration(minutes: 2, seconds: 31),
+              ),
+            ),
+            call(bob, 'Bob', const CallContent(incoming: true, ended: true)),
+          ]),
+          canCallProvider(profileId).overrideWithValue(true),
+        ],
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          home: const ContactListPage(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Calls'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('· 2:31'), findsOneWidget);
+    expect(find.byIcon(Icons.call_made), findsOneWidget);
+    expect(find.byIcon(Icons.call_missed), findsOneWidget);
+    final buttons = tester.widgetList<IconButton>(
+      find.widgetWithIcon(IconButton, Icons.call),
+    );
+    expect([for (final b in buttons) b.onPressed != null], [true, false]);
+    await tester.tap(find.widgetWithIcon(IconButton, Icons.call).first);
+    await tester.tap(find.text('Allow'));
+    await tester.pumpAndSettle();
+    expect(find.text("Calls can't ring over the lock screen"), findsOneWidget);
+    expect(media.asked, [
+      'microphone permission',
+      'allow ringing over the lock screen',
+    ]);
 
     await tester.pumpWidget(const SizedBox());
     await tester.pumpAndSettle();

@@ -1,6 +1,7 @@
 import 'package:btox/l10n/generated/app_localizations.dart';
 import 'package:btox/models/chat_view.dart';
 import 'package:btox/models/content.dart';
+import 'package:btox/widgets/call_entry.dart';
 import 'package:btox/widgets/chat_avatar.dart';
 import 'package:btox/widgets/dates.dart';
 import 'package:flutter/material.dart';
@@ -123,6 +124,7 @@ final class _Preview extends StatelessWidget {
       FileContent(:final name) => (icon(Icons.attach_file), name),
       LocationContent() => (icon(Icons.location_on), l10n.locationMessage),
       TextContent(:final text) => (null, text),
+      final CallContent call => (icon(callIcon(call)), callText(l10n, call)),
     };
     return Text.rich(
       TextSpan(

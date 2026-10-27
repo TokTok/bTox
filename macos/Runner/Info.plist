@@ -28,6 +28,10 @@
 	<string>MainMenu</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Used for video calls</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Used for calls</string>
 	<key>NSLocationUsageDescription</key>
 	<string>Allow the app to access your location</string>
 </dict>

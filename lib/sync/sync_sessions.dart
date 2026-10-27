@@ -18,6 +18,7 @@ import 'package:btox/models/id.dart';
 import 'package:btox/models/persistence.dart';
 import 'package:btox/sync/account.dart';
 import 'package:btox/sync/event.dart';
+import 'package:btox/sync/fact.dart';
 import 'package:btox/sync/frames.dart';
 import 'package:btox/sync/intents.dart';
 import 'package:btox/sync/linked_files.dart';
@@ -53,6 +54,10 @@ final class SyncSessions {
 
   var _formats = MessageFormats.none;
   final _echoes = <GraphId, Echoes>{};
+
+  /// Hears the home device's live facts: with `all`, every one there is, as
+  /// none when it goes offline.
+  void Function(List<Fact> facts, {required bool all})? onLiveFacts;
 
   PublicKey? _home;
   Replica? _replica;
@@ -119,6 +124,15 @@ final class SyncSessions {
   }
 
   LinkedFiles? get files => _files;
+
+  /// The home device's friend number, while it's online.
+  int? get homeFriend => _homeFriend;
+
+  String? friendName(PublicKey friend) => _replica?.state.friends[friend]?.name;
+
+  String get accountName => _replica?.state.name ?? '';
+
+  void toHome(SessionMessage message) => _toHome([message]);
 
   /// Larger files of a linked account are fetched when asked for.
   set autoAcceptSize(int size) {
@@ -316,6 +330,7 @@ final class SyncSessions {
   // Only the home device knows what Tox says now.
   void _forgetLiveFacts() {
     _logger.unawaited('forget live facts', _db.clearLiveFacts(_profileId));
+    onLiveFacts?.call(const [], all: true);
   }
 
   void received(int friendNumber, PublicKey publicKey, Uint8List packet) {
@@ -351,6 +366,7 @@ final class SyncSessions {
         'save live facts',
         _db.updateLiveFacts(_profileId, facts, all: all),
       );
+      onLiveFacts?.call(facts, all: all);
       return;
     }
     if (message case WantBlob() || NoBlob() when replica.inSession) {

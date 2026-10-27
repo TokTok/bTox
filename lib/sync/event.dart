@@ -23,6 +23,8 @@ const _tagNotice = 4;
 const _tagFileStarted = 5;
 const _tagFileEnded = 6;
 const _tagFileAnswered = 7;
+const _tagCall = 8;
+const _tagCallEnded = 9;
 const _tagWantFriend = 64;
 const _tagUnwantFriend = 65;
 const _tagReadUpTo = 66;
@@ -163,6 +165,18 @@ sealed class EventContent with _$EventContent {
     required EventId file,
     required bool accepted,
   }) = FileAnswered;
+  // As it rings.
+  const factory EventContent.call({
+    required String sender,
+    required bool incoming,
+    required bool video,
+  }) = Call;
+  // [declined] where it rang here, so it wasn't missed.
+  const factory EventContent.callEnded({
+    required EventId call,
+    Duration? duration,
+    @Default(false) bool declined,
+  }) = CallEnded;
   // Sets [setting] for [scope]. Per scope and kind, the last writer wins.
   const factory EventContent.setting({
     required Scope scope,
@@ -317,6 +331,14 @@ ArrayWriter _encodeContent(EventContent content) {
       _tagFileAnswered,
       f.bin(file.bytes).flag(accepted),
     ),
+    Call(:final sender, :final incoming, :final video) => of(
+      _tagCall,
+      f.string(sender).flag(incoming).flag(video),
+    ),
+    CallEnded(:final call, :final duration, :final declined) => of(
+      _tagCallEnded,
+      f.bin(call.bytes).optUint(duration?.inMilliseconds).flag(declined),
+    ),
     SettingContent(:final scope, :final setting) => of(
       _tagSetting,
       addSetting(addScope(f, scope), setting),
@@ -438,6 +460,19 @@ EventContent _decodeContent(Fields event) => event.variant<EventContent>(
     ),
     _tagFileAnswered => c.fields(
       (f) => FileAnswered(file: EventId(f.bin()), accepted: f.flag()),
+    ),
+    _tagCall => c.fields(
+      (f) => Call(sender: f.string(), incoming: f.flag(), video: f.flag()),
+    ),
+    _tagCallEnded => c.fields(
+      (f) => CallEnded(
+        call: EventId(f.bin()),
+        duration: switch (f.optUint()) {
+          final ms? => Duration(milliseconds: ms),
+          null => null,
+        },
+        declined: f.laterFlag(),
+      ),
     ),
     _tagSetting => c.fields(
       (f) => SettingContent(scope: readScope(f), setting: readSetting(f)),

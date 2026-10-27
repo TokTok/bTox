@@ -6,6 +6,7 @@ set -eux
 flutter pub get
 
 tools/prepare-toxcore
+tools/prepare-call-media
 
 # Generate the FFI bindings.
 if [ "${RUNNER_OS:-}" != "Windows" ]; then

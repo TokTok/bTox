@@ -184,4 +184,30 @@ void main() {
     // An answer after it ended changes nothing.
     expect(stateOf([offer, done, answer(2, accepted: false)]), FileState.done);
   });
+
+  test('shows a call as it went', () {
+    final call = _event(
+      0,
+      0,
+      const Call(sender: 'Bob', incoming: true, video: false),
+    );
+    CallContent shown(List<(EventId, SyncEvent)> events) =>
+        ChatLog(MessageFormats.none).update(events).single.content
+            as CallContent;
+
+    expect(shown([call]), const CallContent(incoming: true));
+    final answered = _event(
+      1,
+      1,
+      CallEnded(call: call.$1, duration: const Duration(seconds: 151)),
+      [call.$1],
+    );
+    expect(shown([call, answered]).duration, const Duration(seconds: 151));
+    final missed = _event(1, 1, CallEnded(call: call.$1), [call.$1]);
+    expect(shown([call, missed]).missed, isTrue);
+    final declined = _event(1, 1, CallEnded(call: call.$1, declined: true), [
+      call.$1,
+    ]);
+    expect(shown([call, declined]).missed, isFalse);
+  });
 }

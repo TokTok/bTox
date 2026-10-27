@@ -6,9 +6,11 @@ import 'package:btox/logger.dart';
 import 'package:btox/models/chat_view.dart';
 import 'package:btox/models/content.dart';
 import 'package:btox/models/crypto.dart';
+import 'package:btox/pages/call_page.dart';
 import 'package:btox/pages/chat_details_page.dart';
 import 'package:btox/pages/forward_page.dart';
 import 'package:btox/providers/attachments.dart';
+import 'package:btox/providers/calls.dart';
 import 'package:btox/providers/chats.dart';
 import 'package:btox/providers/database.dart';
 import 'package:btox/providers/drafts.dart';
@@ -244,6 +246,29 @@ final class ChatPage extends HookConsumerWidget {
                       ),
                     ),
                   ),
+                  actions: [
+                    if (summary.key case final PublicKey friend
+                        when ref.watch(canCallProvider(chat.profile)))
+                      for (final video in const [true, false])
+                        IconButton(
+                          icon: Icon(
+                            video
+                                ? Icons.videocam_outlined
+                                : Icons.call_outlined,
+                          ),
+                          tooltip: video
+                              ? AppLocalizations.of(context)!.videoCall
+                              : AppLocalizations.of(context)!.voiceCall,
+                          onPressed: summary.online == true
+                              ? () => startCall(
+                                  context,
+                                  chat,
+                                  friend,
+                                  video: video,
+                                )
+                              : null,
+                        ),
+                  ],
                 ),
           body: entriesAsync.when(
             data: (entries) => LayoutBuilder(
