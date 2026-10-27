@@ -6,10 +6,11 @@ import 'package:btox/providers/bootstrap_nodes.dart';
 import 'package:btox/providers/database.dart';
 import 'package:btox/providers/profiles.dart';
 import 'package:btox/providers/tox.dart';
+import 'package:btox/widgets/chat_list_item.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import 'mocks/fake_bootstrap_nodes.dart';
 import 'mocks/fake_toxcore.dart';
@@ -27,6 +28,9 @@ void main() {
   );
   // All 1s, but with a valid checksum.
   final friendToxId = ToxAddress.fromString('${'1' * 72}0000');
+  Finder chat() => find.byWidgetPredicate(
+    (w) => w is ChatListItem && w.chat.key == friendToxId.publicKey,
+  );
 
   testWidgets('Add contact adds a contact', (WidgetTester tester) async {
     final tox = FakeToxcore();
@@ -64,8 +68,7 @@ void main() {
     // Take a screenshot.
     await expectLater(find.byType(BtoxApp), matchesGoldenFile('btox_app.png'));
 
-    // Check that no contact with all 1s for the public key exists.
-    expect(find.textContaining('11111111'), findsNothing);
+    expect(chat(), findsNothing);
 
     // Navigate to the 'add contact' screen.
     await tester.tap(find.byIcon(Icons.add));
@@ -80,14 +83,14 @@ void main() {
     await tester.tap(find.text('Add'));
     await tester.pumpAndSettle();
 
-    // Verify that the contact appeared.
-    expect(find.textContaining('11111111'), findsOneWidget);
+    expect(chat(), findsOneWidget);
 
     tox.kill();
     await tester.pump(const Duration(seconds: 1));
 
     await db.close();
   });
+
   testWidgets('says so when the accounts fail to load', (tester) async {
     await tester.pumpWidget(
       ProviderScope(

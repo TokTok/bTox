@@ -277,29 +277,9 @@
       ],
       "type": "table",
       "data": {
-        "name": "contacts",
+        "name": "chat_drafts",
         "was_declared_in_moor": false,
         "columns": [
-          {
-            "name": "id",
-            "getter_name": "id",
-            "moor_type": "int",
-            "nullable": false,
-            "customConstraints": null,
-            "defaultConstraints": "PRIMARY KEY AUTOINCREMENT",
-            "dialectAwareDefaultConstraints": {
-              "sqlite": "PRIMARY KEY AUTOINCREMENT"
-            },
-            "default_dart": null,
-            "default_client_dart": null,
-            "dsl_features": [
-              "auto-increment"
-            ],
-            "type_converter": {
-              "dart_expr": "const IdConverter<Contacts>()",
-              "dart_type_name": "Id<Contacts>"
-            }
-          },
           {
             "name": "profile_id",
             "getter_name": "profileId",
@@ -331,18 +311,8 @@
             }
           },
           {
-            "name": "name",
-            "getter_name": "name",
-            "moor_type": "string",
-            "nullable": true,
-            "customConstraints": null,
-            "default_dart": null,
-            "default_client_dart": null,
-            "dsl_features": []
-          },
-          {
-            "name": "public_key",
-            "getter_name": "publicKey",
+            "name": "graph",
+            "getter_name": "graph",
             "moor_type": "string",
             "nullable": false,
             "customConstraints": null,
@@ -350,140 +320,8 @@
             "default_client_dart": null,
             "dsl_features": [],
             "type_converter": {
-              "dart_expr": "const HexConverter(PublicKey.fromJson)",
-              "dart_type_name": "PublicKey"
-            }
-          },
-          {
-            "name": "friend_request_address",
-            "getter_name": "friendRequestAddress",
-            "moor_type": "string",
-            "nullable": true,
-            "customConstraints": null,
-            "default_dart": null,
-            "default_client_dart": null,
-            "dsl_features": [],
-            "type_converter": {
-              "dart_expr": "const HexConverter(ToxAddress.fromString)",
-              "dart_type_name": "ToxAddress"
-            }
-          },
-          {
-            "name": "friend_request_message",
-            "getter_name": "friendRequestMessage",
-            "moor_type": "string",
-            "nullable": true,
-            "customConstraints": null,
-            "default_dart": null,
-            "default_client_dart": null,
-            "dsl_features": []
-          },
-          {
-            "name": "online",
-            "getter_name": "online",
-            "moor_type": "bool",
-            "nullable": false,
-            "customConstraints": null,
-            "defaultConstraints": "CHECK (\"online\" IN (0, 1))",
-            "dialectAwareDefaultConstraints": {
-              "sqlite": "CHECK (\"online\" IN (0, 1))"
-            },
-            "default_dart": "const CustomExpression('0')",
-            "default_client_dart": null,
-            "dsl_features": []
-          },
-          {
-            "name": "last_read_message",
-            "getter_name": "lastReadMessage",
-            "moor_type": "int",
-            "nullable": true,
-            "customConstraints": null,
-            "default_dart": null,
-            "default_client_dart": null,
-            "dsl_features": [],
-            "type_converter": {
-              "dart_expr": "const IdConverter<Messages>()",
-              "dart_type_name": "Id<Messages>"
-            }
-          }
-        ],
-        "is_virtual": false,
-        "without_rowid": false,
-        "constraints": []
-      }
-    },
-    {
-      "id": 4,
-      "references": [
-        2
-      ],
-      "type": "table",
-      "data": {
-        "name": "friend_requests",
-        "was_declared_in_moor": false,
-        "columns": [
-          {
-            "name": "id",
-            "getter_name": "id",
-            "moor_type": "int",
-            "nullable": false,
-            "customConstraints": null,
-            "defaultConstraints": "PRIMARY KEY AUTOINCREMENT",
-            "dialectAwareDefaultConstraints": {
-              "sqlite": "PRIMARY KEY AUTOINCREMENT"
-            },
-            "default_dart": null,
-            "default_client_dart": null,
-            "dsl_features": [
-              "auto-increment"
-            ],
-            "type_converter": {
-              "dart_expr": "const IdConverter<FriendRequests>()",
-              "dart_type_name": "Id<FriendRequests>"
-            }
-          },
-          {
-            "name": "profile_id",
-            "getter_name": "profileId",
-            "moor_type": "int",
-            "nullable": false,
-            "customConstraints": null,
-            "defaultConstraints": "REFERENCES profiles (id)",
-            "dialectAwareDefaultConstraints": {
-              "sqlite": "REFERENCES profiles (id)"
-            },
-            "default_dart": null,
-            "default_client_dart": null,
-            "dsl_features": [
-              {
-                "foreign_key": {
-                  "to": {
-                    "table": "profiles",
-                    "column": "id"
-                  },
-                  "initially_deferred": false,
-                  "on_update": null,
-                  "on_delete": null
-                }
-              }
-            ],
-            "type_converter": {
-              "dart_expr": "const IdConverter<Profiles>()",
-              "dart_type_name": "Id<Profiles>"
-            }
-          },
-          {
-            "name": "public_key",
-            "getter_name": "publicKey",
-            "moor_type": "string",
-            "nullable": false,
-            "customConstraints": null,
-            "default_dart": null,
-            "default_client_dart": null,
-            "dsl_features": [],
-            "type_converter": {
-              "dart_expr": "const HexConverter(PublicKey.fromJson)",
-              "dart_type_name": "PublicKey"
+              "dart_expr": "const HexConverter(GraphId.fromJson)",
+              "dart_type_name": "GraphId"
             }
           },
           {
@@ -497,9 +335,101 @@
             "dsl_features": []
           },
           {
-            "name": "timestamp",
-            "getter_name": "timestamp",
-            "moor_type": "dateTime",
+            "name": "attachments",
+            "getter_name": "attachments",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [],
+            "type_converter": {
+              "dart_expr": "const ContentListConverter()",
+              "dart_type_name": "List<Content>"
+            }
+          },
+          {
+            "name": "replying_to",
+            "getter_name": "replyingTo",
+            "moor_type": "string",
+            "nullable": true,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [],
+            "type_converter": {
+              "dart_expr": "const ContentConverter()",
+              "dart_type_name": "Content"
+            }
+          }
+        ],
+        "is_virtual": false,
+        "without_rowid": false,
+        "constraints": [],
+        "explicit_pk": [
+          "profile_id",
+          "graph"
+        ]
+      }
+    },
+    {
+      "id": 4,
+      "references": [
+        2
+      ],
+      "type": "table",
+      "data": {
+        "name": "deleted_chats",
+        "was_declared_in_moor": false,
+        "columns": [
+          {
+            "name": "profile_id",
+            "getter_name": "profileId",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": null,
+            "defaultConstraints": "REFERENCES profiles (id)",
+            "dialectAwareDefaultConstraints": {
+              "sqlite": "REFERENCES profiles (id)"
+            },
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [
+              {
+                "foreign_key": {
+                  "to": {
+                    "table": "profiles",
+                    "column": "id"
+                  },
+                  "initially_deferred": false,
+                  "on_update": null,
+                  "on_delete": null
+                }
+              }
+            ],
+            "type_converter": {
+              "dart_expr": "const IdConverter<Profiles>()",
+              "dart_type_name": "Id<Profiles>"
+            }
+          },
+          {
+            "name": "graph",
+            "getter_name": "graph",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [],
+            "type_converter": {
+              "dart_expr": "const HexConverter(GraphId.fromJson)",
+              "dart_type_name": "GraphId"
+            }
+          },
+          {
+            "name": "rank",
+            "getter_name": "rank",
+            "moor_type": "int",
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
@@ -510,22 +440,20 @@
         "is_virtual": false,
         "without_rowid": false,
         "constraints": [],
-        "unique_keys": [
-          [
-            "profile_id",
-            "public_key"
-          ]
+        "explicit_pk": [
+          "profile_id",
+          "graph"
         ]
       }
     },
     {
       "id": 5,
       "references": [
-        3
+        2
       ],
       "type": "table",
       "data": {
-        "name": "messages",
+        "name": "friend_changes",
         "was_declared_in_moor": false,
         "columns": [
           {
@@ -544,19 +472,19 @@
               "auto-increment"
             ],
             "type_converter": {
-              "dart_expr": "const IdConverter<Messages>()",
-              "dart_type_name": "Id<Messages>"
+              "dart_expr": "const IdConverter<FriendChanges>()",
+              "dart_type_name": "Id<FriendChanges>"
             }
           },
           {
-            "name": "contact_id",
-            "getter_name": "contactId",
+            "name": "profile_id",
+            "getter_name": "profileId",
             "moor_type": "int",
             "nullable": false,
             "customConstraints": null,
-            "defaultConstraints": "REFERENCES contacts (id)",
+            "defaultConstraints": "REFERENCES profiles (id)",
             "dialectAwareDefaultConstraints": {
-              "sqlite": "REFERENCES contacts (id)"
+              "sqlite": "REFERENCES profiles (id)"
             },
             "default_dart": null,
             "default_client_dart": null,
@@ -564,7 +492,7 @@
               {
                 "foreign_key": {
                   "to": {
-                    "table": "contacts",
+                    "table": "profiles",
                     "column": "id"
                   },
                   "initially_deferred": false,
@@ -574,13 +502,13 @@
               }
             ],
             "type_converter": {
-              "dart_expr": "const IdConverter<Contacts>()",
-              "dart_type_name": "Id<Contacts>"
+              "dart_expr": "const IdConverter<Profiles>()",
+              "dart_type_name": "Id<Profiles>"
             }
           },
           {
-            "name": "author",
-            "getter_name": "author",
+            "name": "public_key",
+            "getter_name": "publicKey",
             "moor_type": "string",
             "nullable": false,
             "customConstraints": null,
@@ -593,47 +521,82 @@
             }
           },
           {
-            "name": "sha",
-            "getter_name": "sha",
-            "moor_type": "string",
+            "name": "wanted",
+            "getter_name": "wanted",
+            "moor_type": "bool",
             "nullable": false,
             "customConstraints": null,
+            "defaultConstraints": "CHECK (\"wanted\" IN (0, 1))",
+            "dialectAwareDefaultConstraints": {
+              "sqlite": "CHECK (\"wanted\" IN (0, 1))"
+            },
             "default_dart": null,
             "default_client_dart": null,
-            "dsl_features": [
-              {
-                "check": {
-                  "dart_expression": {
-                    "elements": [
-                      {
-                        "lexeme": "sha",
-                        "tag": "sha"
-                      },
-                      ".length.equals(",
-                      {
-                        "lexeme": "Sha256",
-                        "import_uri": "package:btox/models/crypto.dart"
-                      },
-                      ".kLength * 2)"
-                    ]
-                  }
-                }
-              }
-            ],
-            "type_converter": {
-              "dart_expr": "const HexConverter(Sha256.fromJson)",
-              "dart_type_name": "Sha256"
-            }
+            "dsl_features": []
           },
           {
-            "name": "parent",
-            "getter_name": "parent",
+            "name": "nospam",
+            "getter_name": "nospam",
             "moor_type": "int",
             "nullable": true,
             "customConstraints": null,
-            "defaultConstraints": "REFERENCES messages (id)",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [],
+            "type_converter": {
+              "dart_expr": "const NospamConverter()",
+              "dart_type_name": "ToxAddressNospam"
+            }
+          },
+          {
+            "name": "message",
+            "getter_name": "message",
+            "moor_type": "string",
+            "nullable": true,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "delete_chat",
+            "getter_name": "deleteChat",
+            "moor_type": "bool",
+            "nullable": false,
+            "customConstraints": null,
+            "defaultConstraints": "CHECK (\"delete_chat\" IN (0, 1))",
             "dialectAwareDefaultConstraints": {
-              "sqlite": "REFERENCES messages (id)"
+              "sqlite": "CHECK (\"delete_chat\" IN (0, 1))"
+            },
+            "default_dart": "const CustomExpression('0')",
+            "default_client_dart": null,
+            "dsl_features": []
+          }
+        ],
+        "is_virtual": false,
+        "without_rowid": false,
+        "constraints": []
+      }
+    },
+    {
+      "id": 6,
+      "references": [
+        2
+      ],
+      "type": "table",
+      "data": {
+        "name": "live_facts",
+        "was_declared_in_moor": false,
+        "columns": [
+          {
+            "name": "profile_id",
+            "getter_name": "profileId",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": null,
+            "defaultConstraints": "REFERENCES profiles (id)",
+            "dialectAwareDefaultConstraints": {
+              "sqlite": "REFERENCES profiles (id)"
             },
             "default_dart": null,
             "default_client_dart": null,
@@ -641,7 +604,7 @@
               {
                 "foreign_key": {
                   "to": {
-                    "table": "messages",
+                    "table": "profiles",
                     "column": "id"
                   },
                   "initially_deferred": false,
@@ -651,44 +614,14 @@
               }
             ],
             "type_converter": {
-              "dart_expr": "const IdConverter<Messages>()",
-              "dart_type_name": "Id<Messages>"
+              "dart_expr": "const IdConverter<Profiles>()",
+              "dart_type_name": "Id<Profiles>"
             }
           },
           {
-            "name": "merged",
-            "getter_name": "merged",
-            "moor_type": "int",
-            "nullable": true,
-            "customConstraints": null,
-            "defaultConstraints": "REFERENCES messages (id)",
-            "dialectAwareDefaultConstraints": {
-              "sqlite": "REFERENCES messages (id)"
-            },
-            "default_dart": null,
-            "default_client_dart": null,
-            "dsl_features": [
-              {
-                "foreign_key": {
-                  "to": {
-                    "table": "messages",
-                    "column": "id"
-                  },
-                  "initially_deferred": false,
-                  "on_update": null,
-                  "on_delete": null
-                }
-              }
-            ],
-            "type_converter": {
-              "dart_expr": "const IdConverter<Messages>()",
-              "dart_type_name": "Id<Messages>"
-            }
-          },
-          {
-            "name": "timestamp",
-            "getter_name": "timestamp",
-            "moor_type": "dateTime",
+            "name": "subject",
+            "getter_name": "subject",
+            "moor_type": "blob",
             "nullable": false,
             "customConstraints": null,
             "default_dart": null,
@@ -696,8 +629,79 @@
             "dsl_features": []
           },
           {
-            "name": "content",
-            "getter_name": "content",
+            "name": "kind",
+            "getter_name": "kind",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "fact",
+            "getter_name": "fact",
+            "moor_type": "blob",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          }
+        ],
+        "is_virtual": false,
+        "without_rowid": false,
+        "constraints": [],
+        "explicit_pk": [
+          "profile_id",
+          "subject",
+          "kind"
+        ]
+      }
+    },
+    {
+      "id": 7,
+      "references": [
+        2
+      ],
+      "type": "table",
+      "data": {
+        "name": "chat_reads",
+        "was_declared_in_moor": false,
+        "columns": [
+          {
+            "name": "profile_id",
+            "getter_name": "profileId",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": null,
+            "defaultConstraints": "REFERENCES profiles (id)",
+            "dialectAwareDefaultConstraints": {
+              "sqlite": "REFERENCES profiles (id)"
+            },
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [
+              {
+                "foreign_key": {
+                  "to": {
+                    "table": "profiles",
+                    "column": "id"
+                  },
+                  "initially_deferred": false,
+                  "on_update": null,
+                  "on_delete": null
+                }
+              }
+            ],
+            "type_converter": {
+              "dart_expr": "const IdConverter<Profiles>()",
+              "dart_type_name": "Id<Profiles>"
+            }
+          },
+          {
+            "name": "graph",
+            "getter_name": "graph",
             "moor_type": "string",
             "nullable": false,
             "customConstraints": null,
@@ -705,29 +709,501 @@
             "default_client_dart": null,
             "dsl_features": [],
             "type_converter": {
-              "dart_expr": "const ContentConverter()",
-              "dart_type_name": "Content"
+              "dart_expr": "const HexConverter(GraphId.fromJson)",
+              "dart_type_name": "GraphId"
             }
           },
           {
-            "name": "delivered",
-            "getter_name": "delivered",
-            "moor_type": "bool",
+            "name": "event",
+            "getter_name": "event",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [],
+            "type_converter": {
+              "dart_expr": "const HexConverter(EventId.fromJson)",
+              "dart_type_name": "EventId"
+            }
+          },
+          {
+            "name": "rank",
+            "getter_name": "rank",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          }
+        ],
+        "is_virtual": false,
+        "without_rowid": false,
+        "constraints": [],
+        "explicit_pk": [
+          "profile_id",
+          "graph"
+        ]
+      }
+    },
+    {
+      "id": 8,
+      "references": [
+        2
+      ],
+      "type": "table",
+      "data": {
+        "name": "chat_sends",
+        "was_declared_in_moor": false,
+        "columns": [
+          {
+            "name": "id",
+            "getter_name": "id",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": null,
+            "defaultConstraints": "PRIMARY KEY AUTOINCREMENT",
+            "dialectAwareDefaultConstraints": {
+              "sqlite": "PRIMARY KEY AUTOINCREMENT"
+            },
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [
+              "auto-increment"
+            ],
+            "type_converter": {
+              "dart_expr": "const IdConverter<ChatSends>()",
+              "dart_type_name": "Id<ChatSends>"
+            }
+          },
+          {
+            "name": "profile_id",
+            "getter_name": "profileId",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": null,
+            "defaultConstraints": "REFERENCES profiles (id)",
+            "dialectAwareDefaultConstraints": {
+              "sqlite": "REFERENCES profiles (id)"
+            },
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [
+              {
+                "foreign_key": {
+                  "to": {
+                    "table": "profiles",
+                    "column": "id"
+                  },
+                  "initially_deferred": false,
+                  "on_update": null,
+                  "on_delete": null
+                }
+              }
+            ],
+            "type_converter": {
+              "dart_expr": "const IdConverter<Profiles>()",
+              "dart_type_name": "Id<Profiles>"
+            }
+          },
+          {
+            "name": "graph",
+            "getter_name": "graph",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [],
+            "type_converter": {
+              "dart_expr": "const HexConverter(GraphId.fromJson)",
+              "dart_type_name": "GraphId"
+            }
+          },
+          {
+            "name": "message",
+            "getter_name": "message",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          }
+        ],
+        "is_virtual": false,
+        "without_rowid": false,
+        "constraints": []
+      }
+    },
+    {
+      "id": 9,
+      "references": [
+        2
+      ],
+      "type": "table",
+      "data": {
+        "name": "setting_changes",
+        "was_declared_in_moor": false,
+        "columns": [
+          {
+            "name": "id",
+            "getter_name": "id",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": null,
+            "defaultConstraints": "PRIMARY KEY AUTOINCREMENT",
+            "dialectAwareDefaultConstraints": {
+              "sqlite": "PRIMARY KEY AUTOINCREMENT"
+            },
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [
+              "auto-increment"
+            ],
+            "type_converter": {
+              "dart_expr": "const IdConverter<SettingChanges>()",
+              "dart_type_name": "Id<SettingChanges>"
+            }
+          },
+          {
+            "name": "profile_id",
+            "getter_name": "profileId",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": null,
+            "defaultConstraints": "REFERENCES profiles (id)",
+            "dialectAwareDefaultConstraints": {
+              "sqlite": "REFERENCES profiles (id)"
+            },
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [
+              {
+                "foreign_key": {
+                  "to": {
+                    "table": "profiles",
+                    "column": "id"
+                  },
+                  "initially_deferred": false,
+                  "on_update": null,
+                  "on_delete": null
+                }
+              }
+            ],
+            "type_converter": {
+              "dart_expr": "const IdConverter<Profiles>()",
+              "dart_type_name": "Id<Profiles>"
+            }
+          },
+          {
+            "name": "scope",
+            "getter_name": "scope",
+            "moor_type": "blob",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [],
+            "type_converter": {
+              "dart_expr": "const ScopeConverter()",
+              "dart_type_name": "Scope"
+            }
+          },
+          {
+            "name": "kind",
+            "getter_name": "kind",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "setting",
+            "getter_name": "setting",
+            "moor_type": "blob",
             "nullable": true,
             "customConstraints": null,
-            "defaultConstraints": "CHECK (\"delivered\" IN (0, 1))",
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [],
+            "type_converter": {
+              "dart_expr": "const SettingConverter()",
+              "dart_type_name": "Kept<Setting>"
+            }
+          }
+        ],
+        "is_virtual": false,
+        "without_rowid": false,
+        "constraints": []
+      }
+    },
+    {
+      "id": 10,
+      "references": [
+        2
+      ],
+      "type": "table",
+      "data": {
+        "name": "sync_events",
+        "was_declared_in_moor": false,
+        "columns": [
+          {
+            "name": "profile_id",
+            "getter_name": "profileId",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": null,
+            "defaultConstraints": "REFERENCES profiles (id)",
             "dialectAwareDefaultConstraints": {
-              "sqlite": "CHECK (\"delivered\" IN (0, 1))"
+              "sqlite": "REFERENCES profiles (id)"
+            },
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [
+              {
+                "foreign_key": {
+                  "to": {
+                    "table": "profiles",
+                    "column": "id"
+                  },
+                  "initially_deferred": false,
+                  "on_update": null,
+                  "on_delete": null
+                }
+              }
+            ],
+            "type_converter": {
+              "dart_expr": "const IdConverter<Profiles>()",
+              "dart_type_name": "Id<Profiles>"
+            }
+          },
+          {
+            "name": "id",
+            "getter_name": "id",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [],
+            "type_converter": {
+              "dart_expr": "const HexConverter(EventId.fromJson)",
+              "dart_type_name": "EventId"
+            }
+          },
+          {
+            "name": "graph",
+            "getter_name": "graph",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [],
+            "type_converter": {
+              "dart_expr": "const HexConverter(GraphId.fromJson)",
+              "dart_type_name": "GraphId"
+            }
+          },
+          {
+            "name": "rank",
+            "getter_name": "rank",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "received",
+            "getter_name": "received",
+            "moor_type": "bool",
+            "nullable": false,
+            "customConstraints": null,
+            "defaultConstraints": "CHECK (\"received\" IN (0, 1))",
+            "dialectAwareDefaultConstraints": {
+              "sqlite": "CHECK (\"received\" IN (0, 1))"
             },
             "default_dart": null,
             "default_client_dart": null,
             "dsl_features": []
           },
           {
-            "name": "file_state",
-            "getter_name": "fileState",
+            "name": "shown",
+            "getter_name": "shown",
+            "moor_type": "bool",
+            "nullable": false,
+            "customConstraints": null,
+            "defaultConstraints": "CHECK (\"shown\" IN (0, 1))",
+            "dialectAwareDefaultConstraints": {
+              "sqlite": "CHECK (\"shown\" IN (0, 1))"
+            },
+            "default_dart": "const CustomExpression('0')",
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "bytes",
+            "getter_name": "bytes",
+            "moor_type": "blob",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          }
+        ],
+        "is_virtual": false,
+        "without_rowid": false,
+        "constraints": [],
+        "explicit_pk": [
+          "profile_id",
+          "id"
+        ]
+      }
+    },
+    {
+      "id": 11,
+      "references": [
+        2
+      ],
+      "type": "table",
+      "data": {
+        "name": "transfers",
+        "was_declared_in_moor": false,
+        "columns": [
+          {
+            "name": "id",
+            "getter_name": "id",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": null,
+            "defaultConstraints": "PRIMARY KEY AUTOINCREMENT",
+            "dialectAwareDefaultConstraints": {
+              "sqlite": "PRIMARY KEY AUTOINCREMENT"
+            },
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [
+              "auto-increment"
+            ],
+            "type_converter": {
+              "dart_expr": "const IdConverter<Transfers>()",
+              "dart_type_name": "Id<Transfers>"
+            }
+          },
+          {
+            "name": "profile_id",
+            "getter_name": "profileId",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": null,
+            "defaultConstraints": "REFERENCES profiles (id)",
+            "dialectAwareDefaultConstraints": {
+              "sqlite": "REFERENCES profiles (id)"
+            },
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [
+              {
+                "foreign_key": {
+                  "to": {
+                    "table": "profiles",
+                    "column": "id"
+                  },
+                  "initially_deferred": false,
+                  "on_update": null,
+                  "on_delete": null
+                }
+              }
+            ],
+            "type_converter": {
+              "dart_expr": "const IdConverter<Profiles>()",
+              "dart_type_name": "Id<Profiles>"
+            }
+          },
+          {
+            "name": "graph",
+            "getter_name": "graph",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [],
+            "type_converter": {
+              "dart_expr": "const HexConverter(GraphId.fromJson)",
+              "dart_type_name": "GraphId"
+            }
+          },
+          {
+            "name": "event",
+            "getter_name": "event",
             "moor_type": "string",
             "nullable": true,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": [],
+            "type_converter": {
+              "dart_expr": "const HexConverter(EventId.fromJson)",
+              "dart_type_name": "EventId"
+            }
+          },
+          {
+            "name": "incoming",
+            "getter_name": "incoming",
+            "moor_type": "bool",
+            "nullable": false,
+            "customConstraints": null,
+            "defaultConstraints": "CHECK (\"incoming\" IN (0, 1))",
+            "dialectAwareDefaultConstraints": {
+              "sqlite": "CHECK (\"incoming\" IN (0, 1))"
+            },
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "name",
+            "getter_name": "name",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "size",
+            "getter_name": "size",
+            "moor_type": "int",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "path",
+            "getter_name": "path",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "state",
+            "getter_name": "state",
+            "moor_type": "string",
+            "nullable": false,
             "customConstraints": null,
             "default_dart": null,
             "default_client_dart": null,
@@ -738,19 +1214,87 @@
             }
           },
           {
-            "name": "file_transferred",
-            "getter_name": "fileTransferred",
+            "name": "transferred",
+            "getter_name": "transferred",
             "moor_type": "int",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": "const CustomExpression('0')",
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "file_id",
+            "getter_name": "fileId",
+            "moor_type": "string",
             "nullable": true,
             "customConstraints": null,
             "default_dart": null,
             "default_client_dart": null,
-            "dsl_features": []
+            "dsl_features": [],
+            "type_converter": {
+              "dart_expr": "const HexConverter(FileId.fromJson)",
+              "dart_type_name": "FileId"
+            }
           }
         ],
         "is_virtual": false,
         "without_rowid": false,
         "constraints": []
+      }
+    },
+    {
+      "id": 12,
+      "references": [
+        10
+      ],
+      "type": "index",
+      "data": {
+        "on": 10,
+        "name": "sync_events_graph",
+        "sql": null,
+        "unique": false,
+        "columns": [
+          {
+            "column": "profile_id",
+            "order_by": null
+          },
+          {
+            "column": "graph",
+            "order_by": null
+          }
+        ]
+      }
+    },
+    {
+      "id": 13,
+      "references": [
+        10
+      ],
+      "type": "index",
+      "data": {
+        "on": 10,
+        "name": "sync_events_shown",
+        "sql": null,
+        "unique": false,
+        "columns": [
+          {
+            "column": "profile_id",
+            "order_by": null
+          },
+          {
+            "column": "shown",
+            "order_by": null
+          },
+          {
+            "column": "graph",
+            "order_by": null
+          },
+          {
+            "column": "rank",
+            "order_by": null
+          }
+        ]
       }
     }
   ],
@@ -783,29 +1327,101 @@
       ]
     },
     {
-      "name": "contacts",
+      "name": "chat_drafts",
       "sql": [
         {
           "dialect": "sqlite",
-          "sql": "CREATE TABLE IF NOT EXISTS \"contacts\" (\"id\" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, \"profile_id\" INTEGER NOT NULL REFERENCES profiles (id), \"name\" TEXT NULL, \"public_key\" TEXT NOT NULL, \"friend_request_address\" TEXT NULL, \"friend_request_message\" TEXT NULL, \"online\" INTEGER NOT NULL DEFAULT 0 CHECK (\"online\" IN (0, 1)), \"last_read_message\" INTEGER NULL);"
+          "sql": "CREATE TABLE IF NOT EXISTS \"chat_drafts\" (\"profile_id\" INTEGER NOT NULL REFERENCES profiles (id), \"graph\" TEXT NOT NULL, \"message\" TEXT NOT NULL, \"attachments\" TEXT NOT NULL, \"replying_to\" TEXT NULL, PRIMARY KEY (\"profile_id\", \"graph\"));"
         }
       ]
     },
     {
-      "name": "friend_requests",
+      "name": "deleted_chats",
       "sql": [
         {
           "dialect": "sqlite",
-          "sql": "CREATE TABLE IF NOT EXISTS \"friend_requests\" (\"id\" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, \"profile_id\" INTEGER NOT NULL REFERENCES profiles (id), \"public_key\" TEXT NOT NULL, \"message\" TEXT NOT NULL, \"timestamp\" INTEGER NOT NULL, UNIQUE (\"profile_id\", \"public_key\"));"
+          "sql": "CREATE TABLE IF NOT EXISTS \"deleted_chats\" (\"profile_id\" INTEGER NOT NULL REFERENCES profiles (id), \"graph\" TEXT NOT NULL, \"rank\" INTEGER NOT NULL, PRIMARY KEY (\"profile_id\", \"graph\"));"
         }
       ]
     },
     {
-      "name": "messages",
+      "name": "friend_changes",
       "sql": [
         {
           "dialect": "sqlite",
-          "sql": "CREATE TABLE IF NOT EXISTS \"messages\" (\"id\" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, \"contact_id\" INTEGER NOT NULL REFERENCES contacts (id), \"author\" TEXT NOT NULL, \"sha\" TEXT NOT NULL CHECK(LENGTH(\"sha\") = 64), \"parent\" INTEGER NULL REFERENCES messages (id), \"merged\" INTEGER NULL REFERENCES messages (id), \"timestamp\" INTEGER NOT NULL, \"content\" TEXT NOT NULL, \"delivered\" INTEGER NULL CHECK (\"delivered\" IN (0, 1)), \"file_state\" TEXT NULL, \"file_transferred\" INTEGER NULL);"
+          "sql": "CREATE TABLE IF NOT EXISTS \"friend_changes\" (\"id\" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, \"profile_id\" INTEGER NOT NULL REFERENCES profiles (id), \"public_key\" TEXT NOT NULL, \"wanted\" INTEGER NOT NULL CHECK (\"wanted\" IN (0, 1)), \"nospam\" INTEGER NULL, \"message\" TEXT NULL, \"delete_chat\" INTEGER NOT NULL DEFAULT 0 CHECK (\"delete_chat\" IN (0, 1)));"
+        }
+      ]
+    },
+    {
+      "name": "live_facts",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TABLE IF NOT EXISTS \"live_facts\" (\"profile_id\" INTEGER NOT NULL REFERENCES profiles (id), \"subject\" BLOB NOT NULL, \"kind\" INTEGER NOT NULL, \"fact\" BLOB NOT NULL, PRIMARY KEY (\"profile_id\", \"subject\", \"kind\"));"
+        }
+      ]
+    },
+    {
+      "name": "chat_reads",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TABLE IF NOT EXISTS \"chat_reads\" (\"profile_id\" INTEGER NOT NULL REFERENCES profiles (id), \"graph\" TEXT NOT NULL, \"event\" TEXT NOT NULL, \"rank\" INTEGER NOT NULL, PRIMARY KEY (\"profile_id\", \"graph\"));"
+        }
+      ]
+    },
+    {
+      "name": "chat_sends",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TABLE IF NOT EXISTS \"chat_sends\" (\"id\" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, \"profile_id\" INTEGER NOT NULL REFERENCES profiles (id), \"graph\" TEXT NOT NULL, \"message\" TEXT NOT NULL);"
+        }
+      ]
+    },
+    {
+      "name": "setting_changes",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TABLE IF NOT EXISTS \"setting_changes\" (\"id\" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, \"profile_id\" INTEGER NOT NULL REFERENCES profiles (id), \"scope\" BLOB NOT NULL, \"kind\" INTEGER NOT NULL, \"setting\" BLOB NULL);"
+        }
+      ]
+    },
+    {
+      "name": "sync_events",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TABLE IF NOT EXISTS \"sync_events\" (\"profile_id\" INTEGER NOT NULL REFERENCES profiles (id), \"id\" TEXT NOT NULL, \"graph\" TEXT NOT NULL, \"rank\" INTEGER NOT NULL, \"received\" INTEGER NOT NULL CHECK (\"received\" IN (0, 1)), \"shown\" INTEGER NOT NULL DEFAULT 0 CHECK (\"shown\" IN (0, 1)), \"bytes\" BLOB NOT NULL, PRIMARY KEY (\"profile_id\", \"id\"));"
+        }
+      ]
+    },
+    {
+      "name": "transfers",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TABLE IF NOT EXISTS \"transfers\" (\"id\" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, \"profile_id\" INTEGER NOT NULL REFERENCES profiles (id), \"graph\" TEXT NOT NULL, \"event\" TEXT NULL, \"incoming\" INTEGER NOT NULL CHECK (\"incoming\" IN (0, 1)), \"name\" TEXT NOT NULL, \"size\" INTEGER NOT NULL, \"path\" TEXT NOT NULL, \"state\" TEXT NOT NULL, \"transferred\" INTEGER NOT NULL DEFAULT 0, \"file_id\" TEXT NULL);"
+        }
+      ]
+    },
+    {
+      "name": "sync_events_graph",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE INDEX sync_events_graph ON sync_events (profile_id, graph)"
+        }
+      ]
+    },
+    {
+      "name": "sync_events_shown",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE INDEX sync_events_shown ON sync_events (profile_id, shown, graph, rank)"
         }
       ]
     }

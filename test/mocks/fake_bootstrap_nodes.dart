@@ -1,7 +1,7 @@
 import 'package:btox/models/bootstrap_nodes.dart';
 import 'package:btox/models/crypto.dart';
 import 'package:btox/models/profile_settings.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:riverpod/riverpod.dart';
 
 Stream<BootstrapNodeList> fakeBootstrapNodesProvider(
   Ref ref,

@@ -5,20 +5,21 @@ import 'package:btox/models/connection_status.dart';
 import 'package:btox/pages/select_profile_page.dart';
 import 'package:btox/pages/settings_page.dart';
 import 'package:btox/pages/user_profile_page.dart';
+import 'package:btox/providers/chats.dart';
 import 'package:btox/providers/connection_status.dart';
-import 'package:btox/providers/contacts.dart';
+import 'package:btox/providers/database.dart';
 import 'package:btox/providers/profiles.dart';
 import 'package:btox/widgets/circle_identicon.dart';
+import 'package:btox/widgets/confirm_dialog.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 const _logger = Logger(['MainMenu']);
 
 final class MainMenu extends ConsumerWidget {
   final Profile profile;
-  final Database database;
 
-  const MainMenu({super.key, required this.profile, required this.database});
+  const MainMenu({super.key, required this.profile});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -26,6 +27,7 @@ final class MainMenu extends ConsumerWidget {
         .watch(signedInProfilesProvider)
         .where((p) => p.id != profile.id);
     final l10n = AppLocalizations.of(context)!;
+    final me = profile.settings;
 
     void open(Widget page) {
       Navigator.pop(context); // close drawer before navigating away
@@ -37,21 +39,22 @@ final class MainMenu extends ConsumerWidget {
         DrawerHeader(
           child: ListTile(
             title: Text(
-              profile.settings.nickname,
+              me.nickname,
               style: Theme.of(context).textTheme.headlineSmall,
             ),
             subtitle: Text(
-              profile.settings.statusMessage,
+              me.statusMessage,
               style: Theme.of(context).textTheme.bodyMedium,
             ),
-            trailing: CircleIdenticon(publicKey: profile.publicKey),
+            trailing: CircleIdenticon(bytes: profile.publicKey),
+            onTap: () => open(UserProfilePage(profileId: profile.id)),
           ),
         ),
         for (final other in others)
           ListTile(
             leading: SizedBox.square(
               dimension: 32,
-              child: CircleIdenticon(publicKey: other.publicKey),
+              child: CircleIdenticon(bytes: other.publicKey),
             ),
             title: Text(other.settings.nickname),
             subtitle: Text(
@@ -60,30 +63,32 @@ final class MainMenu extends ConsumerWidget {
               ),
             ),
             trailing: switch (ref
-                .watch(unreadCountsProvider(other.id))
+                .watch(chatsForProfileProvider(other.id))
                 .value
-                ?.values
-                .fold(0, (sum, count) => sum + count)) {
+                ?.where((chat) => chat.mute == null)
+                .fold(0, (sum, chat) => sum + chat.unread)) {
               null || 0 => null,
               final unread => Badge(label: Text('$unread')),
             },
             onTap: () {
               Navigator.pop(context); // close drawer before switching
-              database.updateAppSettings(
-                AppSettingsCompanion(currentProfile: Value(other.id)),
+              _logger.unawaited(
+                'switch accounts',
+                ref
+                    .read(databaseProvider.future)
+                    .then(
+                      (db) => db.updateAppSettings(
+                        AppSettingsCompanion(currentProfile: Value(other.id)),
+                      ),
+                    ),
               );
             },
           ),
         if (others.isNotEmpty) const Divider(),
         ListTile(
-          leading: const Icon(Icons.person),
-          title: Text(l10n.menuProfile),
-          onTap: () => open(UserProfilePage(profileId: profile.id)),
-        ),
-        ListTile(
           leading: const Icon(Icons.settings),
           title: Text(l10n.menuSettings),
-          onTap: () => open(SettingsPage(database: database, profile: profile)),
+          onTap: () => open(SettingsPage(profile: profile)),
         ),
         ListTile(
           leading: const Icon(Icons.switch_account),
@@ -94,9 +99,20 @@ final class MainMenu extends ConsumerWidget {
           leading: const Icon(Icons.logout),
           title: Text(l10n.logout),
           onTap: () async {
-            Navigator.pop(context); // close drawer before navigating away
+            final db = ref.read(databaseProvider.future);
+            if (!await confirm(
+              context,
+              title: l10n.logout,
+              message: l10n.logoutMessage(me.nickname),
+              action: l10n.logout,
+            )) {
+              return;
+            }
+            if (context.mounted) {
+              Navigator.pop(context); // close drawer before navigating away
+            }
             _logger.d('Signing out profile ${profile.id}');
-            await database.signOut(profile.id);
+            await (await db).signOut(profile.id);
           },
         ),
       ],

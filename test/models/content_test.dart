@@ -1,39 +1,26 @@
 import 'package:btox/models/content.dart';
-import 'package:btox/models/crypto.dart';
-import 'package:btox/packets/messagepack/message_data.dart';
-import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('Content encode and decode', () {
-    final l1 = [
-      DeleteContent(
-        message: Sha256.fromDigest(sha256.convert('Hello'.codeUnits)),
-      ),
-      EditContent(
-        message: Sha256.fromDigest(sha256.convert('Hello'.codeUnits)),
-        text: 'Hallo',
-      ),
+  test('old rows of the messages table read back', () {
+    const converter = ContentConverter();
+    for (final content in const [
       FileContent(name: 'file.txt', size: 3, path: '/tmp/file.txt'),
       LocationContent(latitude: 1.2, longitude: 2.3),
-      MediaContent(url: 'https://example.com/image.jpg'),
-      ReactionContent(
-        message: Sha256.fromDigest(sha256.convert('Hello'.codeUnits)),
-        emoji: '👍',
-      ),
       TextContent(text: 'Hello'),
-      UnknownContent(data: MessageDataList([MessageDataInt(42)])),
-    ];
-    final l2 = l1
-        .map((c) => Content.decode(c.encode()))
-        .toList(growable: false);
-    const converter = ContentConverter();
-    final l3 = l1
-        .map((c) => converter.fromSql(converter.toSql(c)))
-        .toList(growable: false);
+    ]) {
+      expect(converter.fromSql(converter.toSql(content)), content);
+    }
+    expect(converter.fromSql('plain'), const TextContent(text: 'plain'));
+  }, tags: ['models']);
 
-    expect(l1, l2);
-    expect(l1, l3);
+  test("a draft's attachments read back, but those of a newer version", () {
+    const converter = ContentListConverter();
+    const location = LocationContent(latitude: 1.2, longitude: 2.3);
+    final stored = converter
+        .toSql([location])
+        .replaceFirst('[', '[{"_type":"poll"},');
+    expect(converter.fromSql(stored), [location]);
   }, tags: ['models']);
 
   test('plain text is what the message says', () {
@@ -46,5 +33,15 @@ void main() {
       const LocationContent(latitude: 1.5, longitude: 2.5).plainText,
       'geo:1.5,2.5',
     );
+  }, tags: ['models']);
+
+  test('only places on Earth are locations', () {
+    expect(
+      contentOfMessage('geo:52.37,-4.89'),
+      const LocationContent(latitude: 52.37, longitude: -4.89),
+    );
+    for (final text in ['geo:91,0', 'geo:0,181', 'geo:${'9' * 400},0']) {
+      expect(contentOfMessage(text), TextContent(text: text), reason: text);
+    }
   }, tags: ['models']);
 }

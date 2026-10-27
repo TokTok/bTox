@@ -234,9 +234,9 @@ abstract interface class ToxApi {
 
   PublicKey groupPeerGetPublicKey(int groupNumber, int groupPeerNumber);
 
-  int toxavGroupchatDisableAv(int conferenceNumber);
+  int groupchatDisableAv(int conferenceNumber);
 
-  bool toxavGroupchatAvEnabled(int conferenceNumber);
+  bool groupchatAvEnabled(int conferenceNumber);
 
   Uint8List getSavedata();
 
@@ -1873,12 +1873,12 @@ mixin ToxFfiApi implements ToxApi {
   }
 
   @override
-  int toxavGroupchatDisableAv(int conferenceNumber) {
+  int groupchatDisableAv(int conferenceNumber) {
     return lib.ffi.toxav_groupchat_disable_av(pointer, conferenceNumber);
   }
 
   @override
-  bool toxavGroupchatAvEnabled(int conferenceNumber) {
+  bool groupchatAvEnabled(int conferenceNumber) {
     return lib.ffi.toxav_groupchat_av_enabled(pointer, conferenceNumber);
   }
 
@@ -2236,6 +2236,216 @@ mixin ToxFfiApi implements ToxApi {
   }
 }
 
+/// The toxav functions, apart from creating, iterating and killing a ToxAV.
+abstract interface class ToxAvApi {
+  int iterationInterval();
+
+  int audioIterationInterval();
+
+  void audioIterate();
+
+  int videoIterationInterval();
+
+  void videoIterate();
+
+  void call(int friendNumber, int audioBitRate, int videoBitRate);
+
+  void answer(int friendNumber, int audioBitRate, int videoBitRate);
+
+  void callControl(int friendNumber, Toxav_Call_Control control);
+
+  void audioSendFrame(
+    int friendNumber,
+    Int16List pcm,
+    int sampleCount,
+    int channels,
+    int samplingRate,
+  );
+
+  void audioSetBitRate(int friendNumber, int bitRate);
+
+  void videoSendFrame(
+    int friendNumber,
+    int width,
+    int height,
+    Uint8List y,
+    Uint8List u,
+    Uint8List v,
+  );
+
+  void videoSetBitRate(int friendNumber, int bitRate);
+}
+
+/// [ToxAvApi] through toxav's C functions.
+mixin ToxAvFfiApi implements ToxAvApi {
+  ToxLibrary get lib;
+
+  Pointer<ToxAV> get pointer;
+
+  @override
+  int iterationInterval() {
+    return lib.ffi.toxav_iteration_interval(pointer);
+  }
+
+  @override
+  int audioIterationInterval() {
+    return lib.ffi.toxav_audio_iteration_interval(pointer);
+  }
+
+  @override
+  void audioIterate() {
+    lib.ffi.toxav_audio_iterate(pointer);
+  }
+
+  @override
+  int videoIterationInterval() {
+    return lib.ffi.toxav_video_iteration_interval(pointer);
+  }
+
+  @override
+  void videoIterate() {
+    lib.ffi.toxav_video_iterate(pointer);
+  }
+
+  @override
+  void call(int friendNumber, int audioBitRate, int videoBitRate) {
+    final a = _Arena(lib);
+    try {
+      final err = a.error();
+      lib.ffi.toxav_call(
+        pointer,
+        friendNumber,
+        audioBitRate,
+        videoBitRate,
+        err,
+      );
+      _check(Toxav_Err_Call.fromValue(err.value), 'toxav_call');
+    } finally {
+      a.free();
+    }
+  }
+
+  @override
+  void answer(int friendNumber, int audioBitRate, int videoBitRate) {
+    final a = _Arena(lib);
+    try {
+      final err = a.error();
+      lib.ffi.toxav_answer(
+        pointer,
+        friendNumber,
+        audioBitRate,
+        videoBitRate,
+        err,
+      );
+      _check(Toxav_Err_Answer.fromValue(err.value), 'toxav_answer');
+    } finally {
+      a.free();
+    }
+  }
+
+  @override
+  void callControl(int friendNumber, Toxav_Call_Control control) {
+    final a = _Arena(lib);
+    try {
+      final err = a.error();
+      lib.ffi.toxav_call_control(pointer, friendNumber, control, err);
+      _check(Toxav_Err_Call_Control.fromValue(err.value), 'toxav_call_control');
+    } finally {
+      a.free();
+    }
+  }
+
+  @override
+  void audioSendFrame(
+    int friendNumber,
+    Int16List pcm,
+    int sampleCount,
+    int channels,
+    int samplingRate,
+  ) {
+    final a = _Arena(lib);
+    try {
+      final err = a.error();
+      lib.ffi.toxav_audio_send_frame(
+        pointer,
+        friendNumber,
+        a.int16s(pcm),
+        sampleCount,
+        channels,
+        samplingRate,
+        err,
+      );
+      _check(
+        Toxav_Err_Send_Frame.fromValue(err.value),
+        'toxav_audio_send_frame',
+      );
+    } finally {
+      a.free();
+    }
+  }
+
+  @override
+  void audioSetBitRate(int friendNumber, int bitRate) {
+    final a = _Arena(lib);
+    try {
+      final err = a.error();
+      lib.ffi.toxav_audio_set_bit_rate(pointer, friendNumber, bitRate, err);
+      _check(
+        Toxav_Err_Bit_Rate_Set.fromValue(err.value),
+        'toxav_audio_set_bit_rate',
+      );
+    } finally {
+      a.free();
+    }
+  }
+
+  @override
+  void videoSendFrame(
+    int friendNumber,
+    int width,
+    int height,
+    Uint8List y,
+    Uint8List u,
+    Uint8List v,
+  ) {
+    final a = _Arena(lib);
+    try {
+      final err = a.error();
+      lib.ffi.toxav_video_send_frame(
+        pointer,
+        friendNumber,
+        width,
+        height,
+        a.bytes(y),
+        a.bytes(u),
+        a.bytes(v),
+        err,
+      );
+      _check(
+        Toxav_Err_Send_Frame.fromValue(err.value),
+        'toxav_video_send_frame',
+      );
+    } finally {
+      a.free();
+    }
+  }
+
+  @override
+  void videoSetBitRate(int friendNumber, int bitRate) {
+    final a = _Arena(lib);
+    try {
+      final err = a.error();
+      lib.ffi.toxav_video_set_bit_rate(pointer, friendNumber, bitRate, err);
+      _check(
+        Toxav_Err_Bit_Rate_Set.fromValue(err.value),
+        'toxav_video_set_bit_rate',
+      );
+    } finally {
+      a.free();
+    }
+  }
+}
+
 void _check<T extends Enum>(T error, String function) {
   if (error.index != 0) {
     throw ApiException(error, function);
@@ -2267,6 +2477,12 @@ final class _Arena {
 
   Pointer<Uint8> bytes(List<int> data) {
     final pointer = buffer(data.length);
+    pointer.asTypedList(data.length).setAll(0, data);
+    return pointer;
+  }
+
+  Pointer<Int16> int16s(List<int> data) {
+    final pointer = _add(_lib.allocator<Int16>(data.isEmpty ? 1 : data.length));
     pointer.asTypedList(data.length).setAll(0, data);
     return pointer;
   }

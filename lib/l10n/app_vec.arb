@@ -4,10 +4,6 @@
     "@defaultContactName": {
         "description": "The default name for a contact when the name is not yet known"
     },
-    "title": "bTox (tìtol mìa ofisial)",
-    "@title": {
-        "description": "The title of the application"
-    },
     "addContact": "Zontar contato",
     "@addContact": {
         "description": "The text for the button to add a contact"

@@ -1,11 +1,12 @@
 // The analyzer resolves ToxLibrary's conditional export to the stub.
 // ignore_for_file: argument_type_not_assignable
 
-import 'dart:ffi';
+import 'dart:ffi' show DynamicLibrary;
 import 'dart:typed_data';
 
 import 'package:btox/btox_app.dart';
 import 'package:btox/db/database.dart';
+import 'package:btox/l10n/generated/app_localizations.dart';
 import 'package:btox/ffi/generated/toxcore.ffi.dart' as gen;
 import 'package:btox/ffi/tox_library.ffi.dart' as tox_lib;
 import 'package:btox/models/crypto.dart';
@@ -18,11 +19,12 @@ import 'package:btox/providers/tox.dart';
 import 'package:drift/native.dart';
 import 'package:ffi/ffi.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import 'mocks/fake_bootstrap_nodes.dart';
 import 'mocks/fake_toxcore.dart';
+import 'mocks/settle.dart';
 
 void main() {
   testWidgets('creating a profile from Select Profile opens it', (
@@ -64,11 +66,17 @@ void main() {
 
     await tester.tap(find.byKey(const Key('createProfileButton')));
     await tester.tap(find.byKey(const Key('createProfileButton')));
+    await settle(
+      tester,
+      until: () => find.byType(ContactListPage).evaluate().isNotEmpty,
+    );
     await tester.pumpAndSettle();
 
     expect(find.byType(CreateProfilePage), findsNothing);
     expect(find.byType(ContactListPage), findsOneWidget);
-    final profiles = await db.select(db.profiles).get();
+    final profiles = (await tester.runAsync(
+      () => db.select(db.profiles).get(),
+    ))!;
     expect(profiles.map((p) => (p.settings.nickname, p.signedIn)), [
       ('Old', false),
       ('Yanciman', true),
@@ -79,5 +87,32 @@ void main() {
     await tester.pumpWidget(const SizedBox());
     await tester.pumpAndSettle();
     await tester.runAsync(db.close);
+  });
+
+  testWidgets('a new profile fits a small screen with the keyboard open and '
+      'large text', (tester) async {
+    addTearDown(tester.view.reset);
+    tester.view
+      ..physicalSize = const Size(360, 560) * tester.view.devicePixelRatio
+      ..viewInsets = FakeViewPadding(
+        bottom: 300 * tester.view.devicePixelRatio,
+      );
+    final button = find.byKey(const Key('createProfileButton'));
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context)
+                .copyWith(textScaler: const TextScaler.linear(1.5)),
+            child: child!,
+          ),
+          home: const CreateProfilePage(),
+        ),
+      ),
+    );
+    await tester.ensureVisible(button);
+    await tester.pump();
+    expect(tester.getRect(button).bottom, lessThanOrEqualTo(260));
   });
 }

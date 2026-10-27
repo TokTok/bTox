@@ -4,6 +4,7 @@ import 'dart:ui';
 
 import 'package:btox/models/connection_status.dart';
 import 'package:btox/models/id.dart';
+import 'package:btox/services/isolate_channel.dart';
 
 const _portName = 'btox-connection-status';
 
@@ -66,56 +67,14 @@ final class ConnectionStatusPublisher {
   }
 }
 
-Stream<ConnectionStatuses?> watchConnectionStatuses() {
-  late final StreamController<ConnectionStatuses?> controller;
-  late final ReceivePort port;
-  SendPort? publisher;
-  Timer? retry;
-
-  // Resends until the publisher answers: after it exits, the name server may
-  // still hold its dead port until a new publisher replaces it.
-  void subscribe() {
-    retry?.cancel();
-    IsolateNameServer.lookupPortByName(_portName)
-        ?.send([port.sendPort, Isolate.current.controlPort]);
-    retry = Timer(const Duration(milliseconds: 500), subscribe);
-  }
-
-  controller = StreamController(
-    onListen: () {
-      port = ReceivePort('connection status subscriber');
-      port.listen((message) {
-        switch (message) {
-          case [
-            'hello',
-            SendPort publisherControl,
-            Map<int, List<Object?>>? statuses,
-          ]:
-            retry?.cancel();
-            if (publisherControl != publisher) {
-              publisher = publisherControl;
-              Isolate(publisherControl).addOnExitListener(
-                port.sendPort,
-                response: ['exited', publisherControl],
-              );
-            }
-            controller.add(_parse(statuses));
-          case ['status', Map<int, List<Object?>>? statuses]:
-            controller.add(_parse(statuses));
-          case ['exited', SendPort publisherControl]:
-            if (publisherControl == publisher) {
-              publisher = null;
-              controller.add(null);
-              subscribe();
-            }
-        }
-      });
-      subscribe();
-    },
-    onCancel: () {
-      retry?.cancel();
-      port.close();
-    },
-  );
-  return controller.stream;
-}
+Stream<ConnectionStatuses?> watchConnectionStatuses({
+  void Function()? whenMissing,
+  Duration missingAfter = const Duration(seconds: 2),
+}) => watchPublisher<ConnectionStatuses?>(
+  _portName,
+  request: (port) => [port, Isolate.current.controlPort],
+  update: 'status',
+  parse: (message) => _parse(message as Map<int, List<Object?>>?),
+  whenMissing: whenMissing,
+  missingAfter: missingAfter,
+);

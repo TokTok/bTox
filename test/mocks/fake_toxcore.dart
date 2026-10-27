@@ -24,6 +24,8 @@ final class FakeToxcore extends api.Tox {
   bool isAlive = true;
 
   bool throwOnBootstrap = false;
+  // Thrown by the next iterate, as for events that can't be read.
+  Object? iterateError;
   final List<Event> _events = [];
 
   final List<PublicKey> friends = [];
@@ -36,16 +38,40 @@ final class FakeToxcore extends api.Tox {
   final List<(int, int, String)> sentMessages = [];
 
   final Set<int> unreachableFriends = {};
+  // Friends Tox doesn't see online yet, so it takes no packets for them.
+  final Set<int> unconnectedFriends = {};
+
+  /// How many more messages Tox takes before its queue is full, if limited.
+  int? sendQueueRoom;
 
   final List<(int, int, ffi.Tox_File_Control)> fileControls = [];
   final List<(int, int, String)> fileSends = [];
+  // By file number, as fileSends.
+  final List<(int, Uint8List)> fileSendKinds = [];
   final List<(int, int, int, Uint8List)> fileChunks = [];
+  final List<(int, int, int)> fileSeeks = [];
+  // Of files friends send, by friend number and file number, else made up
+  // from those.
+  final Map<(int, int), Uint8List> fileIds = {};
+  // How many more chunks find the send queue full.
+  int fullChunkQueues = 0;
+  // Where each file's next chunk must start, as Tox takes them in order.
+  final _nextChunk = <(int, int), int>{};
+  final List<(int, Uint8List)> losslessPackets = [];
 
   int _nextMessageId = 0;
 
+  var _connection = ffi.Tox_Connection.TOX_CONNECTION_NONE;
+
   void pushEvent(Event event) {
+    if (event case ToxEventSelfConnectionStatus(:final connectionStatus)) {
+      _connection = connectionStatus;
+    }
     _events.add(event);
   }
+
+  @override
+  ffi.Tox_Connection selfGetConnectionStatus() => _connection;
 
   @override
   dynamic noSuchMethod(Invocation invocation) =>
@@ -76,7 +102,8 @@ final class FakeToxcore extends api.Tox {
 
   @override
   int friendAddNorequest(PublicKey publicKey) {
-    if (friends.contains(publicKey)) {
+    final existing = friends.indexOf(publicKey);
+    if (existing != -1 && !deletedFriends.contains(existing)) {
       throw api.ApiException(
         ffi.Tox_Err_Friend_Add.TOX_ERR_FRIEND_ADD_ALREADY_SENT,
       );
@@ -112,6 +139,10 @@ final class FakeToxcore extends api.Tox {
 
   @override
   List<Event> iterate() {
+    if (iterateError case final error?) {
+      iterateError = null;
+      throw error;
+    }
     final result = List<Event>.from(_events);
     _events.clear();
     return result;
@@ -121,6 +152,18 @@ final class FakeToxcore extends api.Tox {
   void kill() {
     _logger.d('Killing Tox instance');
     isAlive = false;
+  }
+
+  @override
+  void friendSendLosslessPacket(int friendNumber, Uint8List data) {
+    if (unconnectedFriends.contains(friendNumber)) {
+      throw const api.ApiException(
+        ffi
+            .Tox_Err_Friend_Custom_Packet
+            .TOX_ERR_FRIEND_CUSTOM_PACKET_FRIEND_NOT_CONNECTED,
+      );
+    }
+    losslessPackets.add((friendNumber, data));
   }
 
   @override
@@ -143,6 +186,14 @@ final class FakeToxcore extends api.Tox {
             .TOX_ERR_FRIEND_SEND_MESSAGE_FRIEND_NOT_CONNECTED,
       );
     }
+    if (sendQueueRoom case final room?) {
+      if (room == 0) {
+        throw api.ApiException(
+          ffi.Tox_Err_Friend_Send_Message.TOX_ERR_FRIEND_SEND_MESSAGE_SENDQ,
+        );
+      }
+      sendQueueRoom = room - 1;
+    }
     final messageId = _nextMessageId++;
     sentMessages.add((friendNumber, messageId, utf8.decode(message)));
     return messageId;
@@ -164,8 +215,21 @@ final class FakeToxcore extends api.Tox {
     Uint8List filename,
   ) {
     fileSends.add((friendNumber, fileSize, utf8.decode(filename)));
+    fileSendKinds.add((kind, fileId));
+    _nextChunk[(friendNumber, fileSends.length - 1)] = 0;
     return fileSends.length - 1;
   }
+
+  @override
+  void fileSeek(int friendNumber, int fileNumber, int position) =>
+      fileSeeks.add((friendNumber, fileNumber, position));
+
+  @override
+  Uint8List fileGetFileId(int friendNumber, int fileNumber) =>
+      fileIds[(friendNumber, fileNumber)] ??
+      (Uint8List(32)
+        ..[0] = friendNumber
+        ..[1] = fileNumber);
 
   @override
   void fileSendChunk(
@@ -173,5 +237,20 @@ final class FakeToxcore extends api.Tox {
     int fileNumber,
     int position,
     Uint8List data,
-  ) => fileChunks.add((friendNumber, fileNumber, position, data));
+  ) {
+    final key = (friendNumber, fileNumber);
+    if (position != (_nextChunk[key] ?? position)) {
+      throw const api.ApiException(
+        ffi.Tox_Err_File_Send_Chunk.TOX_ERR_FILE_SEND_CHUNK_WRONG_POSITION,
+      );
+    }
+    if (fullChunkQueues > 0) {
+      fullChunkQueues--;
+      throw const api.ApiException(
+        ffi.Tox_Err_File_Send_Chunk.TOX_ERR_FILE_SEND_CHUNK_SENDQ,
+      );
+    }
+    _nextChunk[key] = position + data.length;
+    fileChunks.add((friendNumber, fileNumber, position, data));
+  }
 }

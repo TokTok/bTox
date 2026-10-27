@@ -7,7 +7,7 @@ import 'package:btox/providers/profiles.dart';
 import 'package:btox/widgets/load_failed.dart';
 import 'package:btox/widgets/system_gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 final class BtoxApp extends ConsumerWidget {
   final GlobalKey<NavigatorState>? navigatorKey;

@@ -4,12 +4,15 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:btox/packets/messagepack/message_data.dart';
 import 'package:btox/packets/messagepack/tags.dart';
 
 // dart2js doesn't support 64 bit ints, so we unpack using 2x 32 bit ints.
-int _getUint64(ByteData d, int offset) =>
-    (d.getUint32(offset) << 32) | d.getUint32(offset + 4);
+// Dart's ints are signed: larger ones, such as toxcore's UINT64_MAX for a
+// file of unknown size, read as the largest.
+int _getUint64(ByteData d, int offset) {
+  final high = d.getUint32(offset);
+  return high >= 0x80000000 ? -1 >>> 1 : (high << 32) | d.getUint32(offset + 4);
+}
 
 int _getInt64(ByteData d, int offset) =>
     (d.getInt32(offset) << 32) | d.getUint32(offset + 4);
@@ -17,9 +20,9 @@ int _getInt64(ByteData d, int offset) =>
 /// Streaming API for unpacking (deserializing) data from msgpack binary format.
 ///
 /// unpackXXX methods returns value if it exist, or `null`.
-/// Throws [FormatException] if value is not an requested type,
-/// but in that case throwing exception not corrupt internal state,
-/// so other unpackXXX methods can be called after that.
+/// Throws [FormatException] if value is not an requested type, or the bytes
+/// end before it does, but in that case throwing exception not corrupt
+/// internal state, so other unpackXXX methods can be called after that.
 final class Unpacker {
   /// Manipulates with provided [Uint8List] to sequentially unpack values.
   Unpacker(this._list) : _d = ByteData.sublistView(_list);
@@ -28,10 +31,19 @@ final class Unpacker {
   final ByteData _d;
   int _offset = 0;
 
-  int get _tag => _d.getUint8(_offset);
+  int get _tag => _offset < _list.length
+      ? _list[_offset]
+      : throw const FormatException('Truncated');
+
+  void _need(int length) {
+    if (_offset + length > _list.length) {
+      throw const FormatException('Truncated');
+    }
+  }
 
   /// Reads the [size] bytes after the tag with [get] and moves past both.
   T _read<T>(int size, T Function(int offset) get) {
+    _need(1 + size);
     final v = get(_offset + 1);
     _offset += 1 + size;
     return v;
@@ -58,12 +70,18 @@ final class Unpacker {
   };
 
   Uint8List _take(int length) {
+    _need(length);
     final data = Uint8List.sublistView(_list, _offset, _offset + length);
     _offset += length;
     return data;
   }
 
   bool get hasNull => _tag == kTagNil;
+
+  bool get hasList =>
+      _tag & 0xF0 == 0x90 || _tag == kTagArray16 || _tag == kTagArray32;
+
+  bool get isDone => _offset == _d.lengthInBytes;
 
   void unpackNull() {
     if (!hasNull) {
@@ -168,41 +186,55 @@ final class Unpacker {
     null => null,
   };
 
-  MessageData unpack() => switch (_tag) {
-    kTagNil => _read(0, (_) => const MessageDataNull()),
-    <= 0x7f ||
-    >= 0xe0 ||
-    >= kTagUint8 && <= kTagInt64 => MessageDataInt(unpackInt()!),
-    kTagFalse || kTagTrue => MessageDataBool(unpackBool()!),
-    kTagFloat32 || kTagFloat64 => MessageDataDouble(unpackDouble()!),
-    >= 0xa0 && <= 0xbf ||
-    kTagStr8 ||
-    kTagStr16 ||
-    kTagStr32 => MessageDataString(unpackString()!),
-    kTagBin8 || kTagBin16 || kTagBin32 => MessageDataBinary(unpackBinary()!),
-    >= 0x90 && <= 0x9f ||
-    kTagArray16 ||
-    kTagArray32 => MessageDataList(unpackList()),
-    >= 0x80 && <= 0x8f || kTagMap16 || kTagMap32 => MessageDataMap(unpackMap()),
-    final b => throw _formatException('Unknown', b),
-  };
+  /// Moves past one value, however deeply nested, without building it.
+  void skip() {
+    for (var left = 1; left > 0; left--) {
+      switch (_tag) {
+        case >= 0x90 && <= 0x9f || kTagArray16 || kTagArray32:
+          left += unpackListLength();
+        case >= 0x80 && <= 0x8f || kTagMap16 || kTagMap32:
+          left += 2 * unpackMapLength();
+        case >= 0xa0 && <= 0xbf || kTagStr8 || kTagStr16 || kTagStr32:
+          _take(
+            _length(
+              'String',
+              fix: 0xA0,
+              fixMask: 0x1F,
+              tag8: kTagStr8,
+              tag16: kTagStr16,
+              tag32: kTagStr32,
+            )!,
+          );
+        case kTagBin8 || kTagBin16 || kTagBin32:
+          unpackBinary();
+        case kTagFalse || kTagTrue:
+          unpackBool();
+        case kTagFloat32 || kTagFloat64:
+          unpackDouble();
+        // The tag, a type, and 1, 2, 4, 8 or 16 bytes.
+        case >= kTagFixExt1 && <= kTagFixExt16:
+          _take(2 + (1 << (_tag - kTagFixExt1)));
+        case kTagExt8 || kTagExt16 || kTagExt32:
+          _take(
+            1 +
+                _length(
+                  'Extension',
+                  tag8: kTagExt8,
+                  tag16: kTagExt16,
+                  tag32: kTagExt32,
+                )!,
+          );
+        default:
+          unpackInt();
+      }
+    }
+  }
 
-  /// Automatically unpacks `bytes` to [List] where items has corresponding data types.
-  ///
-  /// Return types declared as [MessageData] instead of `dynamic` for safety reasons.
-  /// This limits the number of valid types that can be cast to, and since [MessageData]
-  /// is a sealed type, a switch over it can be checked for completeness at compile time.
-  List<MessageData> unpackList() =>
-      List.generate(unpackListLength(), (_) => unpack());
-
-  /// Automatically unpacks `bytes` to [Map] where key and values has corresponding data types.
-  ///
-  /// Return types declared as [MessageData] instead of `dynamic` for safety reasons.
-  /// This limits the number of valid types that can be cast to, and since [MessageData]
-  /// is a sealed type, a switch over it can be checked for completeness at compile time.
-  Map<MessageData, MessageData> unpackMap() {
-    final length = unpackMapLength();
-    return {for (var i = 0; i < length; i++) unpack(): unpack()};
+  /// The bytes of the next value, which it moves past.
+  Uint8List takeValue() {
+    final start = _offset;
+    skip();
+    return Uint8List.sublistView(_list, start, _offset);
   }
 
   Exception _formatException(String type, int b) => FormatException(

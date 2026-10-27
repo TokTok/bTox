@@ -1,19 +1,31 @@
+import 'dart:async';
+
 import 'package:btox/db/database.dart';
 import 'package:btox/l10n/generated/app_localizations.dart';
+import 'package:btox/models/chat_view.dart';
 import 'package:btox/models/content.dart';
 import 'package:btox/models/crypto.dart';
 import 'package:btox/models/id.dart';
-import 'package:btox/models/messaging.dart';
-import 'package:btox/models/persistence.dart';
 import 'package:btox/models/profile_settings.dart';
 import 'package:btox/pages/chat_page.dart';
-import 'package:btox/providers/contacts.dart';
-import 'package:btox/providers/messages.dart';
+import 'package:btox/providers/chats.dart';
+import 'package:btox/providers/database.dart';
+import 'package:btox/providers/drafts.dart';
+import 'package:btox/providers/map_tile.dart';
 import 'package:btox/providers/profiles.dart';
 import 'package:btox/widgets/chat_text_bubble.dart';
+import 'package:btox/widgets/system_gestures.dart';
+import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:hooks_riverpod/misc.dart' show Override;
+
+import 'finders.dart';
+import 'mocks/fake_tile_provider.dart';
+
+final _event = EventId(Uint8List(32));
 
 void main() {
   final profile = Profile(
@@ -32,35 +44,41 @@ void main() {
     nospam: ToxAddressNospam(0),
   );
 
-  final contact = Contact(
-    id: Id(1),
-    profileId: profile.id,
-    name: 'Testman',
-    publicKey: PublicKey.fromJson(
-      '1111111111111111111111111111111111111111111111111111111111111111',
-    ),
-    online: true,
+  final contact = PublicKey.fromJson(
+    '1111111111111111111111111111111111111111111111111111111111111111',
   );
+
+  final chat = ChatRef(profile.id, GraphId.friend(profile.publicKey, contact));
+
+  // [shown]: the chat's account is the one the app shows.
+  List<Override> overrides(
+    List<ChatEntry> entries, {
+    bool shown = true,
+    ChatSummary? summary,
+  }) => [
+    currentProfileProvider.overrideWithValue(shown ? profile : null),
+    profileProvider(profile.id).overrideWith((ref) => Stream.value(profile)),
+    chatProvider(chat).overrideWithValue(
+      AsyncData(
+        summary ??
+            ChatSummary(ref: chat, name: 'Testman', key: contact, online: true),
+      ),
+    ),
+    chatEntriesProvider(chat).overrideWithValue(AsyncData(entries)),
+    newestEventsProvider(chat).overrideWithValue(const {}),
+  ];
 
   testWidgets('Empty chat page should display message entry box', (
     WidgetTester tester,
   ) async {
-    final messages = <Message>[];
+    final messages = <ChatEntry>[];
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [
-          currentProfileProvider.overrideWithValue(profile),
-          profileProvider(profile.id)
-              .overrideWith((ref) => Stream.value(profile)),
-          contactProvider(contact.id)
-              .overrideWith((ref) => Stream.value(contact)),
-          messagesForContactProvider(contact.id)
-              .overrideWith((ref) => Stream.value(messages)),
-        ],
+        overrides: [...overrides(messages)],
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
-          home: ChatPage(contactId: contact.id),
+          home: ChatPage(chat: chat),
         ),
       ),
     );
@@ -74,49 +92,32 @@ void main() {
   });
 
   testWidgets('Chat page should display messages', (WidgetTester tester) async {
-    final messages = <Message>[];
+    final messages = <ChatEntry>[];
 
     messages.add(
-      _fakeInsertMessage(
-        Id(0),
-        newMessage(
-          contactId: contact.id,
-          parent: null,
-          merged: null,
-          author: contact.publicKey,
-          timestamp: DateTime(2025, 1, 1, 0, 1, 12),
-          content: TextContent(text: 'Happy New Year!'),
-        ),
+      ChatEntry(
+        event: _event,
+        mine: false,
+        timestamp: DateTime(2025, 1, 1, 0, 1, 12),
+        content: TextContent(text: 'Happy New Year!'),
       ),
     );
     messages.add(
-      _fakeInsertMessage(
-        Id(1),
-        newMessage(
-          contactId: contact.id,
-          parent: messages.last,
-          merged: null,
-          author: profile.publicKey,
-          timestamp: DateTime(2025, 1, 1, 0, 2, 23),
-          content: TextContent(text: 'Thank you! Happy New Year to you too!'),
-        ).copyWith(delivered: const Value(true)),
+      ChatEntry(
+        event: EventId(Uint8List(32)..[0] = 1),
+        mine: true,
+        timestamp: DateTime(2025, 1, 1, 0, 2, 23),
+        content: TextContent(text: 'Thank you! Happy New Year to you too!'),
+        state: ChatContentState.delivered,
       ),
     );
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [
-          currentProfileProvider.overrideWithValue(profile),
-          profileProvider(profile.id)
-              .overrideWith((ref) => Stream.value(profile)),
-          contactProvider(contact.id)
-              .overrideWith((ref) => Stream.value(contact)),
-          messagesForContactProvider(contact.id)
-              .overrideWith((ref) => Stream.value(messages)),
-        ],
+        overrides: [...overrides(messages)],
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
-          home: ChatPage(contactId: contact.id),
+          home: ChatPage(chat: chat),
         ),
       ),
     );
@@ -132,36 +133,23 @@ void main() {
   testWidgets('Long messages should be shown in a big bubble', (
     WidgetTester tester,
   ) async {
-    final messages = <Message>[];
+    final messages = <ChatEntry>[];
 
     messages.add(
-      _fakeInsertMessage(
-        Id(0),
-        newMessage(
-          contactId: contact.id,
-          parent: null,
-          merged: null,
-          author: profile.publicKey,
-          timestamp: DateTime(2025, 1, 1, 0, 1, 12),
-          content: TextContent(text: 'Here is a long message.\n' * 10),
-        ),
+      ChatEntry(
+        event: _event,
+        mine: true,
+        timestamp: DateTime(2025, 1, 1, 0, 1, 12),
+        content: TextContent(text: 'Here is a long message.\n' * 10),
       ),
     );
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [
-          currentProfileProvider.overrideWithValue(profile),
-          profileProvider(profile.id)
-              .overrideWith((ref) => Stream.value(profile)),
-          contactProvider(contact.id)
-              .overrideWith((ref) => Stream.value(contact)),
-          messagesForContactProvider(contact.id)
-              .overrideWith((ref) => Stream.value(messages)),
-        ],
+        overrides: [...overrides(messages)],
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
-          home: ChatPage(contactId: contact.id),
+          home: ChatPage(chat: chat),
         ),
       ),
     );
@@ -174,75 +162,48 @@ void main() {
     );
   });
 
-  testWidgets('Tapping a message shows the time', (WidgetTester tester) async {
-    final messages = <Message>[];
-
-    messages.add(
-      _fakeInsertMessage(
-        Id(0),
-        newMessage(
-          contactId: contact.id,
-          parent: null,
-          merged: null,
-          author: contact.publicKey,
-          timestamp: DateTime(2025, 1, 1, 0, 1, 12),
-          content: TextContent(text: 'Happy New Year!'),
+  testWidgets('Only the last of a run says when, until tapped', (
+    WidgetTester tester,
+  ) async {
+    final messages = [
+      for (final (minute, text) in [(1, 'Happy New Year!'), (2, 'Again!')])
+        ChatEntry(
+          event: EventId(Uint8List(32)..[0] = minute),
+          mine: false,
+          timestamp: DateTime(2025, 1, 1, 0, minute),
+          content: TextContent(text: text),
         ),
-      ),
-    );
+    ];
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [
-          currentProfileProvider.overrideWithValue(profile),
-          profileProvider(profile.id)
-              .overrideWith((ref) => Stream.value(profile)),
-          contactProvider(contact.id)
-              .overrideWith((ref) => Stream.value(contact)),
-          messagesForContactProvider(contact.id)
-              .overrideWith((ref) => Stream.value(messages)),
-        ],
+        overrides: [...overrides(messages)],
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
-          home: ChatPage(contactId: contact.id),
+          home: ChatPage(chat: chat),
         ),
       ),
     );
-
     await tester.pumpAndSettle();
+    final semantics = tester.ensureSemantics();
+    expect(find.bySemanticsLabel(RegExp('12:01 AM')), findsNothing);
+    expect(find.bySemanticsLabel(RegExp('12:02 AM')), findsOneWidget);
 
-    // Tap the message.
-    // TODO(iphydf): This is a hack. Find a better way to tap the message.
-    final bubble =
-        find.byType(GestureDetector).first.evaluate().first.widget
-            as GestureDetector;
-    bubble.onTap!();
-
+    await tester.tap(findMessage('Happy New Year!'));
     await tester.pumpAndSettle();
-
-    await expectLater(
-      find.byType(ChatPage),
-      matchesGoldenFile('goldens/chat_page/messages_time.png'),
-    );
+    expect(find.bySemanticsLabel(RegExp('12:01 AM')), findsOneWidget);
+    semantics.dispose();
   });
 
   testWidgets('Tapping smiley shows emoji picker', (WidgetTester tester) async {
-    final messages = <Message>[];
+    final messages = <ChatEntry>[];
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [
-          currentProfileProvider.overrideWithValue(profile),
-          profileProvider(profile.id)
-              .overrideWith((ref) => Stream.value(profile)),
-          contactProvider(contact.id)
-              .overrideWith((ref) => Stream.value(contact)),
-          messagesForContactProvider(contact.id)
-              .overrideWith((ref) => Stream.value(messages)),
-        ],
+        overrides: [...overrides(messages)],
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
-          home: ChatPage(contactId: contact.id, recentEmojis: false),
+          home: ChatPage(chat: chat, recentEmojis: false),
         ),
       ),
     );
@@ -271,22 +232,14 @@ void main() {
   testWidgets(
     'Tapping an emoji in the emoji picker puts an emoji in the input',
     (WidgetTester tester) async {
-      final messages = <Message>[];
+      final messages = <ChatEntry>[];
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
-            currentProfileProvider.overrideWithValue(profile),
-            profileProvider(profile.id)
-                .overrideWith((ref) => Stream.value(profile)),
-            contactProvider(contact.id)
-                .overrideWith((ref) => Stream.value(contact)),
-            messagesForContactProvider(contact.id)
-                .overrideWith((ref) => Stream.value(messages)),
-          ],
+          overrides: [...overrides(messages)],
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
-            home: ChatPage(contactId: contact.id, recentEmojis: false),
+            home: ChatPage(chat: chat, recentEmojis: false),
           ),
         ),
       );
@@ -311,34 +264,21 @@ void main() {
   testWidgets('Sending a single emoji shows a big emoji', (
     WidgetTester tester,
   ) async {
-    final messages = <Message>[
-      _fakeInsertMessage(
-        Id(0),
-        newMessage(
-          contactId: contact.id,
-          parent: null,
-          merged: null,
-          author: profile.publicKey,
-          timestamp: DateTime(2025, 1, 1, 0, 1, 12),
-          content: TextContent(text: '😀'),
-        ),
+    final messages = <ChatEntry>[
+      ChatEntry(
+        event: _event,
+        mine: true,
+        timestamp: DateTime(2025, 1, 1, 0, 1, 12),
+        content: TextContent(text: '😀'),
       ),
     ];
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [
-          currentProfileProvider.overrideWithValue(profile),
-          profileProvider(profile.id)
-              .overrideWith((ref) => Stream.value(profile)),
-          contactProvider(contact.id)
-              .overrideWith((ref) => Stream.value(contact)),
-          messagesForContactProvider(contact.id)
-              .overrideWith((ref) => Stream.value(messages)),
-        ],
+        overrides: [...overrides(messages)],
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
-          home: ChatPage(contactId: contact.id, recentEmojis: false),
+          home: ChatPage(chat: chat, recentEmojis: false),
         ),
       ),
     );
@@ -354,36 +294,23 @@ void main() {
   testWidgets('Long-pressing a message shows a context menu', (
     WidgetTester tester,
   ) async {
-    final messages = <Message>[];
+    final messages = <ChatEntry>[];
 
     messages.add(
-      _fakeInsertMessage(
-        Id(0),
-        newMessage(
-          contactId: contact.id,
-          parent: null,
-          merged: null,
-          author: contact.publicKey,
-          timestamp: DateTime(2025, 1, 1, 0, 1, 12),
-          content: TextContent(text: 'Happy New Year!'),
-        ),
+      ChatEntry(
+        event: _event,
+        mine: false,
+        timestamp: DateTime(2025, 1, 1, 0, 1, 12),
+        content: TextContent(text: 'Happy New Year!'),
       ),
     );
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [
-          currentProfileProvider.overrideWithValue(profile),
-          profileProvider(profile.id)
-              .overrideWith((ref) => Stream.value(profile)),
-          contactProvider(contact.id)
-              .overrideWith((ref) => Stream.value(contact)),
-          messagesForContactProvider(contact.id)
-              .overrideWith((ref) => Stream.value(messages)),
-        ],
+        overrides: [...overrides(messages)],
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
-          home: ChatPage(contactId: contact.id),
+          home: ChatPage(chat: chat),
         ),
       ),
     );
@@ -400,19 +327,285 @@ void main() {
       find.byType(MaterialApp),
       matchesGoldenFile('goldens/chat_page/message_context_menu.png'),
     );
-  });
-}
 
-Message _fakeInsertMessage(Id<Messages> id, MessagesCompanion message) {
-  return Message(
-    id: id,
-    contactId: message.contactId.value,
-    parent: message.parent.value,
-    merged: message.merged.value,
-    author: message.author.value,
-    sha: message.sha.value,
-    timestamp: message.timestamp.value,
-    content: message.content.value,
-    delivered: message.delivered.present ? message.delivered.value : null,
+    await tester.tap(find.text('Delete'));
+    await tester.pumpAndSettle();
+    expect(find.text('Not available yet'), findsOneWidget);
+  });
+
+  testWidgets('a swipe in from the edge, as for going back, keeps the chat '
+      'where it was', (tester) async {
+    // Where Android's gesture navigation takes swipes, in physical pixels.
+    tester.view.systemGestureInsets = const FakeViewPadding(
+      left: 60,
+      right: 60,
+    );
+    addTearDown(tester.view.resetSystemGestureInsets);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          ...overrides([
+            for (var i = 0; i < 40; i++)
+              ChatEntry(
+                event: EventId(Uint8List(32)..[0] = i),
+                mine: i.isEven,
+                timestamp: DateTime(2025, 1, 1, 0, i),
+                content: TextContent(text: 'Message $i'),
+              ),
+          ]),
+        ],
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          builder: leaveSystemSwipes,
+          home: ChatPage(chat: chat),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final list = find.byKey(const Key('messages'));
+    final position = tester
+        .state<ScrollableState>(
+          find.descendant(of: list, matching: find.byType(Scrollable)),
+        )
+        .position;
+
+    final edge = tester.getRect(list).centerRight - const Offset(2, 0);
+    await tester.dragFrom(edge, const Offset(-200, 40));
+    await tester.pumpAndSettle();
+    expect(position.pixels, 0);
+
+    await tester.dragFrom(edge, const Offset(0, 300));
+    await tester.pumpAndSettle();
+    expect(position.pixels, greaterThan(0));
+  });
+
+  testWidgets("a chat opened before the database switches to the chat's "
+      'account', (tester) async {
+    final db = Database(NativeDatabase.memory());
+    final opened = Completer<Database>();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          ...overrides(const [], shown: false),
+          databaseProvider.overrideWith((ref) => opened.future),
+        ],
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          home: ChatPage(chat: chat),
+        ),
+      ),
+    );
+
+    opened.complete(db);
+    final settings = await tester.runAsync(() async {
+      await pumpEventQueue();
+      return db.watchAppSettings().first;
+    });
+    expect(settings!.currentProfile, chat.profile);
+
+    await tester.pumpWidget(const SizedBox());
+    await tester.runAsync(db.close);
+  });
+
+  testWidgets('what is being written stays, leaving or reopening the chat', (
+    tester,
+  ) async {
+    final navigator = GlobalKey<NavigatorState>();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: overrides([]),
+        child: MaterialApp(
+          navigatorKey: navigator,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          home: const Scaffold(),
+        ),
+      ),
+    );
+    ChatPage.open(navigator.currentState!, chat);
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('messageField')), 'draft');
+
+    // A notification for the open chat leaves it as it is.
+    final route = ModalRoute.of(tester.element(find.byType(ChatPage)));
+    ChatPage.open(navigator.currentState!, chat);
+    await tester.pumpAndSettle();
+    expect(ModalRoute.of(tester.element(find.byType(ChatPage))), route);
+
+    navigator.currentState!.pop();
+    await tester.pumpAndSettle();
+    ChatPage.open(navigator.currentState!, chat);
+    await tester.pumpAndSettle();
+    expect(find.text('draft'), findsOneWidget);
+  });
+
+  testWidgets('what is sent goes in all its parts, also when the chat '
+      'closes meanwhile', (tester) async {
+    final db = Database(NativeDatabase.memory());
+    final opened = Completer<Database>();
+    final navigator = GlobalKey<NavigatorState>();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          ...overrides([]),
+          databaseProvider.overrideWith((ref) => opened.future),
+          mapTileProvider.overrideWith((ref) => FakeTileProvider()),
+        ],
+        child: MaterialApp(
+          navigatorKey: navigator,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          home: const Scaffold(),
+        ),
+      ),
+    );
+    ChatPage.open(navigator.currentState!, chat);
+    await tester.pumpAndSettle();
+    const location = LocationContent(latitude: 52.37, longitude: 4.89);
+    ProviderScope.containerOf(tester.element(find.byType(ChatPage)))
+        .read(chatDraftProvider(chat))
+        .attachments
+        .value = [
+      location,
+    ];
+    await tester.enterText(find.byKey(const Key('messageField')), 'here');
+    await tester.pump();
+    await tester.tap(find.byIcon(Icons.send));
+    navigator.currentState!.pop();
+    await tester.pumpAndSettle();
+
+    opened.complete(db);
+    await tester.runAsync(
+      () => Future.delayed(const Duration(milliseconds: 50)),
+    );
+    final sends = await tester.runAsync(() => db.select(db.chatSends).get());
+    expect(
+      [for (final s in sends!) s.message],
+      [messageTextOf(location), 'here'],
+    );
+
+    await tester.pumpWidget(const SizedBox());
+    await tester.runAsync(db.close);
+  });
+
+  ChatEntry message(int i) => ChatEntry(
+    event: EventId(Uint8List(32)..[0] = i),
+    mine: false,
+    timestamp: DateTime(2025, 1, 1, 0, i),
+    content: TextContent(text: 'message $i'),
   );
+  Future<void> show(WidgetTester tester, List<ChatEntry> entries) =>
+      tester.pumpWidget(
+        ProviderScope(
+          overrides: overrides(entries),
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            home: ChatPage(chat: chat),
+          ),
+        ),
+      );
+
+  testWidgets('reading further up keeps its place as new messages come, '
+      'which wait below', (tester) async {
+    final entries = [for (var i = 0; i < 50; i++) message(i)];
+    await show(tester, entries);
+    await tester.pumpAndSettle();
+    await tester.drag(find.byKey(const Key('messages')), const Offset(0, 1000));
+    await tester.pumpAndSettle();
+    final shown = [
+      for (var i = 0; i < 50; i++)
+        if (findMessage('message $i').evaluate().isNotEmpty) i,
+    ];
+    final reading = findMessage('message ${shown[shown.length ~/ 2]}');
+    final place = tester.getRect(reading);
+
+    await show(tester, [...entries, message(50), message(51)]);
+    await tester.pump();
+    expect(tester.getRect(reading), place);
+    expect(find.text('2'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Newest messages'));
+    await tester.pumpAndSettle();
+    expect(findMessage('message 51'), findsOneWidget);
+    expect(find.byTooltip('Newest messages'), findsNothing);
+  });
+
+  testWidgets('what is sent while reading further up shows at the bottom', (
+    tester,
+  ) async {
+    final db = Database(NativeDatabase.memory());
+    Future<void> show(List<ChatEntry> entries) => tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          ...overrides(entries),
+          databaseProvider.overrideWith((ref) => db),
+        ],
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          home: ChatPage(chat: chat),
+        ),
+      ),
+    );
+    final entries = [for (var i = 0; i < 50; i++) message(i)];
+    await show(entries);
+    await tester.pumpAndSettle();
+    await tester.drag(find.byKey(const Key('messages')), const Offset(0, 1000));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byKey(const Key('messageField')), 'mine');
+    await tester.pump();
+    await tester.tap(find.byIcon(Icons.send));
+    await tester.runAsync(
+      () => Future.delayed(const Duration(milliseconds: 50)),
+    );
+    await tester.pumpAndSettle();
+    await show([
+      ...entries,
+      ChatEntry(
+        event: EventId(Uint8List(32)..[0] = 99),
+        mine: true,
+        timestamp: DateTime(2025, 1, 1, 1),
+        content: const TextContent(text: 'mine'),
+      ),
+    ]);
+    await tester.pumpAndSettle();
+    expect(findMessage('mine'), findsOneWidget);
+    expect(find.byTooltip('Newest messages'), findsNothing);
+
+    await tester.pumpWidget(const SizedBox());
+    await tester.runAsync(db.close);
+  });
+
+  testWidgets('a chat no longer a friend\'s takes no messages', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: overrides([
+          message(1),
+        ], summary: ChatSummary(ref: chat, key: chat.graph, closed: true)),
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          home: ChatPage(chat: chat),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(findMessage('message 1'), findsOneWidget);
+    expect(find.byType(TextField), findsNothing);
+    expect(
+      find.text("You can't send messages to this chat any more"),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('a message keeps its state as new ones come in', (tester) async {
+    await show(tester, [message(1), message(2)]);
+    await tester.pumpAndSettle();
+    await tester.tap(findMessage('message 2'));
+    await tester.pump();
+    final semantics = tester.ensureSemantics();
+    expect(find.bySemanticsLabel(RegExp('12:02')), findsOneWidget);
+
+    await show(tester, [message(1), message(2), message(3)]);
+    await tester.pump();
+    expect(find.bySemanticsLabel(RegExp('12:02')), findsOneWidget);
+    semantics.dispose();
+  });
 }

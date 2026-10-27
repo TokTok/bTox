@@ -8,8 +8,8 @@ import 'package:clock/clock.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import 'mocks/fake_bootstrap_nodes.dart';
 import 'mocks/fake_toxcore.dart';
@@ -174,8 +174,13 @@ void main() {
           matchesGoldenFile('goldens/drawer.png'),
         );
 
-        // Click "Profile".
-        await tester.tap(find.text('Profile'));
+        // Tap the header for the profile.
+        await tester.tap(
+          find.descendant(
+            of: find.byType(DrawerHeader),
+            matching: find.byType(ListTile),
+          ),
+        );
         await tester.pumpAndSettle();
 
         await expectLater(
@@ -228,6 +233,8 @@ void main() {
         );
 
         // Press "Delete profile".
+        await tester.scrollUntilVisible(find.text('Delete profile'), 300);
+        await tester.pumpAndSettle();
         await tester.tap(find.text('Delete profile'));
         await tester.pumpAndSettle();
 

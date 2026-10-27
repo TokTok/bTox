@@ -35,6 +35,7 @@ abstract class ProfileSettings with _$ProfileSettings {
     required String nickname,
     required String statusMessage,
     @Default(NetworkSettings()) NetworkSettings network,
+    @Default([]) List<String> messageFormatsOff,
   }) = _ProfileSettings;
 
   factory ProfileSettings.fromJson(Map<String, dynamic> json) =>

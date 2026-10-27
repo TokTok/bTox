@@ -9,6 +9,9 @@ import 'package:btox/models/crypto.dart';
 import 'package:btox/models/id.dart';
 import 'package:btox/models/persistence.dart';
 import 'package:btox/models/profile_settings.dart';
+import 'package:btox/sync/event.dart';
+import 'package:btox/sync/home.dart';
+import 'package:clock/clock.dart';
 
 final class ToxSaveProfile {
   final SecretKey secretKey;
@@ -35,7 +38,6 @@ final class ProfileExistsException implements Exception {
 /// Reads unencrypted toxcore savedata with toxcore itself, without going
 /// online.
 ToxSaveProfile readToxSave(ToxLibrary lib, Uint8List save) {
-  // ignore: argument_type_not_assignable
   final tox = Toxcore(
     lib,
     ToxOptions(
@@ -62,7 +64,7 @@ ToxSaveProfile readToxSave(ToxLibrary lib, Uint8List save) {
   }
 }
 
-/// Adds [profile], signed in, with its friends as contacts.
+/// Adds [profile], signed in, with its friends.
 Future<Id<Profiles>> importProfile(Database db, ToxSaveProfile profile) {
   return db.transaction(() async {
     final existing = await (db.select(
@@ -71,26 +73,24 @@ Future<Id<Profiles>> importProfile(Database db, ToxSaveProfile profile) {
     if (existing.isNotEmpty) {
       throw const ProfileExistsException();
     }
+    final settings = ProfileSettings(
+      nickname: profile.name,
+      statusMessage: profile.statusMessage,
+    );
     final id = await db.addProfile(
       ProfilesCompanion.insert(
-        settings: ProfileSettings(
-          nickname: profile.name,
-          statusMessage: profile.statusMessage,
-        ),
+        settings: settings,
         secretKey: profile.secretKey,
         publicKey: profile.publicKey,
         nospam: profile.nospam,
       ),
     );
-    for (final (publicKey, name) in profile.friends) {
-      await db.addContact(
-        ContactsCompanion.insert(
-          profileId: id,
-          publicKey: publicKey,
-          name: Value(name.isEmpty ? null : name),
-        ),
-      );
+    final account = AccountWriter(profile.publicKey, settings);
+    final now = clock.now();
+    for (final (pk, name) in profile.friends) {
+      account.addFriend(now, WantFriend(pk: pk), name);
     }
+    await db.addSyncEvents(id, account.events);
     await db.signIn(id);
     return id;
   });

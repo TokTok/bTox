@@ -13,6 +13,8 @@ abstract class BootstrapNode with _$BootstrapNode {
     required int port,
     required List<int> tcpPorts,
     required PublicKey publicKey,
+    // Whether the list's last check reached it.
+    @Default(true) bool statusTcp,
   }) = _BootstrapNode;
   factory BootstrapNode.fromJson(Map<String, dynamic> json) =>
       _$BootstrapNodeFromJson(json);

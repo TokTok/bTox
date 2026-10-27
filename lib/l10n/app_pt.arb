@@ -3,10 +3,6 @@
     "@defaultContactName": {
         "description": "The default name for a contact when the name is not yet known"
     },
-    "title": "bTox",
-    "@title": {
-        "description": "The title of the application"
-    },
     "addContact": "Adicionar contacto",
     "@addContact": {
         "description": "The text for the button to add a contact"

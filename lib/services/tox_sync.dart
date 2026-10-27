@@ -1,23 +1,35 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:btox/api/toxcore/tox.dart';
 import 'package:btox/api/toxcore/tox_constants.dart';
 import 'package:btox/api/toxcore/tox_events.dart';
+import 'package:btox/attachments/attachments.dart';
 import 'package:btox/db/database.dart';
 import 'package:btox/ffi/toxcore.dart' show Tox_Connection, Tox_Message_Type;
 import 'package:btox/logger.dart';
-import 'package:btox/models/content.dart';
+import 'package:btox/messages/split_message.dart';
+import 'package:btox/messages/formats.dart';
+import 'package:btox/messages/message_format.dart';
+import 'package:btox/models/chat_log.dart';
+import 'package:btox/models/chat_view.dart';
 import 'package:btox/models/crypto.dart';
 import 'package:btox/models/id.dart';
-import 'package:btox/models/messaging.dart';
 import 'package:btox/models/persistence.dart';
-import 'package:btox/models/profile_settings.dart';
 import 'package:btox/providers/attachments.dart';
 import 'package:btox/providers/database.dart';
+import 'package:btox/providers/message_formats.dart'
+    show knownMessageFormatsProvider;
+import 'package:btox/providers/profiles.dart';
 import 'package:btox/providers/tox.dart';
 import 'package:btox/services/file_transfers.dart';
 import 'package:btox/services/message_notifier.dart';
+import 'package:btox/sync/event.dart';
+import 'package:btox/sync/fact.dart';
+import 'package:btox/sync/home.dart';
+import 'package:btox/sync/setting.dart';
+import 'package:clock/clock.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'tox_sync.g.dart';
@@ -42,113 +54,102 @@ Future<ToxSync> toxSync(
     maxMessageLength: toxMaxMessageLength,
     notifier: ref.watch(messageNotifierProvider),
     attachmentsDirectory: () => ref.read(attachmentsDirectoryProvider.future),
+    knownFormats: ref.watch(knownMessageFormatsProvider),
   );
   ref.onDispose(sync.dispose);
-  ref.listen(toxEventsProvider(secretKey, nospam), (_, next) {
-    if (next.value case final event?) {
-      sync.handleEvent(event);
-    }
-  });
   sync.start();
+  runTox(
+    ref,
+    tox,
+    ref.watch(networkSettingsProvider(secretKey))!,
+    sync.handleEvent,
+  );
   return sync;
 }
 
-final _geo = RegExp(r'^geo:(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)$');
+/// One of our messages on its way to a friend, in the parts Tox takes.
+final class _Outgoing {
+  final int friendNumber;
+  final Tox_Message_Type kind;
+  final List<Uint8List> parts;
+  // Tox delivers in order, so the delivered parts are the first ones.
+  var delivered = 0;
+  // Tox's IDs of the parts after those that it has.
+  final pending = <int>[];
 
-// Until clients can agree on richer content, locations travel as text.
-String? _toText(Content content) => switch (content) {
-  TextContent(:final text) => text,
-  LocationContent(:final latitude, :final longitude) =>
-    'geo:$latitude,$longitude',
-  _ => null,
-};
+  _Outgoing(this.friendNumber, this.kind, this.parts);
 
-Content _fromText(String text) => switch (_geo.firstMatch(text)) {
-  final match? => LocationContent(
-    latitude: double.parse(match[1]!),
-    longitude: double.parse(match[2]!),
-  ),
-  null => TextContent(text: text),
-};
-
-List<String> splitMessage(String text, int maxBytes) {
-  final parts = <String>[];
-  var rest = text;
-  while (utf8.encode(rest).length > maxBytes) {
-    var end = 0;
-    var bytes = 0;
-    for (final rune in rest.runes) {
-      final runeBytes = utf8.encode(String.fromCharCode(rune)).length;
-      if (bytes + runeBytes > maxBytes) {
-        break;
-      }
-      bytes += runeBytes;
-      end += rune > 0xFFFF ? 2 : 1;
-    }
-    final space = rest.substring(0, end).lastIndexOf(RegExp(r'\s'));
-    if (space >= end ~/ 2) {
-      end = space + 1;
-    }
-    parts.add(rest.substring(0, end));
-    rest = rest.substring(end);
-  }
-  parts.add(rest);
-  return parts;
+  int get next => delivered + pending.length;
 }
 
-/// Keeps a profile's Tox and its database in sync. Tox starts without
-/// friends, so every contact is added again on start.
+/// Keeps a profile's Tox and its events in sync. A profile this device runs
+/// is its account's home: what Tox does becomes events, and what the pages
+/// ask for becomes events and Tox calls. Tox starts without friends, so every
+/// friend is added again on start.
 final class ToxSync {
   final Database _db;
   final Tox _tox;
   final Id<Profiles> _profileId;
   final int _maxMessageLength;
+  final Duration _retryDelay;
   final MessageNotifier? _notifier;
+  final List<MessageFormat> _knownFormats;
 
   final _subscriptions = <StreamSubscription<Object?>>[];
+  final _connectionChanges = StreamController<Tox_Connection>.broadcast();
+  var _disposed = false;
 
-  ProfileSettings? _settings;
-
-  var _contacts = <Contact>[];
-
-  var _undelivered = <Message>[];
+  Profile? _profile;
+  Home? _home;
 
   final _friendNumbers = <PublicKey, int>{};
+  // The request each friend was added to Tox with, if any.
+  final _requests = <PublicKey, (ToxAddress, String?)?>{};
+  // The friend requests that came since starting.
+  final _toldRequests = <PublicKey, String>{};
   final _onlineFriends = <int>{};
 
-  /// Kept until the database no longer lists them as undelivered, so they
-  /// aren't sent twice.
-  final _sent = <Id<Messages>, (int, Set<int>)>{};
+  /// Our messages on their way, by their Send event.
+  final _outgoing = <EventId, _Outgoing>{};
+  // Sends what Tox didn't take again, if nothing else does first.
+  Timer? _retry;
 
-  final FileTransfers _files;
+  var _transfers = const <Transfer>[];
+
+  late final FileTransfers _files;
 
   ToxSync(
     this._db,
     this._tox,
     this._profileId, {
     required int maxMessageLength,
+    Duration retryDelay = const Duration(seconds: 1),
     MessageNotifier? notifier,
     Future<String> Function()? attachmentsDirectory,
+    List<MessageFormat> knownFormats = messageFormats,
   }) : _maxMessageLength = maxMessageLength,
+       _retryDelay = retryDelay,
        _notifier = notifier,
-       _files = FileTransfers(
-         _db,
-         _tox,
-         attachmentsDirectory ?? () async => '',
-       );
+       _knownFormats = knownFormats {
+    _files = FileTransfers(
+      _db,
+      _tox,
+      _profileId,
+      attachmentsDirectory ?? () async => '',
+      (graph, content) => isIncoming(content)
+          ? _recordIncoming(graph, content)
+          : _home!.record(graph, content),
+    );
+  }
+
+  Tox_Connection get connection => _tox.selfGetConnectionStatus();
+
+  Stream<Tox_Connection> get connectionChanges => _connectionChanges.stream;
 
   void start() {
-    _run('reset online states', _db.clearContactsOnline(_profileId));
-    _run('cancel unfinished files', _db.cancelIncomingFiles(_profileId));
+    _logger.unawaited('forget live facts', _db.clearLiveFacts(_profileId));
     _subscriptions
       ..add(_db.watchProfile(_profileId).listen(_updateProfile))
-      ..add(_db.watchContactsFor(_profileId).listen(_updateContacts))
-      ..add(
-        _db.watchUndeliveredMessagesFor(_profileId).listen(_updateUndelivered),
-      )
-      ..add(
-        _db.watchIncomingFilesFor(_profileId).listen(_files.incomingChanged),
-      )
       ..add(
         _db.watchAppSettings().listen(
           (settings) => _files.autoAcceptSize = settings.autoAcceptFileSize,
@@ -157,74 +158,105 @@ final class ToxSync {
   }
 
   void dispose() {
+    _disposed = true;
+    _retry?.cancel();
     for (final subscription in _subscriptions) {
       subscription.cancel();
     }
     _subscriptions.clear();
     _files.dispose();
-    _run('reset online states', _db.clearContactsOnline(_profileId));
+    _connectionChanges.close();
+    _logger.unawaited('forget live facts', _db.clearLiveFacts(_profileId));
   }
 
   void handleEvent(Event event) {
     switch (event) {
+      case ToxEventSelfConnectionStatus(:final connectionStatus):
+        _connectionChanges.add(connectionStatus);
       case ToxEventFriendConnectionStatus(
         :final friendNumber,
         :final connectionStatus,
       ):
         final online = connectionStatus != Tox_Connection.TOX_CONNECTION_NONE;
-        if (_publicKeyOf(friendNumber) case final publicKey?) {
-          _run(
+        final publicKey = _publicKeyOf(friendNumber);
+        if (publicKey != null) {
+          _logger.unawaited(
             'update online state',
-            _db.updateContactOnline(_profileId, publicKey, online),
+            _db.updateLiveFacts(_profileId, [
+              (
+                Subject.friend(publicKey),
+                FactValue.connection(Connection.values[connectionStatus.value]),
+              ),
+            ]),
           );
+        }
+        // Toxcore also says when only the connection changes, as between
+        // UDP and TCP: the friend was online all along.
+        if (online == _onlineFriends.contains(friendNumber)) {
+          break;
         }
         if (!online) {
           _onlineFriends.remove(friendNumber);
           _files.friendOffline(friendNumber);
           // Tox forgets the messages it hasn't delivered yet.
-          _sent.removeWhere(
-            (_, sent) => sent.$1 == friendNumber && sent.$2.isNotEmpty,
-          );
+          for (final message in _outgoing.values) {
+            if (message.friendNumber == friendNumber) {
+              message.pending.clear();
+            }
+          }
         } else {
           _onlineFriends.add(friendNumber);
-          _acceptFriendRequests(friendNumber);
+          if (publicKey != null) {
+            _accepted(publicKey);
+          }
           _sendMessages();
         }
       case ToxEventFriendReadReceipt(:final friendNumber, :final messageId):
-        for (final MapEntry(key: id, value: (friend, parts)) in _sent.entries) {
-          if (friend == friendNumber && parts.remove(messageId)) {
-            if (parts.isEmpty) {
-              _run('mark message delivered', _db.markMessageDelivered(id));
+        for (final MapEntry(key: id, value: message) in _outgoing.entries) {
+          if (message.friendNumber == friendNumber &&
+              message.pending.remove(messageId)) {
+            if (++message.delivered == message.parts.length) {
+              _delivered(id);
             }
             break;
           }
         }
-      case ToxEventFriendMessage(:final friendNumber, :final message):
-        _receive(friendNumber, utf8.decode(message, allowMalformed: true));
+      case ToxEventFriendMessage(
+        :final friendNumber,
+        :final type,
+        :final message,
+      ):
+        _receive(friendNumber, type, message);
       case ToxEventFriendName(:final friendNumber, :final name):
-        if (_publicKeyOf(friendNumber) case final publicKey?) {
-          _run(
-            'save friend name',
-            _db.updateContactName(
-              _profileId,
-              publicKey,
-              utf8.decode(name, allowMalformed: true),
-            ),
-          );
+        if (_publicKeyOf(friendNumber) case final pk?) {
+          _home?.named(pk, utf8.decode(name, allowMalformed: true));
         }
       case ToxEventFriendRequest(:final publicKey, :final message):
         _logger.i('Received friend request from ${publicKey.toJson()}');
-        _run(
-          'save friend request',
-          _db.addFriendRequest(
-            FriendRequestsCompanion.insert(
-              profileId: _profileId,
-              publicKey: publicKey,
-              message: utf8.decode(message, allowMalformed: true),
-              timestamp: DateTime.now().toUtc(),
-            ),
-          ),
-        );
+        if (_home case final home?) {
+          final text = utf8.decode(message, allowMalformed: true);
+          if (home.declined(publicKey, text)) {
+            break;
+          }
+          final known = home.state.friends[publicKey];
+          // Sent again, as clients do, it's the same request.
+          if (known?.request == text || _toldRequests[publicKey] == text) {
+            break;
+          }
+          _toldRequests[publicKey] = text;
+          home.record(
+            home.account,
+            FriendRequested(pk: publicKey, message: text),
+          );
+          if (known?.wanted != true) {
+            _notifier?.request?.call(
+              _profileId,
+              publicKey,
+              text,
+              _profile?.settings.nickname,
+            );
+          }
+        }
       case ToxEventFileRecv(
         :final friendNumber,
         :final fileNumber,
@@ -232,11 +264,15 @@ final class ToxSync {
         :final fileSize,
         :final filename,
       ):
-        if (_contactOf(friendNumber) case final contact?) {
-          _run(
+        final home = _home;
+        if (home == null) {
+          _files.decline(friendNumber, fileNumber);
+        } else if (_publicKeyOf(friendNumber) case final pk?) {
+          _logger.unawaited(
             'receive file',
             _files.offered(
-              contact,
+              home.chatWith(pk),
+              home.state.friends[pk]?.name ?? '',
               friendNumber,
               fileNumber,
               kind,
@@ -256,89 +292,198 @@ final class ToxSync {
     }
   }
 
-  Contact? _contactOf(int friendNumber) {
-    final publicKey = _publicKeyOf(friendNumber);
-    return _contacts.where((c) => c.publicKey == publicKey).firstOrNull;
-  }
-
   PublicKey? _publicKeyOf(int friendNumber) => _friendNumbers.entries
       .where((entry) => entry.value == friendNumber)
       .firstOrNull
       ?.key;
 
-  void _receive(int friendNumber, String text) {
-    final contact = _contactOf(friendNumber);
-    if (contact == null) {
+  void _receive(int friendNumber, Tox_Message_Type type, Uint8List message) {
+    final home = _home;
+    final pk = _publicKeyOf(friendNumber);
+    final friend = home?.state.friends[pk];
+    if (home == null || pk == null || friend == null || !friend.wanted) {
       _logger.w('Received a message from unknown friend $friendNumber');
       return;
     }
-    _run(
-      'save message',
-      _db.addMessage(
-        newMessage(
-          contactId: contact.id,
-          parent: null,
-          merged: null,
-          author: contact.publicKey,
-          timestamp: DateTime.now().toUtc(),
-          content: _fromText(text),
-        ),
+    _logger.unawaited(
+      'save a message',
+      _recordIncoming(
+        home.chatWith(pk),
+        Received(sender: friend.name ?? '', message: message, kind: type),
       ),
     );
-    _notifier?.notify(contact, text, _settings?.nickname);
+  }
+
+  /// Records a friend's message or file, and shows it unless it repeats one.
+  Future<NewEvent?> _recordIncoming(GraphId chat, EventContent content) async {
+    final home = _home!;
+    final recorded = await home.record(chat, content);
+    if (recorded case (final id, final event, _)
+        when !home.earlier.repeats(id, event, _formats)) {
+      final listed = notifying(
+        [
+          (
+            sender: null,
+            text: notificationText(content, _formats),
+            time: DateTime.fromMillisecondsSinceEpoch(event.time),
+          ),
+        ],
+        home.state.setting<Mute>(Scope.conversation(chat)),
+        clock.now(),
+        [_nickname],
+      );
+      if (listed.isNotEmpty) {
+        _notifier?.notify(
+          ChatRef(_profileId, chat),
+          home.state.friends[home.friendOf(chat)]?.name,
+          listed,
+          _profile?.settings.nickname,
+        );
+      }
+    }
+    return recorded;
   }
 
   void _updateProfile(Profile profile) {
+    final first = _profile == null;
     final settings = profile.settings;
     try {
-      if (settings.nickname != _settings?.nickname) {
+      if (settings.nickname != _profile?.settings.nickname) {
         _tox.selfSetName(utf8.encode(settings.nickname));
       }
-      if (settings.statusMessage != _settings?.statusMessage) {
+      if (settings.statusMessage != _profile?.settings.statusMessage) {
         _tox.selfSetStatusMessage(utf8.encode(settings.statusMessage));
       }
     } on ApiException catch (e) {
       _logger.e('Failed to set profile info: $e');
     }
-    _settings = settings;
+    _profile = profile;
+    if (!first) {
+      _home?.profileChanged(settings);
+      return;
+    }
+    _logger.unawaited('load the account', _startHome(profile));
   }
 
-  void _updateContacts(List<Contact> contacts) {
-    _contacts = contacts;
-    // Requests first, so re-adding a friend as a new contact sends one.
-    final ordered = [
-      ...contacts.where((c) => c.friendRequestAddress != null),
-      ...contacts.where((c) => c.friendRequestAddress == null),
-    ];
-    for (final contact in ordered) {
-      if (_friendNumbers.containsKey(contact.publicKey)) {
-        continue;
+  Future<void> _startHome(Profile profile) async {
+    final home = await Home.load(_db, profile);
+    if (_disposed) {
+      return;
+    }
+    _home = home;
+    // Toxcore forgets unfinished incoming files when it stops.
+    for (final transfer in await _db.watchTransfers(_profileId).first) {
+      if (_disposed) {
+        return;
       }
-      try {
-        _friendNumbers[contact.publicKey] = switch (contact) {
-          Contact(:final friendRequestAddress?) => _tox.friendAdd(
-            friendRequestAddress,
-            utf8.encode(contact.friendRequestMessage ?? ''),
-          ),
-          _ => _tox.friendAddNorequest(contact.publicKey),
-        };
-      } on ApiException catch (e) {
-        _logger.e('Failed to add contact ${contact.id}: $e');
+      if (transfer case Transfer(
+        incoming: true,
+        :final event?,
+        state: FileState.offered || FileState.active,
+      )) {
+        await _db.setTransferState(transfer.id, FileState.paused);
+        await home.record(transfer.graph, FileEnded(file: event, ok: false));
       }
     }
-    final keys = {for (final contact in contacts) contact.publicKey};
-    for (final publicKey in [..._friendNumbers.keys]) {
-      if (!keys.contains(publicKey)) {
-        _deleteFriend(publicKey);
+    await home.profileChanged(profile.settings);
+    if (_disposed) {
+      return;
+    }
+    _updateFriends();
+    _subscriptions
+      ..add(_db.watchFriendChanges(_profileId).listen(_friendChanges))
+      ..add(_db.watchSends(_profileId).listen(_sends))
+      ..add(_db.watchReads(_profileId).listen(_reads))
+      ..add(_db.watchSettingChanges(_profileId).listen(_settings))
+      ..add(_db.watchTransfers(_profileId).listen(_transfersChanged));
+  }
+
+  void _friendChanges(List<FriendChange> changes) => _logger.unawaited(
+    'write friend changes',
+    _home!.friendChanges(changes).then((files) {
+      for (final file in files) {
+        _logger.unawaited('delete $file', deleteAttachment(file));
+      }
+      _updateFriends();
+    }),
+  );
+
+  void _sends(List<ChatSend> sends) => _logger.unawaited(
+    'write sends',
+    _home!.sends(sends, _nickname).then((_) => _sendMessages()),
+  );
+
+  void _reads(List<ChatRead> reads) =>
+      _logger.unawaited('write read marks', _home!.reads(reads));
+
+  void _settings(List<SettingChange> changes) =>
+      _logger.unawaited('write settings', _home!.settings(changes));
+
+  void _transfersChanged(List<Transfer> transfers) {
+    _transfers = transfers;
+    _files.incomingChanged(transfers);
+    _logger.unawaited(
+      'start files',
+      _home!.startFiles(transfers, _nickname).then((_) => _sendMessages()),
+    );
+  }
+
+  String get _nickname => _profile?.settings.nickname ?? '';
+
+  MessageFormats get _formats => formatsOn(
+    _knownFormats,
+    _profile?.settings.messageFormatsOff ?? const [],
+  );
+
+  /// Makes Tox's friends the account's.
+  void _updateFriends() {
+    final friends = _home!.state.friends;
+    // Requests first, so re-adding a friend as a new contact sends one.
+    for (final requested in [true, false]) {
+      for (final MapEntry(key: pk, value: friend) in friends.entries) {
+        if (friend.wanted && (friend.nospam != null) == requested) {
+          _addFriend(pk, switch (friend.nospam) {
+            final nospam? => ToxAddress.of(pk, nospam),
+            null => null,
+          }, friend.requestMessage);
+        }
+      }
+    }
+    for (final pk in [..._friendNumbers.keys]) {
+      if (friends[pk]?.wanted != true) {
+        _deleteFriend(pk);
       }
     }
     _sendMessages();
   }
 
+  /// Adds [pk] to Tox, with a friend request to [address] if there is one.
+  /// A new request to a friend already added, such as one who deleted us,
+  /// adds them again to send it.
+  void _addFriend(PublicKey pk, ToxAddress? address, [String? message]) {
+    final request = address == null ? null : (address, message);
+    if (_friendNumbers.containsKey(pk)) {
+      if (request == null || request == _requests[pk]) {
+        return;
+      }
+      _deleteFriend(pk);
+    }
+    try {
+      _friendNumbers[pk] = address == null
+          ? _tox.friendAddNorequest(pk)
+          : _tox.friendAdd(address, utf8.encode(message ?? ''));
+      _requests[pk] = request;
+    } on ApiException catch (e) {
+      _logger.e('Failed to add friend ${pk.toJson()}: $e');
+    }
+  }
+
   void _deleteFriend(PublicKey publicKey) {
     final friendNumber = _friendNumbers.remove(publicKey)!;
+    _requests.remove(publicKey);
     _onlineFriends.remove(friendNumber);
-    _sent.removeWhere((_, sent) => sent.$1 == friendNumber);
+    _outgoing.removeWhere((_, message) => message.friendNumber == friendNumber);
+    _files.friendOffline(friendNumber);
     try {
       _tox.friendDelete(friendNumber);
     } on ApiException catch (e) {
@@ -346,66 +491,73 @@ final class ToxSync {
     }
   }
 
-  void _updateUndelivered(List<Message> undelivered) {
-    _undelivered = undelivered;
-    final ids = {for (final message in undelivered) message.id};
-    _sent.removeWhere((id, _) => !ids.contains(id));
-    _sendMessages();
+  /// A friend first coming online means they accepted our request.
+  void _accepted(PublicKey pk) {
+    if (_requests.containsKey(pk)) {
+      _requests[pk] = null;
+    }
+    _home?.accepted(pk);
   }
 
-  /// The friend first coming online means they accepted our request.
-  void _acceptFriendRequests(int friendNumber) {
-    for (final contact in _contacts) {
-      if (contact.friendRequestAddress != null &&
-          _friendNumbers[contact.publicKey] == friendNumber) {
-        _run('clear friend request', _db.clearFriendRequest(contact.id));
-      }
-    }
+  void _delivered(EventId id) {
+    _outgoing.remove(id);
+    _home?.delivered(id);
   }
 
   void _sendMessages() {
-    final friendNumbers = {
-      for (final contact in _contacts)
-        contact.id: _friendNumbers[contact.publicKey],
-    };
-    for (final message in _undelivered) {
-      final friendNumber = friendNumbers[message.contactId];
-      if (friendNumber == null ||
-          !_onlineFriends.contains(friendNumber) ||
-          _sent.containsKey(message.id)) {
+    _retry?.cancel();
+    _retry = null;
+    final home = _home;
+    if (home == null) {
+      return;
+    }
+    for (final MapEntry(key: id, value: pk) in home.undelivered.entries) {
+      final friendNumber = _friendNumbers[pk];
+      if (friendNumber == null || !_onlineFriends.contains(friendNumber)) {
         continue;
       }
-      switch (message.content) {
-        case FileContent():
-          _files.send(message, friendNumber);
-        case final content:
-          // Other content stays undelivered until there's a protocol for it.
-          if (_toText(content) case final text?) {
-            _send(message.id, friendNumber, text);
-          }
-      }
-    }
-  }
-
-  void _send(Id<Messages> id, int friendNumber, String text) {
-    final parts = <int>{};
-    try {
-      for (final part in splitMessage(text, _maxMessageLength)) {
-        parts.add(
-          _tox.friendSendMessage(
+      if (home.store[id]?.content case Send(:final message, :final kind)) {
+        _send(
+          id,
+          _outgoing[id] ??= _Outgoing(
             friendNumber,
-            Tox_Message_Type.TOX_MESSAGE_TYPE_NORMAL,
-            utf8.encode(part),
+            kind,
+            splitMessage(message, _maxMessageLength),
           ),
         );
       }
-      _sent[id] = (friendNumber, parts);
-    } on ApiException catch (e) {
-      _logger.w('Failed to send message $id: $e');
+    }
+    for (final transfer in _transfers) {
+      if (home.friendOf(transfer.graph) case final pk?) {
+        if (_friendNumbers[pk] case final friendNumber?
+            when _onlineFriends.contains(friendNumber)) {
+          _files.send(transfer, friendNumber);
+        }
+      }
     }
   }
 
-  void _run(String what, Future<void> future) {
-    future.catchError((Object e) => _logger.e('Failed to $what: $e'));
+  /// Gives Tox the parts of [message] it doesn't have, from where it
+  /// stopped taking them.
+  void _send(EventId id, _Outgoing message) {
+    if (message.next == message.parts.length) {
+      return;
+    }
+    try {
+      while (message.next < message.parts.length) {
+        message.pending.add(
+          _tox.friendSendMessage(
+            message.friendNumber,
+            message.kind,
+            message.parts[message.next],
+          ),
+        );
+      }
+    } on ApiException catch (e) {
+      _logger.w('Failed to send message $id: $e');
+      _retry ??= Timer(_retryDelay, _sendMessages);
+      return;
+    }
+    _home!.sent(id);
   }
 }

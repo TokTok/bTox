@@ -3,6 +3,7 @@
 
 import 'dart:ffi';
 import 'dart:io';
+import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:btox/api/toxcore/tox.dart';
@@ -19,11 +20,12 @@ import 'package:btox/providers/bootstrap_nodes.dart';
 import 'package:btox/providers/database.dart';
 import 'package:btox/providers/profiles.dart';
 import 'package:btox/providers/tox.dart';
+import 'package:btox/services/tox_session.dart';
 import 'package:drift/native.dart';
 import 'package:ffi/ffi.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:riverpod/misc.dart' show Override;
+import 'package:riverpod/riverpod.dart';
 
 import '../mocks/fake_bootstrap_nodes.dart';
 import '../mocks/fake_toxcore.dart';
@@ -60,10 +62,7 @@ void main() {
 
     Future<AsyncValue<Tox>> restart(NetworkSettings network) async {
       final previous = container.read(provider).value;
-      await db.updateProfileSettings(
-        id,
-        ProfileSettings(nickname: 'Me', statusMessage: '', network: network),
-      );
+      await db.updateProfileSettings(id, (s) => s.copyWith(network: network));
       for (var i = 0; i < 100; i++) {
         await Future.delayed(const Duration(milliseconds: 10));
         final state = container.read(provider);
@@ -88,140 +87,125 @@ void main() {
     expect(second.error, isA<ApiException>());
   });
 
-  test('toxEvents yields events from tox.iterate()', () async {
-    final fakeTox = FakeToxcore();
-    final secretKey = SecretKey(Uint8List(32));
-    final nospam = ToxAddressNospam(0);
-
-    final container = ProviderContainer(
-      overrides: [
-        bootstrapNodesProvider.overrideWith(
-          (ref, network) => Stream.value(
-            BootstrapNodeList(
-              nodes: [
-                BootstrapNode(
-                  ipv4: '127.0.0.1',
-                  port: 33445,
-                  publicKey: PublicKey(Uint8List(32)),
-                  tcpPorts: [33446],
-                ),
-              ],
-            ),
-          ),
+  group('runTox', () {
+    List<Event> run(FakeToxcore tox, void Function(Event) handle) {
+      final container = ProviderContainer(
+        overrides: [
+          bootstrapNodesProvider.overrideWith(fakeBootstrapNodesProvider),
+        ],
+      );
+      addTearDown(() {
+        container.dispose();
+        tox.kill();
+      });
+      final events = <Event>[];
+      container.listen(
+        Provider(
+          (ref) => runTox(ref, tox, const NetworkSettings(), (event) {
+            events.add(event);
+            handle(event);
+          }),
         ),
-        toxProvider(secretKey, nospam).overrideWith((ref) => fakeTox),
-        networkSettingsProvider(secretKey)
-            .overrideWithValue(const NetworkSettings()),
-      ],
-    );
+        (_, _) {},
+      );
+      return events;
+    }
 
-    final events = <Event>[];
-    final subscription = container.listen(
-      toxEventsProvider(secretKey, nospam),
-      (previous, next) {
-        next.whenData((event) => events.add(event));
-      },
-      fireImmediately: true,
-    );
-
-    final event = ToxEventSelfConnectionStatus(
+    const connected = ToxEventSelfConnectionStatus(
       connectionStatus: ffi.Tox_Connection.TOX_CONNECTION_UDP,
     );
-    fakeTox.pushEvent(event);
 
-    // Give it a bit of time to iterate
-    await Future.delayed(const Duration(milliseconds: 50));
-
-    expect(events, contains(event));
-
-    subscription.close();
-    fakeTox.kill();
-  });
-
-  test('toxEvents handles bootstrap failure gracefully', () async {
-    final fakeTox = FakeToxcore()..throwOnBootstrap = true;
-    final secretKey = SecretKey(Uint8List(32));
-    final nospam = ToxAddressNospam(0);
-
-    final container = ProviderContainer(
-      overrides: [
-        bootstrapNodesProvider.overrideWith(
-          (ref, network) => Stream.value(
-            BootstrapNodeList(
-              nodes: [
-                BootstrapNode(
-                  ipv4: '127.0.0.1',
-                  port: 33445,
-                  publicKey: PublicKey(Uint8List(32)),
-                  tcpPorts: [33446],
-                ),
-              ],
-            ),
+    test('gives the events in order, without DHT node responses', () async {
+      final tox = FakeToxcore();
+      final events = run(tox, (_) {});
+      final message = ToxEventFriendMessage(
+        friendNumber: 0,
+        type: ffi.Tox_Message_Type.TOX_MESSAGE_TYPE_NORMAL,
+        message: Uint8List(1),
+      );
+      tox
+        ..pushEvent(
+          ToxEventDhtNodesResponse(
+            publicKey: PublicKey(Uint8List(32)),
+            ip: '127.0.0.1',
+            port: 33445,
           ),
-        ),
-        toxProvider(secretKey, nospam).overrideWith((ref) => fakeTox),
-        networkSettingsProvider(secretKey)
-            .overrideWithValue(const NetworkSettings()),
-      ],
-    );
+        )
+        ..pushEvent(connected)
+        ..pushEvent(message);
 
-    final events = <Event>[];
-    final subscription = container.listen(
-      toxEventsProvider(secretKey, nospam),
-      (previous, next) {
-        next.whenData((event) => events.add(event));
-      },
-    );
+      await Future.delayed(const Duration(milliseconds: 50));
+      expect(events, [connected, message]);
+    });
 
-    fakeTox.kill();
-    await Future.delayed(const Duration(milliseconds: 50));
-    subscription.close();
-  });
+    test('goes on after events it can\'t read', () async {
+      final tox = FakeToxcore();
+      final events = run(tox, (_) {});
+      tox.iterateError = ArgumentError('Unknown value');
+      await Future.delayed(const Duration(milliseconds: 50));
+      tox.pushEvent(connected);
 
-  test('toxEvents ignores ToxEventDhtNodesResponse', () async {
-    final fakeTox = FakeToxcore();
-    final secretKey = SecretKey(Uint8List(32));
-    final nospam = ToxAddressNospam(0);
+      await Future.delayed(const Duration(milliseconds: 50));
+      expect(events, [connected]);
+    });
 
-    final container = ProviderContainer(
-      overrides: [
-        bootstrapNodesProvider.overrideWith(
-          (ref, network) => Stream.value(const BootstrapNodeList(nodes: [])),
-        ),
-        toxProvider(secretKey, nospam).overrideWith((ref) => fakeTox),
-        networkSettingsProvider(secretKey)
-            .overrideWithValue(const NetworkSettings()),
-      ],
-    );
-
-    final events = <Event>[];
-    final subscription = container.listen(
-      toxEventsProvider(secretKey, nospam),
-      (previous, next) {
-        next.whenData((event) => events.add(event));
-      },
-    );
-
-    fakeTox.pushEvent(
-      ToxEventDhtNodesResponse(
-        publicKey: PublicKey(Uint8List(32)),
-        ip: '127.0.0.1',
+    test('starts from nodes the list reached, not always the same', () {
+      BootstrapNode node(String ip, {bool up = true}) => BootstrapNode(
+        ipv4: ip,
         port: 33445,
-      ),
-    );
+        tcpPorts: const [443],
+        publicKey: PublicKey(Uint8List(32)),
+        statusTcp: up,
+      );
+      final nodes = [
+        for (var i = 0; i < 10; i++) node('10.0.0.$i', up: i >= 5),
+        node('node.example'),
+      ];
+      List<String> used(NetworkSettings network, int seed) => [
+        for (final n in bootstrapNodesToUse(nodes, network, Random(seed)))
+          n.ipv4,
+      ];
 
-    final event = ToxEventSelfConnectionStatus(
-      connectionStatus: ffi.Tox_Connection.TOX_CONNECTION_UDP,
-    );
-    fakeTox.pushEvent(event);
+      final direct = used(const NetworkSettings(), 1);
+      expect(direct, hasLength(8));
+      expect(
+        direct.take(6),
+        everyElement(isNot(matches(r'^10\.0\.0\.[0-4]$'))),
+      );
+      expect(used(const NetworkSettings(), 2), isNot(direct));
+      // A proxy can't take hostnames.
+      expect(
+        used(
+          const NetworkSettings(
+            proxyType: ProxyType.socks5,
+            proxyHost: 'localhost',
+            proxyPort: 9050,
+          ),
+          1,
+        ),
+        isNot(contains('node.example')),
+      );
+      // Nodes without an IPv4 address.
+      expect(
+        bootstrapNodesToUse([
+          node('NONE'),
+          node(''),
+          node('-'),
+        ], const NetworkSettings()),
+        isEmpty,
+      );
+    });
 
-    await Future.delayed(const Duration(milliseconds: 50));
+    test('keeps going when bootstrapping or an event fails', () async {
+      final tox = FakeToxcore()..throwOnBootstrap = true;
+      final events = run(tox, (_) => throw StateError('failed'));
+      tox
+        ..pushEvent(connected)
+        ..pushEvent(connected);
 
-    expect(events, isNot(contains(isA<ToxEventDhtNodesResponse>())));
-    expect(events, contains(event));
-
-    subscription.close();
-    fakeTox.kill();
+      await Future.delayed(const Duration(milliseconds: 50));
+      expect(events, [connected, connected]);
+    });
   });
 
   group('proxy problems', () {
@@ -232,17 +216,30 @@ void main() {
       List<Override> overrides,
       bool Function(List<ConnectionStatus>) until,
     ) async {
+      final db = Database(NativeDatabase.memory());
+      final profileId = await db.addProfile(
+        ProfilesCompanion.insert(
+          settings: const ProfileSettings(nickname: 'Me', statusMessage: ''),
+          secretKey: secretKey,
+          publicKey: PublicKey(Uint8List(32)),
+          nospam: nospam,
+        ),
+      );
       final container = ProviderContainer(
         overrides: [
+          databaseProvider.overrideWith((ref) => db),
           bootstrapNodesProvider.overrideWith(fakeBootstrapNodesProvider),
           proxyCheckDelayProvider.overrideWithValue(Duration.zero),
           ...overrides,
         ],
       );
-      addTearDown(container.dispose);
+      addTearDown(() async {
+        container.dispose();
+        await db.close();
+      });
       final statuses = <ConnectionStatus>[];
       container.listen(
-        selfConnectionStatusProvider(secretKey, nospam),
+        selfConnectionStatusProvider(profileId, secretKey, nospam),
         (_, status) => statuses.add(status),
         fireImmediately: true,
       );

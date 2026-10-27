@@ -1,5 +1,5 @@
+import 'package:btox/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_context_menu/flutter_context_menu.dart';
 
 final class ChatContextMenu {
   static Future<void> show(
@@ -7,49 +7,41 @@ final class ChatContextMenu {
     Offset position, {
     required void Function() onReply,
     required void Function() onForward,
-    required void Function() onCopy,
+    // Null for a message without text.
+    required void Function()? onCopy,
     required void Function() onSelect,
     required void Function() onInfo,
     required void Function() onDelete,
-  }) {
-    // The package finds its menu by the raw type, so it must be dynamic.
-    final entries = <ContextMenuEntry<dynamic>>[
-      MenuItem(
-        label: const Text('Reply'),
-        icon: const Icon(Icons.reply_outlined),
-        onSelected: (_) => onReply(),
+  }) async {
+    final l10n = AppLocalizations.of(context)!;
+    final overlay =
+        Overlay.of(context).context.findRenderObject()! as RenderBox;
+    final chosen = await showMenu<void Function()>(
+      context: context,
+      // Taking focus would give it back to the message field on closing,
+      // which then opens the keyboard.
+      requestFocus: false,
+      position: RelativeRect.fromRect(
+        position & Size.zero,
+        Offset.zero & overlay.size,
       ),
-      MenuItem(
-        label: const Text('Forward'),
-        icon: const Icon(Icons.forward_outlined),
-        onSelected: (_) => onForward(),
-      ),
-      MenuItem(
-        label: const Text('Copy'),
-        icon: const Icon(Icons.copy),
-        onSelected: (_) => onCopy(),
-      ),
-      MenuItem(
-        label: const Text('Select'),
-        icon: const Icon(Icons.check_circle_outline),
-        onSelected: (_) => onSelect(),
-      ),
-      MenuItem(
-        label: const Text('Info'),
-        icon: const Icon(Icons.info_outline),
-        onSelected: (_) => onInfo(),
-      ),
-      MenuItem(
-        label: const Text('Delete'),
-        icon: const Icon(Icons.delete_outline),
-        onSelected: (_) => onDelete(),
-      ),
-    ];
-
-    return ContextMenu(
-      entries: entries,
-      position: position,
-      padding: const EdgeInsets.all(8.0),
-    ).show(context);
+      items: [
+        for (final (label, icon, action) in [
+          (l10n.reply, Icons.reply_outlined, onReply),
+          (l10n.forward, Icons.forward_outlined, onForward),
+          if (onCopy != null) (l10n.copy, Icons.copy, onCopy),
+          (l10n.select, Icons.check_circle_outline, onSelect),
+          (l10n.info, Icons.info_outline, onInfo),
+          (l10n.delete, Icons.delete_outline, onDelete),
+        ])
+          PopupMenuItem(
+            value: action,
+            child: Row(
+              children: [Icon(icon), const SizedBox(width: 12), Text(label)],
+            ),
+          ),
+      ],
+    );
+    chosen?.call();
   }
 }

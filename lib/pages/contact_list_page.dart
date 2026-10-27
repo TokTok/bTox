@@ -1,19 +1,21 @@
-import 'package:btox/db/database.dart';
 import 'package:btox/l10n/generated/app_localizations.dart';
 import 'package:btox/logger.dart';
+import 'package:btox/models/chat_view.dart';
 import 'package:btox/models/crypto.dart';
 import 'package:btox/pages/add_contact_page.dart';
 import 'package:btox/pages/chat_page.dart';
-import 'package:btox/providers/contacts.dart';
+import 'package:btox/providers/chats.dart';
 import 'package:btox/providers/database.dart';
 import 'package:btox/providers/profiles.dart';
+import 'package:btox/widgets/chat_list_item.dart';
 import 'package:btox/widgets/confirm_dialog.dart';
 import 'package:btox/widgets/connection_status_icon.dart';
-import 'package:btox/widgets/contact_list_item.dart';
 import 'package:btox/widgets/friend_request_list_item.dart';
+import 'package:btox/widgets/load_failed.dart';
 import 'package:btox/widgets/main_menu.dart';
+import 'package:btox/widgets/mute_chat.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 const _logger = Logger(['ContactListPage']);
 
@@ -23,20 +25,33 @@ final class ContactListPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profile = ref.watch(currentProfileProvider);
-    final database = ref.watch(databaseProvider).asData?.value;
 
-    if (profile == null || database == null) {
+    if (profile == null) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    final requests =
-        ref.watch(friendRequestsForProfileProvider(profile.id)).value ??
-        const [];
-    final unread =
-        ref.watch(unreadCountsProvider(profile.id)).value ?? const {};
+    final requests = ref
+        .watch(friendRequestsProvider(profile.id))
+        .entries
+        .toList();
+    Future<void> want(
+      PublicKey pk, {
+      required bool wanted,
+      bool deleteChat = false,
+    }) async {
+      final db = await ref.read(databaseProvider.future);
+      await db.addFriendChange(
+        profile.id,
+        pk,
+        wanted: wanted,
+        deleteChat: deleteChat,
+      );
+    }
+
+    final chats = ref.watch(chatsForProfileProvider(profile.id));
 
     return Scaffold(
-      drawer: MainMenu(profile: profile, database: database),
+      drawer: MainMenu(profile: profile),
       appBar: AppBar(
         title: Row(
           children: [
@@ -51,64 +66,81 @@ final class ContactListPage extends ConsumerWidget {
                 ),
               ),
             ),
-            Text(AppLocalizations.of(context)!.title),
+            Expanded(
+              child: Text(
+                AppLocalizations.of(context)!
+                    .titleWithAccount(profile.settings.nickname),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
           ],
         ),
       ),
-      body: ref
-          .watch(contactsForProfileProvider(profile.id))
-          .when(
-            data: (contacts) {
-              return ListView.builder(
-                itemCount: requests.length + contacts.length,
-                itemBuilder: (context, index) {
-                  if (index < requests.length) {
-                    return FriendRequestListItem(
-                      request: requests[index],
-                      onAccept: database.acceptFriendRequest,
-                      onReject: (request) =>
-                          database.deleteFriendRequest(request.id),
-                    );
-                  }
-                  final contact = contacts[index - requests.length];
-                  return ContactListItem(
-                    contact: contact,
-                    unread: unread[contact.id] ?? 0,
-                    onTap: (contact) {
-                      _logger.d('Opening chat with contact: ${contact.id}');
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ChatPage(contactId: contact.id),
-                        ),
-                      );
-                    },
-                    onLongPress: (contact) =>
-                        _confirmDelete(context, database, contact),
-                  );
+      body: chats.when(
+        data: (chats) {
+          if (requests.isEmpty && chats.isEmpty) {
+            return _Empty(
+              icon: Icons.chat_bubble_outline,
+              title: AppLocalizations.of(context)!.noChats,
+              hint: AppLocalizations.of(context)!.noChatsHint,
+            );
+          }
+          final above = requests.length;
+          return ListView.builder(
+            itemCount: above + chats.length,
+            itemBuilder: (context, index) {
+              if (index < requests.length) {
+                final MapEntry(key: pk, value: message) = requests[index];
+                return FriendRequestListItem(
+                  publicKey: pk,
+                  message: message,
+                  onAccept: () => want(pk, wanted: true),
+                  onReject: () => want(pk, wanted: false),
+                );
+              }
+              return ChatListItem(
+                chat: chats[index - above],
+                onTap: (chat) {
+                  _logger.d('Opening chat ${chat.ref}');
+                  Navigator.push(context, ChatPage.route(chat.ref));
                 },
+                onLongPress: (chat) => _chatActions(
+                  context,
+                  ref,
+                  chat,
+                  delete: switch (chat.key) {
+                    final PublicKey pk => (deleteChat) => want(
+                      pk,
+                      wanted: false,
+                      deleteChat: deleteChat,
+                    ),
+                    _ => null,
+                  },
+                ),
               );
             },
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (error, _) => Center(child: Text('Error: $error')),
-          ),
+          );
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (_, _) => const LoadFailed(),
+      ),
       floatingActionButton: FloatingActionButton(
         key: const Key('addContactButton'),
         onPressed: () => Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => AddContactPage(
-              onAddContact: (toxID, message) async {
-                final address = ToxAddress.fromString(toxID);
-                final id = await database.addContact(
-                  ContactsCompanion.insert(
-                    profileId: profile.id,
-                    publicKey: address.publicKey,
-                    friendRequestAddress: Value(address),
-                    friendRequestMessage: Value(message),
-                  ),
+              own: {profile.publicKey},
+              onAddContact: (address, message) async {
+                final db = await ref.read(databaseProvider.future);
+                await db.addFriendChange(
+                  profile.id,
+                  address.publicKey,
+                  wanted: true,
+                  nospam: address.nospam,
+                  message: message,
                 );
-                _logger.d('Added contact: $id');
+                _logger.d('Added contact: ${address.publicKey}');
               },
               selfName: profile.settings.nickname,
             ),
@@ -120,26 +152,117 @@ final class ContactListPage extends ConsumerWidget {
     );
   }
 
+  Future<void> _chatActions(
+    BuildContext context,
+    WidgetRef ref,
+    ChatSummary chat, {
+    Future<void> Function(bool deleteChat)? delete,
+  }) async {
+    final l10n = AppLocalizations.of(context)!;
+    final picked = await showModalBottomSheet<_ChatAction>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: Icon(
+                chat.mute == null
+                    ? Icons.notifications_off_outlined
+                    : Icons.notifications_outlined,
+              ),
+              title: Text(chat.mute == null ? l10n.muteChat : l10n.unmuteChat),
+              onTap: () => Navigator.pop(
+                context,
+                chat.mute == null ? _ChatAction.mute : _ChatAction.unmute,
+              ),
+            ),
+            if (delete != null)
+              ListTile(
+                leading: const Icon(Icons.delete_outline),
+                title: Text(l10n.deleteContact),
+                onTap: () => Navigator.pop(context, _ChatAction.delete),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (picked == null || !context.mounted) {
+      return;
+    }
+    switch (picked) {
+      case _ChatAction.mute:
+        await muteChat(context, ref, chat);
+        return;
+      case _ChatAction.unmute:
+        await unmuteChat(ref, chat.ref);
+        return;
+      case _ChatAction.delete:
+        await _confirmDelete(context, delete!, chat.name);
+    }
+  }
+
   Future<void> _confirmDelete(
     BuildContext context,
-    Database database,
-    Contact contact,
+    Future<void> Function(bool deleteChat) delete,
+    String? contactName,
   ) async {
     final l10n = AppLocalizations.of(context)!;
-    final name = contact.name ?? l10n.defaultContactName;
-    if (!await confirm(
+    final name = contactName ?? l10n.defaultContactName;
+    final deleteChat = await confirmWithOption(
       context,
       title: l10n.deleteContact,
       message: l10n.deleteContactMessage(name),
       action: l10n.delete,
-    )) {
+      option: l10n.deleteChatToo,
+    );
+    if (deleteChat == null) {
       return;
     }
-    _logger.i('Deleting contact ${contact.id}');
-    await database.deleteContact(contact.id);
+    _logger.i('Deleting contact $name');
+    await delete(deleteChat);
     if (context.mounted) {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(l10n.contactDeleted(name))));
     }
+  }
+}
+
+enum _ChatAction { mute, unmute, delete }
+
+/// What a tab shows with nothing in it.
+final class _Empty extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String? hint;
+
+  const _Empty({required this.icon, required this.title, this.hint});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 48, color: theme.colorScheme.outline),
+            const SizedBox(height: 16),
+            Text(title, style: theme.textTheme.titleMedium),
+            if (hint case final hint?) ...[
+              const SizedBox(height: 4),
+              Text(
+                hint,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 }

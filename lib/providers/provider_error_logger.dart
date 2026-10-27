@@ -1,5 +1,5 @@
 import 'package:btox/logger.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:riverpod/riverpod.dart';
 
 const _logger = Logger(['Provider']);
 

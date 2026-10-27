@@ -1,16 +1,22 @@
 import 'package:btox/l10n/generated/app_localizations.dart';
+import 'package:btox/logger.dart';
+import 'package:btox/models/crypto.dart';
 import 'package:btox/widgets/friend_request_message_field.dart';
 import 'package:btox/widgets/tox_id_field.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 
+const _logger = Logger(['AddContactPage']);
+
 final class AddContactPage extends HookWidget {
   final String selfName;
-  final Function(String, String) onAddContact;
+  final Set<PublicKey> own;
+  final Future<void> Function(ToxAddress, String) onAddContact;
 
   const AddContactPage({
     super.key,
     required this.selfName,
+    required this.own,
     required this.onAddContact,
   });
 
@@ -22,10 +28,21 @@ final class AddContactPage extends HookWidget {
       text: AppLocalizations.of(context)!.defaultAddContactMessage(selfName),
     );
 
-    void submit() {
-      if (formKey.currentState!.validate()) {
-        onAddContact(toxIdInputController.text, messageInputController.text);
-        Navigator.pop(context);
+    Future<void> submit() async {
+      if (!formKey.currentState!.validate()) {
+        return;
+      }
+      final messenger = ScaffoldMessenger.of(context);
+      final failed = AppLocalizations.of(context)!.addContactFailed;
+      Navigator.pop(context);
+      try {
+        await onAddContact(
+          ToxAddress.fromString(toxIdInputController.text),
+          messageInputController.text,
+        );
+      } on Exception catch (e) {
+        _logger.e('Failed to add a contact: $e');
+        messenger.showSnackBar(SnackBar(content: Text(failed)));
       }
     }
 
@@ -36,7 +53,7 @@ final class AddContactPage extends HookWidget {
           key: formKey,
           child: Column(
             children: [
-              ToxIdField(controller: toxIdInputController),
+              ToxIdField(controller: toxIdInputController, own: own),
               FriendRequestMessageField(
                 controller: messageInputController,
                 onEditingComplete: submit,

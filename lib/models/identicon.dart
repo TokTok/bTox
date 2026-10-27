@@ -1,12 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright © 2019 by The qTox Project Contributors
 // Copyright © 2024-2025 The TokTok team.
-import 'dart:math';
+
 import 'dart:typed_data';
-import 'dart:ui' as ui;
 
 import 'package:btox/logger.dart';
-import 'package:btox/models/bytes.dart';
 import 'package:btox/models/crypto.dart';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
@@ -33,9 +31,9 @@ const _kIdenticonRows = 5;
 const _logger = Logger(['Identicon']);
 
 @Riverpod(keepAlive: true)
-Identicon identicon(Ref ref, PublicKey publicKey) {
-  _logger.d('Creating identicon for public key: $publicKey');
-  return Identicon.fromPublicKey(publicKey);
+Identicon identicon(Ref ref, CryptoBytes bytes) {
+  _logger.d('Creating identicon for $bytes');
+  return Identicon.fromBytes(bytes.bytes);
 }
 
 double _bytesToColor(Uint8List bytes) {
@@ -72,39 +70,13 @@ double _toDouble(int value) {
   return value.toDouble();
 }
 
-Uint8List _upscale(int factor, Uint8List pixels) {
-  final size = sqrt(pixels.length / 4).round();
-  assert(size * size * 4 == pixels.length);
-  final scaled = Uint8List(pixels.length * factor * factor);
-  for (int row = 0; row < size; ++row) {
-    for (int col = 0; col < size; ++col) {
-      final color = pixels.buffer.asUint8List(row * size * 4 + col * 4);
-      for (int y = 0; y < factor; ++y) {
-        for (int x = 0; x < factor; ++x) {
-          final idx =
-              (row * factor + y) * size * factor * 4 + (col * factor + x) * 4;
-          scaled.setRange(idx, idx + 4, color);
-        }
-      }
-    }
-  }
-  return scaled;
-}
-
-final class Identicon extends ImageProvider<ui.Image> {
+/// A key's picture: blocks of two colours, mirrored left to right, as qTox
+/// draws them.
+final class Identicon {
   final List<List<int>> identiconColors;
   final List<Color> colors;
-  final int scale;
-  final Uint8List rgba;
-  final Future<ui.Image> image;
 
-  const Identicon(
-    this.identiconColors,
-    this.colors,
-    this.scale,
-    this.rgba,
-    this.image,
-  );
+  const Identicon(this.identiconColors, this.colors);
 
   factory Identicon.fromBytes(Uint8List data) {
     _logger.v('Generating identicon from data: $data');
@@ -146,73 +118,14 @@ final class Identicon extends ImageProvider<ui.Image> {
       }
     }
 
-    final matrix = toMatrix(identiconColors);
-    final pixels = <int>[];
-
-    for (int row = 0; row < _kIdenticonRows; ++row) {
-      for (int col = 0; col < _kIdenticonRows; ++col) {
-        final color = colors[matrix[row][col]];
-        pixels.addAll([
-          (color.r * 255).round(),
-          (color.g * 255).round(),
-          (color.b * 255).round(),
-          255,
-        ]);
-      }
-    }
-
-    // We don't need to scale it by a lot, but giving the original size makes
-    // Flutter scale it very fuzzily.
-    const int scale = 10;
-    final rgba = _upscale(scale, Uint8List.fromList(pixels));
-
-    return Identicon(
-      identiconColors,
-      colors,
-      scale,
-      rgba,
-      toImage(rgba, scale),
-    );
+    return Identicon(identiconColors, colors);
   }
 
-  factory Identicon.fromPublicKey(PublicKey publicKey) {
-    return Identicon.fromBytes(publicKey.bytes);
-  }
-
-  @override
-  int get hashCode => memHash(rgba);
-
-  @override
-  bool operator ==(Object other) {
-    return other is Identicon && memEquals(rgba, other.rgba);
-  }
-
-  @override
-  ImageStreamCompleter loadImage(ui.Image key, ImageDecoderCallback decode) {
-    return ImmediateImageStreamCompleter(
-      ImageInfo(image: key.clone(), debugLabel: 'Identicon'),
-    );
-  }
-
-  @override
-  Future<ui.Image> obtainKey(ImageConfiguration configuration) async {
-    return image;
-  }
-
-  static Future<ui.Image> toImage(Uint8List rgba, int scale) async {
-    _logger.v('Generating identicon image');
-    final buffer = await ui.ImmutableBuffer.fromUint8List(rgba);
-    final descriptor = ui.ImageDescriptor.raw(
-      buffer,
-      width: _kIdenticonRows * scale,
-      height: _kIdenticonRows * scale,
-      pixelFormat: ui.PixelFormat.rgba8888,
-    );
-
-    final codec = await descriptor.instantiateCodec();
-    final frame = await codec.getNextFrame();
-    return frame.image;
-  }
+  /// Each block's colour, by row and column.
+  List<List<Color>> get blocks => [
+    for (final row in toMatrix(identiconColors))
+      [for (final colorIndex in row) colors[colorIndex]],
+  ];
 
   static List<List<int>> toMatrix(List<List<int>> identiconColors) {
     final matrix = List.generate(_kIdenticonRows, (row) {
@@ -227,11 +140,5 @@ final class Identicon extends ImageProvider<ui.Image> {
       }
     }
     return matrix;
-  }
-}
-
-final class ImmediateImageStreamCompleter extends ImageStreamCompleter {
-  ImmediateImageStreamCompleter(ImageInfo info) {
-    setImage(info);
   }
 }

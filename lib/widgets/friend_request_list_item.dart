@@ -1,16 +1,18 @@
-import 'package:btox/db/database.dart';
 import 'package:btox/l10n/generated/app_localizations.dart';
+import 'package:btox/models/crypto.dart';
 import 'package:btox/widgets/circle_identicon.dart';
 import 'package:flutter/material.dart';
 
 final class FriendRequestListItem extends StatelessWidget {
-  final FriendRequest request;
-  final void Function(FriendRequest) onAccept;
-  final void Function(FriendRequest) onReject;
+  final PublicKey publicKey;
+  final String message;
+  final void Function() onAccept;
+  final void Function() onReject;
 
   const FriendRequestListItem({
     super.key,
-    required this.request,
+    required this.publicKey,
+    required this.message,
     required this.onAccept,
     required this.onReject,
   });
@@ -18,28 +20,21 @@ final class FriendRequestListItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      leading: CircleIdenticon(publicKey: request.publicKey),
-      title: Text(
-        request.message,
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
-      ),
-      subtitle: Text(
-        request.publicKey.toJson(),
-        overflow: TextOverflow.ellipsis,
-      ),
+      leading: CircleIdenticon(bytes: publicKey),
+      title: Text(message, maxLines: 2, overflow: TextOverflow.ellipsis),
+      subtitle: Text(publicKey.toJson(), overflow: TextOverflow.ellipsis),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           IconButton(
             icon: const Icon(Icons.check),
             tooltip: AppLocalizations.of(context)!.acceptFriendRequest,
-            onPressed: () => onAccept(request),
+            onPressed: onAccept,
           ),
           IconButton(
             icon: const Icon(Icons.close),
             tooltip: AppLocalizations.of(context)!.rejectFriendRequest,
-            onPressed: () => onReject(request),
+            onPressed: onReject,
           ),
         ],
       ),

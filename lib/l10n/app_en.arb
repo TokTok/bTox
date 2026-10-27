@@ -4,10 +4,6 @@
   "@defaultContactName": {
     "description": "The default name for a contact when the name is not yet known"
   },
-  "title": "bTox (working title)",
-  "@title": {
-    "description": "The title of the application"
-  },
   "addContact": "Add contact",
   "@addContact": {
     "description": "The text for the button to add a contact"
@@ -140,9 +136,19 @@
   "@create": {
     "description": "The text for the button create a new profile"
   },
-  "logout": "Logout",
+  "logout": "Log out",
   "@logout": {
     "description": "The text for the logout menu item"
+  },
+  "logoutMessage": "{name} stops receiving messages until you log in to it again.",
+  "@logoutMessage": {
+    "description": "Asks whether to sign the current account out",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Alice"
+      }
+    }
   },
   "deleteProfile": "Delete profile",
   "@deleteProfile": {
@@ -186,7 +192,7 @@
   "@deleteContact": {
     "description": "The title of the dialog for deleting a contact"
   },
-  "deleteContactMessage": "Delete \"{name}\" and all your messages with them? This can't be undone.",
+  "deleteContactMessage": "Delete \"{name}\" from your contacts?",
   "@deleteContactMessage": {
     "description": "The message to confirm the deletion of a contact",
     "placeholders": {
@@ -206,17 +212,13 @@
       }
     }
   },
-  "importProfile": "Import profile",
-  "@importProfile": {
-    "description": "The button and dialog title for importing a .tox profile file"
-  },
   "import": "Import",
   "@import": {
     "description": "The button that confirms importing a profile"
   },
   "password": "Password",
   "@password": {
-    "description": "The label for an encrypted profile's password"
+    "description": "The label for a password: an encrypted profile's, or a group's"
   },
   "wrongPassword": "Wrong password",
   "@wrongPassword": {
@@ -244,6 +246,14 @@
   "@exportDataHint": {
     "description": "Explanation below the export data setting"
   },
+  "importData": "Import data",
+  "@importData": {
+    "description": "The setting, button and dialog title for importing a bTox export or a .tox profile file"
+  },
+  "importDataHint": "A bTox export, or a Tox profile from another client",
+  "@importDataHint": {
+    "description": "Explanation below the import data setting"
+  },
   "export": "Export",
   "@export": {
     "description": "Button that exports data"
@@ -265,7 +275,7 @@
   "@stayOnline": {
     "description": "The setting to keep running in the background after closing the app"
   },
-  "stayOnlineHint": "Keeps all signed-in accounts online",
+  "stayOnlineHint": "Keeps all logged-in accounts online",
   "@stayOnlineHint": {
     "description": "Explains that stay online applies to every signed-in account"
   },
@@ -307,9 +317,9 @@
   "@fileCancelled": {
     "description": "A file transfer that was declined or stopped"
   },
-  "network": "Network",
-  "@network": {
-    "description": "The heading of the network settings"
+  "filePaused": "Paused until they're back online",
+  "@filePaused": {
+    "description": "An incoming file that stopped part way, which goes on when the sender sends it again"
   },
   "udpEnabled": "Use UDP",
   "@udpEnabled": {
@@ -389,8 +399,270 @@
   "@attachLocation": {
     "description": "Button to send the current location"
   },
+  "sendFailed": "Couldn't send the message",
+  "@sendFailed": {
+    "description": "Error when a message couldn't be saved for sending"
+  },
+  "importFailed": "Couldn't import this file",
+  "@importFailed": {
+    "description": "Error when a profile or backup file couldn't be imported"
+  },
+  "notImplemented": "Not available yet",
+  "@notImplemented": {
+    "description": "Shown for a menu item that doesn't work yet"
+  },
+  "reply": "Reply",
+  "@reply": {
+    "description": "Message menu item to reply to the message"
+  },
+  "forward": "Forward",
+  "@forward": {
+    "description": "Message menu item to forward the message"
+  },
+  "chatDetails": "Chat details",
+  "@chatDetails": {
+    "description": "The tooltip of a chat's title, which opens who the chat is with"
+  },
+  "chatMembers": "{count, plural, =1{1 member} other{{count} members}}",
+  "@chatMembers": {
+    "description": "The heading of the people in a group or conference, counting yourself",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "you": "You",
+  "@you": {
+    "description": "Yourself, among the people in a chat"
+  },
+  "muteChat": "Mute notifications",
+  "@muteChat": {
+    "description": "The action, and its dialog, that stops a chat's notifications for a while"
+  },
+  "unmuteChat": "Unmute notifications",
+  "@unmuteChat": {
+    "description": "The action that lets a muted chat notify again"
+  },
+  "muteForAnHour": "For 1 hour",
+  "@muteForAnHour": {
+    "description": "How long to mute a chat for"
+  },
+  "muteForEightHours": "For 8 hours",
+  "@muteForEightHours": {
+    "description": "How long to mute a chat for"
+  },
+  "muteForAWeek": "For 1 week",
+  "@muteForAWeek": {
+    "description": "How long to mute a chat for"
+  },
+  "muteAlways": "Always",
+  "@muteAlways": {
+    "description": "Mutes a chat until it's unmuted"
+  },
+  "notifyMentions": "Still notify me of mentions",
+  "@notifyMentions": {
+    "description": "In the dialog muting a group chat: messages naming you still notify"
+  },
+  "mutedUntil": "Muted until {time}",
+  "@mutedUntil": {
+    "description": "How long a chat stays muted",
+    "placeholders": {
+      "time": {
+        "type": "String",
+        "example": "Thu 17:00"
+      }
+    }
+  },
+  "mutedAlways": "Muted",
+  "@mutedAlways": {
+    "description": "A chat muted until it's unmuted"
+  },
+  "roleFounder": "Founder",
+  "@roleFounder": {
+    "description": "The role of whoever created a group"
+  },
+  "roleModerator": "Moderator",
+  "@roleModerator": {
+    "description": "The role of someone who can moderate a group"
+  },
+  "roleObserver": "Observer",
+  "@roleObserver": {
+    "description": "The role of someone who can only read a group"
+  },
+  "statusAway": "Away",
+  "@statusAway": {
+    "description": "Someone's status when they're away"
+  },
+  "statusBusy": "Busy",
+  "@statusBusy": {
+    "description": "Someone's status when they're busy"
+  },
+  "membersWhileOnline": "Who is here shows while the account's home device is online",
+  "@membersWhileOnline": {
+    "description": "In place of a linked account's chat members, while its home device can't say who they are"
+  },
+  "publicKey": "Public key",
+  "@publicKey": {
+    "description": "The heading of a friend's public key, which Tox knows them by"
+  },
+  "publicKeyCopied": "Public key copied",
+  "@publicKeyCopied": {
+    "description": "The message shown after copying a friend's public key"
+  },
+  "copy": "Copy",
+  "@copy": {
+    "description": "Message menu item to copy the message's text"
+  },
+  "select": "Select",
+  "@select": {
+    "description": "Message menu item to select messages"
+  },
+  "messagesCopied": "{count, plural, =1{Message copied} other{{count} messages copied}}",
+  "@messagesCopied": {
+    "description": "The message shown after copying messages' text",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "info": "Info",
+  "@info": {
+    "description": "Message menu item to show the message's details"
+  },
+  "today": "Today",
+  "@today": {
+    "description": "Above the messages of today in a chat"
+  },
+  "yesterday": "Yesterday",
+  "@yesterday": {
+    "description": "Above the messages of yesterday in a chat"
+  },
   "loadFailed": "Something went wrong",
   "@loadFailed": {
     "description": "Shown in place of a page that couldn't be loaded"
+  },
+  "locationMessage": "Location",
+  "@locationMessage": {
+    "description": "A shared location, as the chat list shows it"
+  },
+  "emoji": "Emoji",
+  "@emoji": {
+    "description": "The button in the message box that opens the emoji picker"
+  },
+  "send": "Send",
+  "@send": {
+    "description": "The button that sends what is written in the message box"
+  },
+  "attach": "Attach",
+  "@attach": {
+    "description": "The button in the message box that opens what can be attached"
+  },
+  "cancelReply": "Cancel reply",
+  "@cancelReply": {
+    "description": "The button that stops replying to a message"
+  },
+  "removeAttachment": "Remove",
+  "@removeAttachment": {
+    "description": "The button on an attachment waiting to be sent that takes it away"
+  },
+  "attachFailed": "Couldn't attach that",
+  "@attachFailed": {
+    "description": "Shown when a picture or file couldn't be picked or copied to send"
+  },
+  "dayAndTime": "{day} {time}",
+  "@dayAndTime": {
+    "description": "A day and a time on it, as in 'muted until Fri 14:00'",
+    "placeholders": {
+      "day": {
+        "type": "String",
+        "example": "Fri"
+      },
+      "time": {
+        "type": "String",
+        "example": "14:00"
+      }
+    }
+  },
+  "draftLabel": "Draft:",
+  "@draftLabel": {
+    "description": "Before what is being written in a chat, as the chat list shows it"
+  },
+  "messageV3": "TRIfA message IDs",
+  "@messageV3": {
+    "description": "Setting to read the ID TRIfA adds to its messages"
+  },
+  "messageV3Hint": "Hides the ID TRIfA adds to messages, and shows a message it sends again only once",
+  "@messageV3Hint": {
+    "description": "What reading TRIfA's message IDs does"
+  },
+  "titleWithAccount": "bTox ({name})",
+  "@titleWithAccount": {
+    "description": "The title of the chat list, with the account it shows",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Alice"
+      }
+    }
+  },
+  "deleteChatToo": "Also delete your messages and files with them, for good",
+  "@deleteChatToo": {
+    "description": "Option when deleting a contact to delete the chat with them too"
+  },
+  "profileDeleteFailed": "Couldn't delete profile \"{name}\"",
+  "@profileDeleteFailed": {
+    "description": "Error when a profile couldn't be deleted",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Alice"
+      }
+    }
+  },
+  "exported": "Data exported",
+  "@exported": {
+    "description": "Shown when the backup was saved"
+  },
+  "exportFailed": "Couldn't export the data",
+  "@exportFailed": {
+    "description": "Error when the backup couldn't be made or saved"
+  },
+  "ownToxIdError": "This is your own Tox ID",
+  "@ownToxIdError": {
+    "description": "Error when adding your own Tox ID as a contact"
+  },
+  "addContactFailed": "Couldn't add the contact",
+  "@addContactFailed": {
+    "description": "Error when a contact couldn't be saved"
+  },
+  "chatClosed": "You can't send messages to this chat any more",
+  "@chatClosed": {
+    "description": "Shown in place of the message input for a deleted contact or a group left"
+  },
+  "friendRequest": "Friend request",
+  "@friendRequest": {
+    "description": "Title of the notification for a friend request"
+  },
+  "chatInAccount": "{chat} · {account}",
+  "@chatInAccount": {
+    "description": "Title of a chat's notification while several accounts are signed in: the chat, then the account it's in",
+    "placeholders": {
+      "chat": {"type": "String"},
+      "account": {"type": "String"}
+    }
+  },
+  "newestMessages": "Newest messages",
+  "@newestMessages": {
+    "description": "Tooltip of the button that scrolls a chat to its newest messages"
+  },
+  "noChats": "No chats yet",
+  "@noChats": {
+    "description": "Shown on the Chats tab when there are no chats"
+  },
+  "noChatsHint": "Add a contact with the + button to start chatting",
+  "@noChatsHint": {
+    "description": "How to start a first chat, under noChats"
   }
 }

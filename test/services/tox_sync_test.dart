@@ -1,24 +1,36 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:btox/api/toxcore/tox_events.dart';
 import 'package:btox/db/database.dart';
 import 'package:btox/ffi/toxcore.dart';
-import 'package:btox/models/content.dart';
+import 'package:btox/messages/message_format.dart';
+import 'package:btox/messages/split_message.dart';
+import 'package:btox/models/chat_view.dart';
 import 'package:btox/models/crypto.dart';
 import 'package:btox/models/id.dart';
-import 'package:btox/models/messaging.dart';
 import 'package:btox/models/persistence.dart';
 import 'package:btox/models/profile_settings.dart';
 import 'package:btox/services/message_notifier.dart';
 import 'package:btox/services/tox_sync.dart';
+import 'package:btox/sync/account.dart';
+import 'package:btox/sync/event.dart';
+import 'package:btox/sync/fact.dart';
+import 'package:btox/sync/setting.dart';
+import 'package:btox/sync/store.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../mocks/fake_message_format.dart';
+import '../mocks/fake_notifier.dart';
 import '../mocks/fake_toxcore.dart';
 
 final _friendAddress = ToxAddress.fromString('${'2' * 72}0000');
+final _friend = _friendAddress.publicKey;
 final _me = PublicKey(Uint8List(32));
+final _account = GraphId.account(_me);
+final _chat = GraphId.friend(_me, _friend);
 
 Future<void> _until(bool Function() condition) async {
   for (int i = 0; i < 50 && !condition(); i++) {
@@ -34,7 +46,8 @@ void main() {
   late FakeToxcore tox;
   late Id<Profiles> profileId;
   late ToxSync sync;
-  late List<(Id<Contacts>, String, String, String?)> shown;
+  late List<Shown> shown;
+  late List<String> requested;
   late MessageNotifier notifier;
 
   setUp(() async {
@@ -51,42 +64,41 @@ void main() {
       ),
     );
     shown = [];
-    notifier = MessageNotifier(
-      (id, title, body, account) async => shown.add((id, title, body, account)),
-      (id) async {},
+    requested = [];
+    notifier = fakeNotifier(
+      shown,
+      request: (_, from, message, _) async => requested.add(message),
     );
     sync = ToxSync(
       db,
       tox,
       profileId,
       maxMessageLength: 10,
+      retryDelay: const Duration(milliseconds: 20),
       notifier: notifier,
+      knownFormats: const [FakeMessageFormat()],
     );
     addTearDown(sync.dispose);
   });
 
-  Future<Id<Contacts>> addContact({bool withRequest = false}) => db.addContact(
-    ContactsCompanion.insert(
-      profileId: profileId,
-      publicKey: _friendAddress.publicKey,
-      friendRequestAddress: Value(withRequest ? _friendAddress : null),
-      friendRequestMessage: Value(withRequest ? 'Add me' : null),
-    ),
-  );
+  Future<void> want({bool withRequest = false, bool wanted = true}) =>
+      db.addFriendChange(
+        profileId,
+        _friend,
+        wanted: wanted,
+        nospam: withRequest ? _friendAddress.nospam : null,
+        message: withRequest ? 'Add me' : null,
+      );
 
-  Future<Id<Messages>> send(
-    Id<Contacts> contactId,
-    Content content, {
-    PublicKey? author,
-  }) => db.addMessage(
-    newMessage(
-      contactId: contactId,
-      parent: null,
-      merged: null,
-      author: author ?? _me,
-      timestamp: DateTime.utc(2026),
-      content: content,
-    ).copyWith(delivered: Value(author == null ? false : null)),
+  Future<List<EventContent>> contents(GraphId graph) async => [
+    for (final (_, event) in rankOrder(
+      await db.watchSyncEvents(profileId, graph).first,
+    ))
+      event.content,
+  ];
+
+  Future<AccountState> account() async => AccountState.of(
+    rankOrder(await db.watchSyncEvents(profileId, _account).first),
   );
 
   void setOnline(int friendNumber, bool online) => sync.handleEvent(
@@ -102,95 +114,103 @@ void main() {
     ToxEventFriendReadReceipt(friendNumber: 0, messageId: messageId),
   );
 
-  Future<bool?> delivered(Id<Messages> id) async =>
-      (await db.getMessage(id)).delivered;
+  Future<bool> delivered() async =>
+      (await contents(_chat)).any((content) => content is Delivered);
 
   List<String> sentTexts() => [
     for (final (_, _, text) in tox.sentMessages) text,
   ];
 
-  test('sets our name and status message', () async {
+  test('sets and records our name and status message', () async {
     sync.start();
     await _until(() => tox.name == 'Me');
 
     await db.updateProfileSettings(
       profileId,
-      ProfileSettings(nickname: 'New', statusMessage: 'Busy'),
+      (s) => s.copyWith(nickname: 'New', statusMessage: 'Busy'),
     );
     await _until(() => tox.name == 'New' && tox.statusMessage == 'Busy');
+    await _settle();
+    final state = await account();
+    expect((state.name, state.statusMessage), ('New', 'Busy'));
   });
 
-  test('sends friend requests, preferring them for re-added friends', () async {
-    await addContact();
-    await addContact(withRequest: true);
+  test('sends friend requests until accepted', () async {
+    await want(withRequest: true);
     sync.start();
     await _until(() => tox.friends.isNotEmpty);
-    expect(tox.friends, [_friendAddress.publicKey]);
+    expect(tox.friends, [_friend]);
     expect(tox.friendRequests, [(_friendAddress, 'Add me')]);
 
     setOnline(0, true);
     await _settle();
-    final contacts = await db.select(db.contacts).get();
-    expect(contacts.map((c) => c.friendRequestAddress), [null, null]);
+    expect((await account()).friends[_friend]?.nospam, isNull);
   });
 
-  test('deletes the friend with their last contact', () async {
-    final first = await addContact();
-    final second = await addContact();
+  test('asks a friend again who was added before', () async {
+    await want();
     sync.start();
     await _until(() => tox.friends.isNotEmpty);
 
-    await db.deleteContact(first);
-    await _settle();
-    expect(tox.deletedFriends, isEmpty);
-
-    await db.deleteContact(second);
-    await _until(() => tox.deletedFriends.isNotEmpty);
+    // Such as when they deleted us, and are added again by their address.
+    await want(withRequest: true);
+    await _until(() => tox.friendRequests.isNotEmpty);
+    expect(tox.friendRequests, [(_friendAddress, 'Add me')]);
     expect(tox.deletedFriends, [0]);
   });
 
-  test("tracks the friend's online state", () async {
-    final contactId = await addContact();
+  test('deletes friends no longer wanted', () async {
+    await want();
     sync.start();
     await _until(() => tox.friends.isNotEmpty);
-    Future<bool> online() async =>
-        (await db.watchContact(contactId).first).online;
+
+    await want(wanted: false);
+    await _until(() => tox.deletedFriends.isNotEmpty);
+    expect(tox.deletedFriends, [0]);
+    expect(await db.select(db.friendChanges).get(), isEmpty);
+  });
+
+  test("tracks the friend's online state", () async {
+    await want();
+    sync.start();
+    await _until(() => tox.friends.isNotEmpty);
+    Future<FactValue?> connection() async =>
+        (await db.watchLiveFacts(profileId).first)
+            .of(Subject.friend(_friend))
+            .singleOrNull;
 
     setOnline(0, true);
     await _settle();
-    expect(await online(), isTrue);
+    expect(await connection(), const FactValue.connection(Connection.udp));
 
     setOnline(0, false);
     await _settle();
-    expect(await online(), isFalse);
+    expect(await connection(), const FactValue.connection(Connection.none));
   });
 
   group('messages', () {
-    late Id<Contacts> contactId;
-
     setUp(() async {
-      contactId = await addContact();
+      await want();
       sync.start();
       await _until(() => tox.friends.isNotEmpty);
     });
 
     test('are sent once the friend is online, until delivered', () async {
-      final id = await send(contactId, TextContent(text: 'hi'));
-      await send(contactId, MediaContent(url: 'unsupported'));
-      await send(
-        contactId,
-        TextContent(text: 'theirs'),
-        author: _friendAddress.publicKey,
-      );
+      await db.addSend(profileId, _chat, 'hi');
       await _settle();
       expect(tox.sentMessages, isEmpty);
+      expect(await db.select(db.chatSends).get(), isEmpty);
 
       setOnline(0, true);
       expect(sentTexts(), ['hi']);
 
       receipt(tox.sentMessages.single.$2);
       await _settle();
-      expect(await delivered(id), isTrue);
+      expect(await contents(_chat), [
+        isA<Send>(),
+        isA<Sent>(),
+        isA<Delivered>(),
+      ]);
 
       setOnline(0, false);
       setOnline(0, true);
@@ -200,7 +220,7 @@ void main() {
 
     test('are sent again after the friend went offline', () async {
       setOnline(0, true);
-      final id = await send(contactId, TextContent(text: 'hi'));
+      await db.addSend(profileId, _chat, 'hi');
       await _until(() => tox.sentMessages.isNotEmpty);
 
       setOnline(0, false);
@@ -209,27 +229,25 @@ void main() {
 
       receipt(tox.sentMessages.first.$2);
       await _settle();
-      expect(await delivered(id), isFalse);
+      expect(await delivered(), isFalse);
+      expect((await contents(_chat)).whereType<Sent>(), hasLength(1));
     });
 
     test('that fail are sent again on the next attempt', () async {
       tox.unreachableFriends.add(0);
       setOnline(0, true);
-      await send(contactId, TextContent(text: 'hi'));
+      await db.addSend(profileId, _chat, 'hi');
       await _settle();
       expect(tox.sentMessages, isEmpty);
 
       tox.unreachableFriends.clear();
-      setOnline(0, true);
+      await _until(() => tox.sentMessages.isNotEmpty);
       expect(sentTexts(), ['hi']);
     });
 
     test('too long for Tox are delivered in parts', () async {
       setOnline(0, true);
-      final id = await send(
-        contactId,
-        TextContent(text: 'hello brave new world'),
-      );
+      await db.addSend(profileId, _chat, 'hello brave new world');
       await _until(() => tox.sentMessages.isNotEmpty);
       expect(sentTexts(), ['hello ', 'brave new ', 'world']);
 
@@ -237,123 +255,228 @@ void main() {
         receipt(messageId);
       }
       await _settle();
-      expect(await delivered(id), isFalse);
+      expect(await delivered(), isFalse);
 
       receipt(tox.sentMessages.last.$2);
       await _settle();
-      expect(await delivered(id), isTrue);
+      expect(await delivered(), isTrue);
+    });
+
+    test('in parts go on where Tox stopped, once it takes more', () async {
+      tox.sendQueueRoom = 1;
+      setOnline(0, true);
+      await db.addSend(profileId, _chat, 'hello brave new world');
+      await _until(() => tox.sentMessages.isNotEmpty);
+      await _settle();
+      expect(sentTexts(), ['hello ']);
+      expect((await contents(_chat)).whereType<Sent>(), isEmpty);
+
+      tox.sendQueueRoom = null;
+      await _until(() => tox.sentMessages.length == 3);
+      expect(sentTexts(), ['hello ', 'brave new ', 'world']);
+      await _settle();
+      expect((await contents(_chat)).whereType<Sent>(), hasLength(1));
     });
   });
 
   test('splitMessage never splits a character', () {
-    final parts = splitMessage('ü' * 6 + '😀' * 3, 7);
-    expect(parts, ['üüü', 'üüü', '😀', '😀', '😀']);
-    expect(splitMessage('a bbbbbbbbbbb', 10), ['a bbbbbbbb', 'bbb']);
+    List<String> split(String text, int maxBytes) => [
+      for (final part in splitMessage(utf8.encode(text), maxBytes))
+        utf8.decode(part),
+    ];
+    expect(split('ü' * 6 + '😀' * 3, 7), ['üüü', 'üüü', '😀', '😀', '😀']);
+    expect(split('a bbbbbbbbbbb', 10), ['a bbbbbbbb', 'bbb']);
   });
 
-  void receive(int friendNumber, String text) => sync.handleEvent(
+  void receive(int friendNumber, List<int> message) => sync.handleEvent(
     ToxEventFriendMessage(
       friendNumber: friendNumber,
       type: Tox_Message_Type.TOX_MESSAGE_TYPE_NORMAL,
-      message: utf8.encode(text),
+      message: Uint8List.fromList(message),
     ),
   );
 
-  test('saves and notifies messages, except for the open chat', () async {
-    final contactId = await addContact();
+  test('deletes a friend with their chat, which starts over', () async {
+    await want();
+    sync.start();
+    await _until(() => tox.friends.isNotEmpty);
+    receive(0, utf8.encode('hi'));
+    await _settle();
+    final (hi, received) =
+        (await db.watchSyncEvents(profileId, _chat).first).single;
+    await db.setRead(profileId, _chat, (received.rank, hi));
+    final file = File('${Directory.systemTemp.createTempSync().path}/cat.png')
+      ..writeAsStringSync('meow');
+    await db.addTransfer(
+      TransfersCompanion.insert(
+        profileId: profileId,
+        graph: _chat,
+        incoming: true,
+        name: 'cat.png',
+        size: 4,
+        path: file.path,
+        state: FileState.done,
+      ),
+    );
+    await _settle();
+
+    await db.addFriendChange(
+      profileId,
+      _friend,
+      wanted: false,
+      deleteChat: true,
+    );
+    await _until(() => tox.deletedFriends.isNotEmpty);
+    await _settle();
+    expect(await contents(_chat), isEmpty);
+    expect(await db.select(db.transfers).get(), isEmpty);
+    expect(file.existsSync(), isFalse);
+
+    // Read markers point into the deleted chat, so new messages come after.
+    await want();
+    await _until(() => tox.friends.length == 2);
+    receive(1, utf8.encode('hi again'));
+    await _settle();
+    final (_, again) =
+        (await db.watchSyncEvents(profileId, _chat).first).single;
+    expect(again.rank, greaterThan((await account()).read[_chat]!.$1));
+  });
+
+  test('records and notifies messages, except for the open chat', () async {
+    await want();
     sync.start();
     await _until(() => tox.friends.isNotEmpty && tox.name == 'Me');
 
-    notifier.openChat = contactId;
-    receive(0, 'seen');
+    notifier.openChat = ChatRef(profileId, _chat);
+    receive(0, utf8.encode('seen'));
+    await _settle();
     notifier.openChat = null;
-    receive(0, 'Grüße ✓');
-    final messages = await db
-        .watchMessagesFor(contactId)
-        .firstWhere((messages) => messages.length == 2);
+    receive(0, utf8.encode('Grüße ✓'));
+    await _settle();
 
     expect(
-      [for (final m in messages) (m.content as TextContent).text],
+      [
+        for (final content in await contents(_chat))
+          utf8.decode((content as Received).message),
+      ],
       ['seen', 'Grüße ✓'],
     );
-    expect(messages.first.author, _friendAddress.publicKey);
-    expect(shown, [(contactId, 'Unknown', 'Grüße ✓', 'Me')]);
+    expect(shown, [(ChatRef(profileId, _chat), null, 'Grüße ✓', 'Me')]);
+
+    // Muted, not even its mentions notify, until unmuted.
+    shown.clear();
+    final scope = Scope.conversation(_chat);
+    await db.setSetting(
+      profileId,
+      scope,
+      Kept(
+        Setting.mute(
+          until: DateTime.now().add(const Duration(hours: 1)),
+          mentions: false,
+        ),
+      ),
+    );
+    await _settle();
+    expect((await account()).setting<Mute>(scope), isNotNull);
+    receive(0, utf8.encode('Me: quiet'));
+    await _settle();
+    await db.clearSetting(profileId, scope, Setting.muteKind);
+    await _settle();
+    receive(0, utf8.encode('loud'));
+    await _settle();
+    expect(shown, [(ChatRef(profileId, _chat), null, 'loud', 'Me')]);
   });
 
-  test('ignores messages from unknown friends', () async {
-    final contactId = await addContact();
+  test('keeps resends a format knows, which count and notify once', () async {
+    await want();
     sync.start();
     await _until(() => tox.friends.isNotEmpty);
 
-    receive(1, 'from a stranger');
-    receive(0, 'from a friend');
-    final messages = await db
-        .watchMessagesFor(contactId)
-        .firstWhere((messages) => messages.isNotEmpty);
+    final hi = FakeMessageFormat.encode('hi', '1');
+    receive(0, hi);
+    receive(0, hi);
+    receive(0, utf8.encode('plain'));
     await _settle();
 
-    expect(await db.select(db.messages).get(), hasLength(1));
-    expect((messages.single.content as TextContent).text, 'from a friend');
+    expect(
+      [
+        for (final content in await contents(_chat))
+          (content as Received).message,
+      ],
+      [hi, hi, utf8.encode('plain')],
+    );
+    expect(
+      (await db.watchReceivedRanks(profileId, withFakeFormat).first)[_chat],
+      hasLength(2),
+    );
+    expect([for (final s in shown) s.$3], ['hi', 'plain']);
   });
 
-  test('saves friend names', () async {
-    await addContact();
+  test('ignores messages from unknown friends', () async {
+    await want();
+    sync.start();
+    await _until(() => tox.friends.isNotEmpty);
+
+    receive(1, utf8.encode('from a stranger'));
+    receive(0, utf8.encode('from a friend'));
+    await _settle();
+
+    expect(await contents(_chat), hasLength(1));
+  });
+
+  test('records friend names', () async {
+    await want();
     sync.start();
     await _until(() => tox.friends.isNotEmpty);
 
     sync.handleEvent(
-      ToxEventFriendName(friendNumber: 0, name: utf8.encode('toxxi')),
+      ToxEventFriendName(friendNumber: 0, name: utf8.encode('Home')),
     );
-    final contacts = await db
-        .select(db.contacts)
-        .watch()
-        .firstWhere((c) => c.single.name != null);
-    expect(contacts.single.name, 'toxxi');
+    await _settle();
+    expect((await account()).friends[_friend]?.name, 'Home');
   });
 
-  test('keeps the latest friend request', () async {
+  test('keeps the latest friend request, telling of each', () async {
     sync.start();
-    for (final message in ['add me', 'please add me']) {
+    await _settle();
+    for (final message in ['add me', 'please add me', 'please add me']) {
       sync.handleEvent(
         ToxEventFriendRequest(
-          publicKey: _friendAddress.publicKey,
+          publicKey: _friend,
           message: utf8.encode(message),
         ),
       );
     }
-    final requests = await db
-        .watchFriendRequestsFor(profileId)
-        .firstWhere((r) => r.isNotEmpty && r.single.message != 'add me');
+    await _settle();
 
-    expect(requests.single.publicKey, _friendAddress.publicKey);
-    expect(await db.select(db.contacts).get(), isEmpty);
-  });
-
-  test('sends and receives locations as geo text', () async {
-    final contactId = await addContact();
-    sync.start();
-    await _until(() => tox.friends.isNotEmpty);
-    setOnline(0, true);
-
-    await send(
-      contactId,
-      const LocationContent(latitude: 52.37, longitude: 4.89),
-    );
-    await _until(() => tox.sentMessages.isNotEmpty);
-    expect(sentTexts().join(), 'geo:52.37,4.89');
-
-    receive(0, 'geo:-33.9,18.4');
-    final messages = await db
-        .watchMessagesFor(contactId)
-        .firstWhere((messages) => messages.length == 2);
+    final friend = (await account()).friends[_friend]!;
+    expect((friend.request, friend.wanted), ('please add me', false));
+    expect(requested, ['add me', 'please add me']);
     expect(
-      messages.last.content,
-      const LocationContent(latitude: -33.9, longitude: 18.4),
+      (await contents(_account)).whereType<FriendRequested>(),
+      hasLength(2),
     );
+    expect(tox.friends, isEmpty);
+
+    // Declined, it stays declined as their client sends it again.
+    await want(wanted: false);
+    await _settle();
+    requested.clear();
+    for (final message in ['please add me', 'it is me, Bob']) {
+      sync.handleEvent(
+        ToxEventFriendRequest(
+          publicKey: _friend,
+          message: utf8.encode(message),
+        ),
+      );
+      await _settle();
+    }
+    expect((await account()).friends[_friend]?.request, 'it is me, Bob');
+    expect(requested, ['it is me, Bob']);
   });
 
-  test('refuses avatars and cancels declined files', () async {
-    final contactId = await addContact();
+  test('announces files, refuses avatars and cancels declined files', () async {
+    await want();
     sync.start();
     await _until(() => tox.friends.isNotEmpty);
     await db.updateAppSettings(
@@ -373,19 +496,31 @@ void main() {
     offer(0, Tox_File_Kind.TOX_FILE_KIND_AVATAR);
     offer(1, Tox_File_Kind.TOX_FILE_KIND_DATA);
     final offered = await db
-        .watchMessagesFor(contactId)
-        .firstWhere((messages) => messages.isNotEmpty);
-    expect(offered.single.fileState, FileState.offered);
+        .watchTransfers(profileId)
+        .firstWhere((transfers) => transfers.isNotEmpty);
+    expect(offered.single.state, FileState.offered);
+    expect(shown, [(ChatRef(profileId, _chat), null, '📎 a.txt', 'Me')]);
+    expect(
+      (await db
+          .watchReceivedRanks(profileId, MessageFormats.none)
+          .first)[_chat],
+      hasLength(1),
+    );
     expect(tox.fileControls, [
       (0, 0, Tox_File_Control.TOX_FILE_CONTROL_CANCEL),
     ]);
 
-    await db.setFileState(offered.single.id, FileState.cancelled);
+    await db.setTransferState(offered.single.id, FileState.cancelled);
     await _until(() => tox.fileControls.length == 2);
     expect(tox.fileControls.last, (
       0,
       1,
       Tox_File_Control.TOX_FILE_CONTROL_CANCEL,
     ));
+    await _settle();
+    expect(await contents(_chat), [
+      isA<FileStarted>(),
+      isA<FileEnded>().having((e) => e.ok, 'ok', false),
+    ]);
   });
 }

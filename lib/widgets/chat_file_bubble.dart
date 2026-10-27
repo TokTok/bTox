@@ -1,12 +1,19 @@
 import 'package:btox/attachments/attachments.dart';
-import 'package:btox/db/database.dart';
 import 'package:btox/l10n/generated/app_localizations.dart';
+import 'package:btox/logger.dart';
+import 'package:btox/models/chat_view.dart';
 import 'package:btox/models/content.dart';
+import 'package:btox/models/id.dart';
 import 'package:btox/models/persistence.dart';
 import 'package:btox/providers/database.dart';
+import 'package:btox/widgets/bubble_footer.dart';
 import 'package:btox/widgets/chat_text_bubble.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
+
+const _logger = Logger(['ChatFileBubble']);
+
+const _previewSize = 240.0;
 
 String fileSizeText(int bytes) => switch (bytes) {
   < 1024 => '$bytes B',
@@ -15,94 +22,126 @@ String fileSizeText(int bytes) => switch (bytes) {
 };
 
 final class ChatFileBubble extends ConsumerWidget {
-  final Message message;
-  final bool isSender;
+  final ChatRef chat;
+  final ChatEntry entry;
   final Color color;
   final TextStyle textStyle;
+  final BorderRadius corners;
+  final Widget? header;
+  final BubbleFooter? footer;
 
   const ChatFileBubble({
     super.key,
-    required this.message,
-    required this.isSender,
+    required this.chat,
+    required this.entry,
     required this.color,
     required this.textStyle,
+    required this.corners,
+    this.header,
+    this.footer,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    final content = message.content as FileContent;
-    final preview = message.fileState == FileState.done
-        ? imagePreview(content.path)
+    final isSender = entry.mine;
+    final content = entry.content as FileContent;
+    final progress = entry.file;
+    // Ours is here from the start, theirs once it has all come.
+    final preview =
+        content.path.isNotEmpty &&
+            (isSender || progress?.state == FileState.done)
+        ? imagePreview(
+            content.path,
+            size: (_previewSize * MediaQuery.devicePixelRatioOf(context))
+                .round(),
+          )
         : null;
 
-    void setState(FileState state) =>
-        ref.read(databaseProvider).value?.setFileState(message.id, state);
+    void answer(Id<Transfers> transfer, {required bool accept}) {
+      _logger.unawaited(
+        'answer the file',
+        ref
+            .read(databaseProvider.future)
+            .then((db) => db.answerTransfer(transfer, accept: accept)),
+      );
+    }
 
-    return Align(
-      alignment: isSender ? Alignment.centerRight : Alignment.centerLeft,
-      child: ChatTextBubble(
-        radius: 20,
-        color: color,
-        stateIcon: null,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (preview != null)
-              ConstrainedBox(
-                constraints: const BoxConstraints(
-                  maxWidth: 240,
-                  maxHeight: 240,
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: preview,
-                ),
-              )
-            else
-              Row(
-                mainAxisSize: MainAxisSize.min,
+    return ChatTextBubble(
+      corners: corners,
+      header: header,
+      color: color,
+      footer: preview == null ? footer : null,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (preview != null)
+            ConstrainedBox(
+              constraints: const BoxConstraints(
+                maxWidth: _previewSize,
+                maxHeight: _previewSize,
+              ),
+              child: Stack(
                 children: [
-                  const Icon(Icons.insert_drive_file),
-                  const SizedBox(width: 8),
-                  Flexible(child: Text(content.name, style: textStyle)),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: preview,
+                  ),
+                  if (footer case final footer?) footer.overMedia(),
                 ],
               ),
+            )
+          else ...[
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.insert_drive_file),
+                const SizedBox(width: 8),
+                Flexible(child: Text(content.name, style: textStyle)),
+              ],
+            ),
             Text(
               fileSizeText(content.size),
               style: Theme.of(context).textTheme.bodySmall,
             ),
-            switch (message.fileState) {
-              FileState.offered when !isSender => Row(
+          ],
+          switch (progress) {
+            FileProgress(state: FileState.offered, :final transfer?)
+                when !isSender =>
+              Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   TextButton(
-                    onPressed: () => setState(FileState.active),
+                    onPressed: () => answer(transfer, accept: true),
                     child: Text(l10n.acceptFile),
                   ),
                   TextButton(
-                    onPressed: () => setState(FileState.cancelled),
+                    onPressed: () => answer(transfer, accept: false),
                     child: Text(l10n.declineFile),
                   ),
                 ],
               ),
-              FileState.active => SizedBox(
-                width: 160,
+            FileProgress(state: FileState.active, :final transferred) =>
+              SizedBox(
+                width: preview == null ? 160 : _previewSize,
                 child: LinearProgressIndicator(
-                  value: content.size == 0
+                  value: content.size == 0 || transferred == null
                       ? null
-                      : (message.fileTransferred ?? 0) / content.size,
+                      : transferred / content.size,
                 ),
               ),
-              FileState.cancelled => Text(
-                l10n.fileCancelled,
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-              _ => const SizedBox.shrink(),
-            },
-          ],
-        ),
+            FileProgress(state: FileState.cancelled) => Text(
+              l10n.fileCancelled,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            FileProgress(state: FileState.paused) => Text(
+              l10n.filePaused,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            _ => const SizedBox.shrink(),
+          },
+        ],
       ),
     );
   }

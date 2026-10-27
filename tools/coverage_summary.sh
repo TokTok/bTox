@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # This script generates a coverage summary from coverage/lcov.info
-# It excludes generated files (.g.dart, .freezed.dart, and generated/ directories)
+# It excludes generated files (.g.dart, .drift.dart, .freezed.dart, and generated/ directories)
 
 LCOV_FILE="coverage/lcov.info"
 
@@ -20,7 +20,7 @@ awk -F: '
   /^LF:/ { lf[file] = $2; }
   END {
     for (f in lf) {
-      if (f !~ /(\.g\.dart|\.freezed\.dart|generated\/)/) {
+      if (f !~ /(\.g\.dart|\.drift\.dart|\.freezed\.dart|generated\/)/) {
         if (lf[f] > 0) {
           printf "%6.2f%% | %s\n", (lh[f]/lf[f])*100, f;
         }
@@ -34,7 +34,7 @@ echo "Core Logic Total Coverage:"
 # Total summary
 awk '
   BEGIN { RS = "end_of_record\n" }
-  !/SF:.*(\.g\.dart|\.freezed\.dart|generated\/)/ {
+  !/SF:.*(\.g\.dart|\.drift\.dart|\.freezed\.dart|generated\/)/ {
     split($0, lines, "\n");
     for (i in lines) {
       if (lines[i] ~ /^LH:/) {

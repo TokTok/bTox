@@ -10,19 +10,77 @@ Future<bool> confirm(
 }) async =>
     await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(title),
+      builder: (context) => _Confirm(
+        title: title,
         content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(AppLocalizations.of(context)!.cancel),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(action),
-          ),
-        ],
+        action: action,
+        result: () => true,
       ),
     ) ??
     false;
+
+/// Asks whether to go ahead with [action], offering [option], ticked at
+/// first. Null if not, else whether [option] stayed ticked.
+Future<bool?> confirmWithOption(
+  BuildContext context, {
+  required String title,
+  required String message,
+  required String action,
+  required String option,
+}) {
+  var ticked = true;
+  return showDialog<bool>(
+    context: context,
+    builder: (context) => StatefulBuilder(
+      builder: (context, setState) => _Confirm(
+        title: title,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(message),
+            CheckboxListTile(
+              value: ticked,
+              onChanged: (value) => setState(() => ticked = value!),
+              title: Text(option),
+              controlAffinity: ListTileControlAffinity.leading,
+              contentPadding: EdgeInsets.zero,
+            ),
+          ],
+        ),
+        action: action,
+        result: () => ticked,
+      ),
+    ),
+  );
+}
+
+final class _Confirm extends StatelessWidget {
+  final String title;
+  final Widget content;
+  final String action;
+  final bool Function() result;
+
+  const _Confirm({
+    required this.title,
+    required this.content,
+    required this.action,
+    required this.result,
+  });
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    title: Text(title),
+    content: content,
+    actions: [
+      TextButton(
+        onPressed: () => Navigator.pop(context),
+        child: Text(AppLocalizations.of(context)!.cancel),
+      ),
+      TextButton(
+        onPressed: () => Navigator.pop(context, result()),
+        child: Text(action),
+      ),
+    ],
+  );
+}

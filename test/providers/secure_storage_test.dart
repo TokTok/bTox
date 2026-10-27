@@ -2,10 +2,10 @@ import 'dart:io';
 
 import 'package:btox/providers/secure_storage.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
+import 'package:riverpod/riverpod.dart';
 
 const _channel = MethodChannel('plugins.it_nomads.com/flutter_secure_storage');
 

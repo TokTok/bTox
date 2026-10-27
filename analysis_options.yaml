@@ -9,6 +9,7 @@ linter:
 analyzer:
   exclude:
     - "**/*.g.dart"
+    - "**/*.drift.dart"
     - build/**
     - android/**
     - ios/**
@@ -16,3 +17,6 @@ analyzer:
     - windows/**
     - macos/**
     - linux/**
+
+plugins:
+  riverpod_lint: 3.1.9

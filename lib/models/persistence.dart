@@ -7,10 +7,12 @@ import 'package:btox/models/content.dart';
 import 'package:btox/models/crypto.dart';
 import 'package:btox/models/id.dart';
 import 'package:btox/models/profile_settings.dart';
+import 'package:btox/sync/setting.dart';
 import 'package:drift/drift.dart';
 
-/// A file transfer's progress. Incoming files start as offered until accepted.
-enum FileState { offered, active, done, cancelled }
+/// A file transfer's progress. Incoming files start as offered until accepted,
+/// and are paused when they stop before all of it came, until sent again.
+enum FileState { offered, active, done, cancelled, paused }
 
 abstract class AppSettings extends Table {
   IntColumn get id => integer()();
@@ -34,73 +36,81 @@ abstract class CachedBootstrapNodes extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-abstract class Contacts extends Table {
+/// Friends to add or remove, until the account has the change.
+abstract class FriendChanges extends Table {
   IntColumn get id =>
-      integer().autoIncrement().map(const IdConverter<Contacts>())();
+      integer().autoIncrement().map(const IdConverter<FriendChanges>())();
   IntColumn get profileId =>
       integer().references(Profiles, #id).map(const IdConverter<Profiles>())();
-
-  TextColumn get name => text().nullable()();
   TextColumn get publicKey =>
       text().map(const HexConverter(PublicKey.fromJson))();
-
-  // Resent whenever Tox starts, until the friend first comes online.
-  TextColumn get friendRequestAddress =>
-      text().map(const HexConverter(ToxAddress.fromString)).nullable()();
-  TextColumn get friendRequestMessage => text().nullable()();
-
-  BoolColumn get online => boolean().withDefault(const Constant(false))();
-  // Later messages from the contact are unread.
-  IntColumn get lastReadMessage =>
-      integer().map(const IdConverter<Messages>()).nullable()();
+  BoolColumn get wanted => boolean()();
+  // With these, a friend request to send.
+  IntColumn get nospam => integer().map(const NospamConverter()).nullable()();
+  TextColumn get message => text().nullable()();
+  // With a friend no longer wanted: their chat goes too.
+  BoolColumn get deleteChat => boolean().withDefault(const Constant(false))();
 }
 
-abstract class FriendRequests extends Table {
-  IntColumn get id =>
-      integer().autoIncrement().map(const IdConverter<FriendRequests>())();
+/// Chats deleted on this device, by the rank their next event takes, so it
+/// comes after the read markers that pointed into them.
+abstract class DeletedChats extends Table {
   IntColumn get profileId =>
       integer().references(Profiles, #id).map(const IdConverter<Profiles>())();
-
-  TextColumn get publicKey =>
-      text().map(const HexConverter(PublicKey.fromJson))();
-  TextColumn get message => text()();
-  DateTimeColumn get timestamp => dateTime()();
+  TextColumn get graph => text().map(const HexConverter(GraphId.fromJson))();
+  IntColumn get rank => integer()();
 
   @override
-  List<Set<Column>> get uniqueKeys => [
-    {profileId, publicKey},
-  ];
+  Set<Column> get primaryKey => {profileId, graph};
 }
 
-abstract class Messages extends Table {
+/// Files moving between this device's Tox and its attachments directory, by
+/// the event that started them. One without an event is still to be sent.
+abstract class Transfers extends Table {
   IntColumn get id =>
-      integer().autoIncrement().map(const IdConverter<Messages>())();
-  IntColumn get contactId =>
-      integer().references(Contacts, #id).map(const IdConverter<Contacts>())();
+      integer().autoIncrement().map(const IdConverter<Transfers>())();
+  IntColumn get profileId =>
+      integer().references(Profiles, #id).map(const IdConverter<Profiles>())();
+  TextColumn get graph => text().map(const HexConverter(GraphId.fromJson))();
+  TextColumn get event =>
+      text().map(const HexConverter(EventId.fromJson)).nullable()();
+  BoolColumn get incoming => boolean()();
+  TextColumn get name => text()();
+  IntColumn get size => integer()();
+  TextColumn get path => text()();
+  TextColumn get state => textEnum<FileState>()();
+  IntColumn get transferred => integer().withDefault(const Constant(0))();
+  // A friend's file coming here: what their Tox calls it.
+  TextColumn get fileId =>
+      text().map(const HexConverter(FileId.fromJson)).nullable()();
+}
 
-  TextColumn get author => text().map(const HexConverter(PublicKey.fromJson))();
+/// Settings of an account to set or clear, until the background service
+/// writes the change as an event.
+@DataClassName('SettingChange')
+abstract class SettingChanges extends Table {
+  IntColumn get id =>
+      integer().autoIncrement().map(const IdConverter<SettingChanges>())();
+  IntColumn get profileId =>
+      integer().references(Profiles, #id).map(const IdConverter<Profiles>())();
+  BlobColumn get scope => blob().map(const ScopeConverter())();
+  IntColumn get kind => integer()();
+  // Null to clear it.
+  BlobColumn get setting => blob().map(const SettingConverter()).nullable()();
+}
 
-  // The SHA-256 hash of the message content, timestamp, and parent/merge hashes.
-  TextColumn get sha => text()
-      .check(sha.length.equals(Sha256.kLength * 2))
-      .map(const HexConverter(Sha256.fromJson))();
-  IntColumn get parent => integer()
-      .references(Messages, #id)
-      .map(const IdConverter<Messages>())
-      .nullable()();
-  IntColumn get merged => integer()
-      .references(Messages, #id)
-      .map(const IdConverter<Messages>())
-      .nullable()();
+/// What Tox says now, only true while it runs: who is online, who is in a
+/// chat. One row per subject and kind of value.
+abstract class LiveFacts extends Table {
+  IntColumn get profileId =>
+      integer().references(Profiles, #id).map(const IdConverter<Profiles>())();
+  // Encoded as the sync protocol writes them.
+  BlobColumn get subject => blob()();
+  IntColumn get kind => integer()();
+  BlobColumn get fact => blob()();
 
-  DateTimeColumn get timestamp => dateTime()();
-  TextColumn get content => text().map(const ContentConverter())();
-
-  // Null for received messages and for ours from before schema version 2.
-  BoolColumn get delivered => boolean().nullable()();
-
-  TextColumn get fileState => textEnum<FileState>().nullable()();
-  IntColumn get fileTransferred => integer().nullable()();
+  @override
+  Set<Column> get primaryKey => {profileId, subject, kind};
 }
 
 abstract class Profiles extends Table {
@@ -119,4 +129,66 @@ abstract class Profiles extends Table {
   IntColumn get nospam => integer()
       .check(nospam.isBetweenValues(0, 0xFFFFFFFF))
       .map(const NospamConverter())();
+}
+
+/// What a chat's page sends, until the background service writes it as an
+/// event.
+abstract class ChatSends extends Table {
+  IntColumn get id =>
+      integer().autoIncrement().map(const IdConverter<ChatSends>())();
+  IntColumn get profileId =>
+      integer().references(Profiles, #id).map(const IdConverter<Profiles>())();
+  TextColumn get graph => text().map(const HexConverter(GraphId.fromJson))();
+  TextColumn get message => text()();
+}
+
+@DataClassName('StoredEvent')
+@TableIndex(name: 'sync_events_graph', columns: {#profileId, #graph})
+@TableIndex(
+  name: 'sync_events_shown',
+  columns: {#profileId, #shown, #graph, #rank},
+)
+abstract class SyncEvents extends Table {
+  IntColumn get profileId =>
+      integer().references(Profiles, #id).map(const IdConverter<Profiles>())();
+  TextColumn get id => text().map(const HexConverter(EventId.fromJson))();
+  TextColumn get graph => text().map(const HexConverter(GraphId.fromJson))();
+  IntColumn get rank => integer()();
+  // Someone else's message or file, counted as unread until the account has
+  // read past it.
+  BoolColumn get received => boolean()();
+  // Shows as an entry in its chat, so the chat list can show the latest.
+  BoolColumn get shown => boolean().withDefault(const Constant(false))();
+  BlobColumn get bytes => blob()();
+
+  @override
+  Set<Column> get primaryKey => {profileId, id};
+}
+
+/// How far each chat has been seen on this device. The background service
+/// records it when that's further than the account knows.
+abstract class ChatReads extends Table {
+  IntColumn get profileId =>
+      integer().references(Profiles, #id).map(const IdConverter<Profiles>())();
+  TextColumn get graph => text().map(const HexConverter(GraphId.fromJson))();
+  TextColumn get event => text().map(const HexConverter(EventId.fromJson))();
+  IntColumn get rank => integer()();
+
+  @override
+  Set<Column> get primaryKey => {profileId, graph};
+}
+
+/// What's being written in a chat on this device, until it's sent.
+@DataClassName('StoredDraft')
+abstract class ChatDrafts extends Table {
+  IntColumn get profileId =>
+      integer().references(Profiles, #id).map(const IdConverter<Profiles>())();
+  TextColumn get graph => text().map(const HexConverter(GraphId.fromJson))();
+  TextColumn get message => text()();
+  TextColumn get attachments => text().map(const ContentListConverter())();
+  TextColumn get replyingTo =>
+      text().map(const ContentConverter()).nullable()();
+
+  @override
+  Set<Column> get primaryKey => {profileId, graph};
 }

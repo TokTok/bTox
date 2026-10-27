@@ -15,21 +15,25 @@ import 'package:btox/l10n/generated/app_localizations.dart';
 import 'package:btox/models/crypto.dart';
 import 'package:btox/models/profile_settings.dart';
 import 'package:btox/pages/contact_list_page.dart';
+import 'package:btox/pages/create_profile_page.dart';
 import 'package:btox/pages/settings_page.dart';
 import 'package:btox/providers/bootstrap_nodes.dart';
 import 'package:btox/providers/connection_status.dart';
 import 'package:btox/providers/database.dart';
 import 'package:btox/providers/tox.dart';
 import 'package:btox/services/profile_import.dart';
+import 'package:btox/sync/account.dart';
+import 'package:btox/sync/store.dart';
 import 'package:drift/native.dart';
 import 'package:ffi/ffi.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../mocks/fake_bootstrap_nodes.dart';
 import '../mocks/fake_toxcore.dart';
+import '../mocks/settle.dart';
 
 final _lib = tox_lib.ToxLibrary(
   malloc,
@@ -145,15 +149,21 @@ void main() {
     addTearDown(db.close);
     final id = await importProfile(db, profile);
     expect((await db.watchProfile(id).first).signedIn, isTrue);
-    final contacts = await db.watchContactsFor(id).first;
-    expect(contacts.map((c) => (c.publicKey, c.name)), [(_friendKey, null)]);
+    final account = AccountState.of(
+      rankOrder(
+        await db.watchSyncEvents(id, GraphId.account(profile.publicKey)).first,
+      ),
+    );
+    expect(account.name, 'Alice');
+    expect(account.friends.keys, [_friendKey]);
+    expect(account.friends[_friendKey]?.wanted, isTrue);
     await expectLater(
       importProfile(db, profile),
       throwsA(isA<ProfileExistsException>()),
     );
   });
 
-  testWidgets('Select Profile imports an encrypted profile', (tester) async {
+  testWidgets('New profile imports an encrypted profile', (tester) async {
     FilePicker.platform = _FakeFilePicker(_exportFromOtherClient().save);
     final db = Database(NativeDatabase.memory());
     final tox = FakeToxcore();
@@ -182,16 +192,35 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('Import profile'));
+    await tester.tap(find.byTooltip('New profile'));
     await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField), 'wrong');
+    await tester.tap(find.byTooltip('Import data'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.byType(TextField),
+      ),
+      'wrong',
+    );
     await tester.tap(find.text('Import'));
     await tester.pumpAndSettle();
     expect(find.text('Wrong password'), findsOneWidget);
 
-    await tester.enterText(find.byType(TextField), 'secret');
+    await tester.enterText(
+      find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.byType(TextField),
+      ),
+      'secret',
+    );
     await tester.tap(find.text('Import'));
-    await tester.pumpAndSettle();
+    await settle(
+      tester,
+      until: () =>
+          find.byType(CreateProfilePage).evaluate().isEmpty &&
+          find.text('Profile "Alice" imported').evaluate().isNotEmpty,
+    );
     expect(find.byType(ContactListPage), findsOneWidget);
     expect(find.text('Profile "Alice" imported'), findsOneWidget);
 
@@ -228,7 +257,7 @@ void main() {
         ],
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
-          home: SettingsPage(database: source, profile: alice!),
+          home: SettingsPage(profile: alice!),
         ),
       ),
     );
@@ -258,7 +287,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('Import profile'));
+    await tester.tap(find.byTooltip('Import data'));
     await tester.pumpAndSettle();
     await tester.enterText(
       find.descendant(

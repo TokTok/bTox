@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 final class AttachmentButton extends StatelessWidget {
   final IconData icon;
   final String text;
-  final void Function() onPressed;
+  final void Function()? onPressed;
 
   const AttachmentButton({
     super.key,

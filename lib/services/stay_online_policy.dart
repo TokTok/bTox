@@ -1,11 +1,12 @@
 import 'dart:async';
 
 import 'package:btox/providers/profiles.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-final stayOnlineProvider = Provider<bool?>(
-  (ref) => ref.watch(appSettingsProvider).value?.stayOnline,
-);
+part 'stay_online_policy.g.dart';
+
+@Riverpod(keepAlive: true)
+bool? stayOnline(Ref ref) => ref.watch(appSettingsProvider).value?.stayOnline;
 
 final class StayOnlinePolicy {
   final void Function() onStop;

@@ -1,8 +1,19 @@
 targets:
   $default:
     builders:
+      # In its own file, so other builders see the classes it generates.
       drift_dev:
-        options:
-          # For `dart run drift_dev make-migrations`.
+        enabled: false
+      drift_dev:analyzer:
+        enabled: true
+        options: &drift_options # For `dart run drift_dev make-migrations`.
           databases:
             btox: lib/db/database.dart
+      drift_dev:not_shared:
+        enabled: true
+        options: *drift_options
+
+global_options:
+  drift_dev:not_shared:
+    runs_before:
+      - riverpod_generator

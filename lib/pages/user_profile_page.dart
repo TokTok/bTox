@@ -1,16 +1,20 @@
 import 'package:btox/db/database.dart';
 import 'package:btox/l10n/generated/app_localizations.dart';
+import 'package:btox/logger.dart';
 import 'package:btox/models/crypto.dart';
 import 'package:btox/models/id.dart';
 import 'package:btox/models/persistence.dart';
 import 'package:btox/providers/database.dart';
 import 'package:btox/providers/profiles.dart';
+import 'package:btox/widgets/load_failed.dart';
 import 'package:btox/widgets/nickname_field.dart';
 import 'package:btox/widgets/status_message_field.dart';
 import 'package:btox/widgets/tox_id_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+
+const _logger = Logger(['UserProfilePage']);
 
 final class UserProfilePage extends ConsumerWidget {
   final Id<Profiles> profileId;
@@ -22,10 +26,10 @@ final class UserProfilePage extends ConsumerWidget {
     final profileAsync = ref.watch(profileProvider(profileId));
 
     return profileAsync.when(
-      data: (profile) => _ProfileForm(profile),
+      data: _ProfileForm.new,
       loading: () =>
           const Scaffold(body: Center(child: CircularProgressIndicator())),
-      error: (error, _) => Scaffold(body: Center(child: Text('Error: $error'))),
+      error: (_, _) => const Scaffold(body: LoadFailed()),
     );
   }
 }
@@ -54,16 +58,22 @@ final class _ProfileForm extends HookConsumerWidget {
       if (profile.settings.nickname != nickInputController.text ||
           profile.settings.statusMessage != statusMessageInputController.text) {
         applyButtonPressed.value = true;
-        final database = ref.read(databaseProvider).asData?.value;
-        if (database != null) {
-          database.updateProfileSettings(
-            profile.id,
-            profile.settings.copyWith(
-              nickname: nickInputController.text,
-              statusMessage: statusMessageInputController.text,
-            ),
-          );
-        }
+        final nickname = nickInputController.text;
+        final statusMessage = statusMessageInputController.text;
+        _logger.unawaited(
+          'save the profile',
+          ref
+              .read(databaseProvider.future)
+              .then(
+                (db) => db.updateProfileSettings(
+                  profile.id,
+                  (s) => s.copyWith(
+                    nickname: nickname,
+                    statusMessage: statusMessage,
+                  ),
+                ),
+              ),
+        );
       }
     }
 

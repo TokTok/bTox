@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:ui';
 
 import 'package:btox/logger.dart';
+import 'package:btox/models/chat_view.dart';
 import 'package:btox/models/connection_status.dart';
 import 'package:btox/models/id.dart';
 import 'package:btox/models/persistence.dart';
@@ -15,7 +16,7 @@ import 'package:btox/services/stay_online_policy.dart';
 import 'package:btox/services/tox_session.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:riverpod/riverpod.dart';
 
 const _logger = Logger(['BackgroundService']);
 
@@ -48,12 +49,20 @@ Future<void> initializeService() async {
   );
 }
 
+/// Starts the background service again if it stopped, as it may just as
+/// the UI comes back.
+Future<void> ensureServiceRunning() async {
+  final service = FlutterBackgroundService();
+  if (!await service.isRunning()) {
+    _logger.i('Starting the background service again');
+    await service.startService();
+  }
+}
+
 /// Tells the background service which chat is on screen, if any.
-void reportOpenChat(Id<Contacts>? contactId) {
+void reportOpenChat(ChatRef? chat) {
   if (AnyPlatform.instance.isMobile) {
-    FlutterBackgroundService().invoke('openChat', {
-      'contactId': contactId?.value,
-    });
+    FlutterBackgroundService().invoke('openChat', {'chat': chat?.key});
   }
 }
 
@@ -73,10 +82,10 @@ void _onStart(ServiceInstance service) async {
   DartPluginRegistrant.ensureInitialized();
 
   service.on('openChat').listen((args) {
-    final contactId = args?['contactId'] as int?;
-    _BackgroundService.instance.openChat = contactId == null
+    final key = args?['chat'] as String?;
+    _BackgroundService.instance.openChat = key == null
         ? null
-        : Id(contactId);
+        : ChatRef.ofKey(key);
   });
 
   await _BackgroundService.instance.start(
@@ -152,6 +161,11 @@ final class _BackgroundService {
       (_, stayOnline) => policy.stayOnline = stayOnline,
       fireImmediately: true,
     );
+    container.listen(
+      signedInProfilesProvider,
+      (_, profiles) => notifier?.signedInAccounts = profiles.length,
+      fireImmediately: true,
+    );
     container.listen(toxSessionsProvider, (_, statuses) {
       publisher.publish(statuses);
       onStatuses(statuses, {
@@ -161,7 +175,7 @@ final class _BackgroundService {
     }, fireImmediately: true);
   }
 
-  set openChat(Id<Contacts>? contactId) => _notifier?.openChat = contactId;
+  set openChat(ChatRef? chat) => _notifier?.openChat = chat;
 
   void stop() {
     _policy?.dispose();

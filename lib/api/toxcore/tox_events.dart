@@ -238,10 +238,23 @@ sealed class Event with _$Event {
   }) = ToxEventDhtNodesResponse;
 }
 
-/// Unpacks the bytes of `tox_events_get_bytes`.
+/// Unpacks the bytes of `tox_events_get_bytes`. An event these bindings
+/// can't read, of a kind or value newer than they are, is left out, so the
+/// rest still come.
 List<Event> unpackEvents(Unpacker u) => [
-  for (var i = u.unpackListLength(); i > 0; i--) _unpackEvent(u),
+  for (var i = u.unpackListLength(); i > 0; i--)
+    ?_tryUnpackEvent(u.takeValue()),
 ];
+
+Event? _tryUnpackEvent(Uint8List bytes) {
+  try {
+    return _unpackEvent(Unpacker(bytes));
+  } on FormatException {
+    return null;
+  } on ArgumentError {
+    return null;
+  }
+}
 
 Event _unpackEvent(Unpacker u) {
   _expect(u.unpackListLength(), 2);

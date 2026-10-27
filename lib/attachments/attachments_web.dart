@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:btox/models/content.dart';
+import 'package:btox/models/crypto.dart';
 import 'package:image_picker/image_picker.dart' show XFile;
 import 'package:flutter/widgets.dart';
 
@@ -12,9 +13,17 @@ Future<String> attachmentsDirectory() async => '';
 Future<FileContent> saveAttachment(String directory, XFile file) =>
     throw UnsupportedError('No attachments on the web');
 
+Future<FileContent> copyAttachment(String directory, FileContent file) =>
+    throw UnsupportedError('No attachments on the web');
+
 Future<void> deleteAttachment(String path) async {}
 
-Widget? imagePreview(String path) => null;
+bool attachmentExists(String path) => false;
+
+Future<BlobId> blobOf(String path) =>
+    throw UnsupportedError('No attachments on the web');
+
+Widget? imagePreview(String path, {required int size}) => null;
 
 final class Attachment {
   Attachment.create(String path) {
@@ -24,6 +33,12 @@ final class Attachment {
   Attachment.open(String path) {
     throw UnsupportedError('No attachments on the web');
   }
+
+  Attachment.resume(String path) {
+    throw UnsupportedError('No attachments on the web');
+  }
+
+  int get length => throw UnimplementedError();
 
   Uint8List read(int position, int length) => throw UnimplementedError();
 

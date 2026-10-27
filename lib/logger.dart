@@ -27,6 +27,11 @@ final class Logger {
 
   void w(String text, [StackTrace? stackTrace]) => _log('W', text, stackTrace);
 
+  /// Lets [future] run without waiting for it, logging if it fails to [what].
+  void unawaited(String what, Future<void> future) {
+    future.catchError((Object e) => this.e('Failed to $what: $e'));
+  }
+
   void _log(String level, String text, StackTrace? stackTrace) {
     final line = '${_callerFileLine()}: $level $tags $text';
     if (stackTrace != null) {

@@ -8,8 +8,8 @@ import 'package:btox/pages/select_profile_page.dart';
 import 'package:btox/providers/database.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 void main() {
   testWidgets('long-pressing a profile deletes it', (tester) async {

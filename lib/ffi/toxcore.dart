@@ -45,8 +45,12 @@ final class Toxcore extends api.Tox with api.ToxFfiApi {
   @override
   final ToxLibrary lib;
 
+  Pointer<Tox> _pointer;
+
+  /// Calls after [kill] throw, rather than pass toxcore a null Tox.
   @override
-  Pointer<Tox> pointer;
+  Pointer<Tox> get pointer =>
+      _pointer == nullptr ? throw StateError('The Tox was killed') : _pointer;
 
   factory Toxcore(ToxLibrary lib, api.ToxOptions options) {
     _logger.d('Creating Tox instance');
@@ -70,10 +74,10 @@ final class Toxcore extends api.Tox with api.ToxFfiApi {
     );
   }
 
-  Toxcore._(this.lib, this.pointer);
+  Toxcore._(this.lib, this._pointer);
 
   @override
-  bool get isAlive => pointer != nullptr;
+  bool get isAlive => _pointer != nullptr;
 
   @override
   List<Event> iterate() {
@@ -115,7 +119,7 @@ final class Toxcore extends api.Tox with api.ToxFfiApi {
   void kill() {
     _logger.d('Killing Tox instance: ${selfGetAddress()}');
     final ptr = pointer;
-    pointer = nullptr;
+    _pointer = nullptr;
     lib.ffi.tox_kill(ptr);
   }
 }

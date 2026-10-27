@@ -1,6 +1,8 @@
-import 'package:btox/attachments/attachments.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:btox/attachments/attachments.dart' as attachments;
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-final attachmentsDirectoryProvider = FutureProvider(
-  (ref) => attachmentsDirectory(),
-);
+part 'attachments.g.dart';
+
+@Riverpod(keepAlive: true)
+Future<String> attachmentsDirectory(Ref ref) =>
+    attachments.attachmentsDirectory();

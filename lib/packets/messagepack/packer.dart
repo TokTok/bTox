@@ -4,9 +4,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:btox/packets/messagepack/message_data.dart';
 import 'package:btox/packets/messagepack/tags.dart';
-import 'package:btox/packets/packet.dart';
 
 // dart2js doesn't support 64 bit ints, so we pack using 2x 32 bit ints.
 void _setUint64(ByteData d, int offset, int v) {
@@ -165,13 +163,8 @@ final class Packer {
           tag32: kTagMap32,
         );
 
-  void packMessageData(MessageData data) {
-    data.pack(this);
-  }
-
-  void pack(Packet packet) {
-    packet.pack(this);
-  }
+  /// Writes [encoded], a value packed already.
+  void packRaw(List<int> encoded) => _bytes.add(encoded);
 
   /// Get bytes representation of this packer.
   /// Note: after this call do not reuse packer - create new.

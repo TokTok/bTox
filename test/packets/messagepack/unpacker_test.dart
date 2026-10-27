@@ -1,6 +1,5 @@
 import 'dart:typed_data';
 
-import 'package:btox/packets/messagepack/message_data.dart';
 import 'package:btox/packets/messagepack/packer.dart';
 import 'package:btox/packets/messagepack/unpacker.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -145,51 +144,41 @@ void main() {
       expect(() => Unpacker(bytes).unpackBinary(), throwsFormatException);
     });
 
-    test('unpack MessageData types', () {
-      final packer = Packer();
-      packer.packInt(123);
-      packer.packBool(true);
-      packer.packDouble(1.23);
-      packer.packString('test');
-      packer.packBinary(Uint8List.fromList([1, 2, 3]));
-      packer.packNull();
+    test('skip passes any value, however deep, without building it', () {
+      final packer = Packer()
+        ..packMapLength(2)
+        ..packString('a')
+        ..packListLength(2)
+        ..packBinary(Uint8List(3))
+        ..packDouble(1.5)
+        ..packInt(-7)
+        ..packBool(true)
+        ..packInt(42);
+      final unpacker = Unpacker(packer.takeBytes())..skip();
+      expect(unpacker.unpackInt(), 42);
 
-      final unpacker = Unpacker(packer.takeBytes());
-      expect((unpacker.unpack() as MessageDataInt).value, 123);
-      expect((unpacker.unpack() as MessageDataBool).value, true);
-      expect(
-        (unpacker.unpack() as MessageDataDouble).value,
-        closeTo(1.23, 0.001),
-      );
-      expect((unpacker.unpack() as MessageDataString).value, 'test');
-      expect(
-        (unpacker.unpack() as MessageDataBinary).value,
-        Uint8List.fromList([1, 2, 3]),
-      );
-      expect(unpacker.unpack(), isA<MessageDataNull>());
+      final deep = Uint8List.fromList([...List.filled(200000, 0x91), 0xc0]);
+      expect((Unpacker(deep)..skip()).isDone, isTrue);
     });
 
-    test('unpackList and unpackMap', () {
-      final packer = Packer();
-      packer.packListLength(2);
-      packer.packInt(1);
-      packer.packInt(2);
+    test('bytes that end too soon are a FormatException', () {
+      for (final bytes in [
+        [0xdb, 0, 0, 0, 5, 0x61],
+        [0xcd, 0x01],
+        <int>[],
+        [0xdd, 0xff, 0xff, 0xff, 0xff],
+      ]) {
+        expect(
+          () => Unpacker(Uint8List.fromList(bytes)).skip(),
+          throwsFormatException,
+          reason: '$bytes',
+        );
+      }
+    });
 
-      packer.packMapLength(1);
-      packer.packString('key');
-      packer.packString('value');
-
-      final unpacker = Unpacker(packer.takeBytes());
-      final list = unpacker.unpackList();
-      expect(list.length, 2);
-      expect((list[0] as MessageDataInt).value, 1);
-      expect((list[1] as MessageDataInt).value, 2);
-
-      final map = unpacker.unpackMap();
-      expect(map.length, 1);
-      final entry = map.entries.first;
-      expect((entry.key as MessageDataString).value, 'key');
-      expect((entry.value as MessageDataString).value, 'value');
+    test('a uint64 too large for an int reads as the largest', () {
+      final bytes = Uint8List.fromList([0xcf, ...List.filled(8, 0xff)]);
+      expect(Unpacker(bytes).unpackInt(), 0x7fffffffffffffff);
     });
   });
 }

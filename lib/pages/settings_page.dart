@@ -9,31 +9,29 @@ import 'package:btox/models/connection_status.dart';
 import 'package:btox/models/profile_settings.dart';
 import 'package:btox/platform/any_platform.dart';
 import 'package:btox/providers/connection_status.dart';
+import 'package:btox/providers/database.dart';
+import 'package:btox/providers/message_formats.dart';
 import 'package:btox/providers/profiles.dart';
 import 'package:btox/services/backup.dart';
 import 'package:btox/widgets/account_picker.dart';
 import 'package:btox/widgets/chat_file_bubble.dart';
-import 'package:btox/widgets/confirm_dialog.dart';
+import 'package:btox/widgets/delete_profile.dart';
+import 'package:btox/widgets/import_profile.dart';
 import 'package:btox/widgets/passphrase_dialog.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:image_picker/image_picker.dart' show XFile;
 
 const _logger = Logger(['SettingsPage']);
 
 final class SettingsPage extends ConsumerWidget {
-  final Database database;
   final Profile profile;
 
-  const SettingsPage({
-    super.key,
-    required this.database,
-    required this.profile,
-  });
+  const SettingsPage({super.key, required this.profile});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -44,9 +42,16 @@ final class SettingsPage extends ConsumerWidget {
     final status = ref.watch(connectionStatusProvider);
     final appSettings = ref.watch(appSettingsProvider).value;
     final l10n = AppLocalizations.of(context)!;
+    final name = profile.settings.nickname;
 
-    void updateNetwork(NetworkSettings network) => database
-        .updateProfileSettings(profile.id, settings.copyWith(network: network));
+    void save(Future<void> Function(Database db) change) => _logger.unawaited(
+      'save the settings',
+      ref.read(databaseProvider.future).then(change),
+    );
+    void updateSettings(ProfileSettings Function(ProfileSettings) change) =>
+        save((db) => db.updateProfileSettings(profile.id, change));
+    void updateNetwork(NetworkSettings Function(NetworkSettings) change) =>
+        updateSettings((s) => s.copyWith(network: change(s.network)));
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.menuSettings)),
@@ -58,8 +63,10 @@ final class SettingsPage extends ConsumerWidget {
               title: Text(l10n.stayOnline),
               subtitle: Text(l10n.stayOnlineHint),
               value: appSettings?.stayOnline ?? true,
-              onChanged: (value) => database.updateAppSettings(
-                AppSettingsCompanion(stayOnline: Value(value)),
+              onChanged: (value) => save(
+                (db) => db.updateAppSettings(
+                  AppSettingsCompanion(stayOnline: Value(value)),
+                ),
               ),
             ),
           if (filesSupported)
@@ -89,41 +96,36 @@ final class SettingsPage extends ConsumerWidget {
                   ),
                 );
                 if (size != null) {
-                  await database.updateAppSettings(
-                    AppSettingsCompanion(autoAcceptFileSize: Value(size)),
+                  save(
+                    (db) => db.updateAppSettings(
+                      AppSettingsCompanion(autoAcceptFileSize: Value(size)),
+                    ),
                   );
                 }
               },
             ),
+          const _ExportTile(),
           ListTile(
-            title: Text(l10n.exportData),
-            subtitle: Text(l10n.exportDataHint),
-            onTap: () => _export(context, ref),
+            title: Text(l10n.importData),
+            subtitle: Text(l10n.importDataHint),
+            onTap: () => importProfileFile(context, ref),
           ),
-          _SectionHeader(l10n.accountSettings(profile.settings.nickname)),
-          ListTile(
-            title: Text(l10n.deleteProfile),
-            onTap: () async {
-              final nickname = profile.settings.nickname;
-              if (!await confirm(
-                    context,
-                    title: l10n.deleteProfile,
-                    message: l10n.deleteProfileMessage(nickname),
-                    action: l10n.delete,
-                  ) ||
-                  !context.mounted) {
-                return;
-              }
-              _logger.i('Deleting profile ${profile.id}');
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(l10n.profileDeleted(nickname))),
-              );
-              Navigator.pop(context);
-              await database.deleteProfile(profile.id);
-              _logger.i('Profile ${profile.id} deleted');
-            },
-          ),
-          _SectionHeader(l10n.network),
+          _SectionHeader(l10n.accountSettings(name)),
+          for (final format in ref.watch(knownMessageFormatsProvider))
+            SwitchListTile(
+              title: Text(format.title(l10n)),
+              subtitle: Text(format.description(l10n)),
+              value: !settings.messageFormatsOff.contains(format.id),
+              onChanged: (on) => updateSettings(
+                (s) => s.copyWith(
+                  messageFormatsOff: [
+                    for (final id in s.messageFormatsOff)
+                      if (id != format.id) id,
+                    if (!on) format.id,
+                  ],
+                ),
+              ),
+            ),
           SwitchListTile(
             title: Text(l10n.udpEnabled),
             subtitle: Text(
@@ -132,13 +134,14 @@ final class SettingsPage extends ConsumerWidget {
             value: network.udpEnabled && !network.usesProxy,
             onChanged: network.usesProxy
                 ? null
-                : (value) => updateNetwork(network.copyWith(udpEnabled: value)),
+                : (value) =>
+                      updateNetwork((n) => n.copyWith(udpEnabled: value)),
           ),
           SwitchListTile(
             title: Text(l10n.ipv6Enabled),
             value: network.ipv6Enabled,
             onChanged: (value) =>
-                updateNetwork(network.copyWith(ipv6Enabled: value)),
+                updateNetwork((n) => n.copyWith(ipv6Enabled: value)),
           ),
           SwitchListTile(
             title: Text(l10n.localDiscoveryEnabled),
@@ -151,7 +154,7 @@ final class SettingsPage extends ConsumerWidget {
             onChanged: network.usesProxy
                 ? null
                 : (value) => updateNetwork(
-                    network.copyWith(localDiscoveryEnabled: value),
+                    (n) => n.copyWith(localDiscoveryEnabled: value),
                   ),
           ),
           ListTile(
@@ -175,34 +178,88 @@ final class SettingsPage extends ConsumerWidget {
                 builder: (_) => _ProxyDialog(network: network),
               );
               if (updated != null) {
-                updateNetwork(updated);
+                updateNetwork((_) => updated);
               }
             },
+          ),
+          ListTile(
+            title: Text(
+              l10n.deleteProfile,
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+            onTap: () => deleteProfileIfConfirmed(
+              context,
+              ref,
+              profile,
+              name,
+              confirmed: () {
+                if (context.mounted) {
+                  Navigator.pop(context);
+                }
+              },
+            ),
           ),
         ],
       ),
     );
   }
+}
 
-  Future<void> _export(BuildContext context, WidgetRef ref) async {
+/// Exports all accounts, saying how it went.
+final class _ExportTile extends HookConsumerWidget {
+  const _ExportTile();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
-    final profiles = await database.select(database.profiles).get();
+    final busy = useState(false);
+    return ListTile(
+      title: Text(l10n.exportData),
+      subtitle: Text(l10n.exportDataHint),
+      enabled: !busy.value,
+      onTap: () async {
+        final messenger = ScaffoldMessenger.of(context);
+        busy.value = true;
+        try {
+          if (await _export(context, ref)) {
+            messenger.showSnackBar(SnackBar(content: Text(l10n.exported)));
+          }
+        } on Exception catch (e) {
+          _logger.e('Failed to export: $e');
+          messenger.showSnackBar(SnackBar(content: Text(l10n.exportFailed)));
+        } finally {
+          if (context.mounted) {
+            busy.value = false;
+          }
+        }
+      },
+    );
+  }
+
+  /// Whether the data was saved, rather than the user cancelling.
+  Future<bool> _export(BuildContext context, WidgetRef ref) async {
+    final l10n = AppLocalizations.of(context)!;
+    final database = await ref.read(databaseProvider.future);
+    final names = {
+      for (final p in await database.select(database.profiles).get())
+        p.id: p.settings.nickname,
+    };
     if (!context.mounted) {
-      return;
+      return false;
     }
     final accounts = await showAccountPicker(
       context,
       title: l10n.exportData,
       action: l10n.export,
-      accounts: {for (final p in profiles) p.id: p.settings.nickname},
+      accounts: names,
     );
     if (accounts == null) {
-      return;
+      return false;
     }
     final lib = await ref.read(toxFfiProvider.future);
     final backup = await exportBackup(database, accounts);
     if (!context.mounted) {
-      return;
+      return false;
     }
     final encrypted = await showPassphraseDialog(
       context,
@@ -212,7 +269,7 @@ final class SettingsPage extends ConsumerWidget {
       obscure: false,
     );
     if (encrypted == null) {
-      return;
+      return false;
     }
     final date = DateTime.now().toIso8601String().substring(0, 10);
     final path = await FilePicker.platform.saveFile(
@@ -223,6 +280,7 @@ final class SettingsPage extends ConsumerWidget {
     if (path != null && AnyPlatform.instance.isDesktop) {
       await XFile.fromData(encrypted).saveTo(path);
     }
+    return path != null;
   }
 }
 
@@ -286,6 +344,8 @@ final class _ProxyDialog extends HookWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             SegmentedButton<ProxyType>(
+              // A check mark leaves "SOCKS5" no room on a phone.
+              showSelectedIcon: false,
               segments: [
                 for (final type in ProxyType.values)
                   ButtonSegment(

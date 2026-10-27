@@ -10,8 +10,8 @@ import 'package:btox/providers/database.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 Future<void> _withSettingsPage(
   WidgetTester tester,
@@ -45,7 +45,7 @@ Future<void> _withSettingsPage(
       ],
       child: MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
-        home: SettingsPage(database: db, profile: profile),
+        home: SettingsPage(profile: profile),
       ),
     ),
   );

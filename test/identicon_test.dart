@@ -30,21 +30,6 @@ void main() {
     // 1: QColor(AHSL 1, 0.978278, 0.500008, 0.8) = #e6b2b9
     expect(_toCssColor(identicon.colors[1]), '#e6b3b9');
   }, tags: ['identicon']);
-
-  test('Identicon can generate an image', () async {
-    final data = Uint8List.fromList(
-      hex.decode(
-        '7A114177E3934588EED87E6FE8B18AF7DC581C1FBB67F973EE5BF07B6EFABB72',
-      ),
-    );
-
-    final identicon = Identicon.fromBytes(data);
-
-    final image = await identicon.image;
-
-    expect(image.height, greaterThan(5));
-    expect(image.height, image.width);
-  }, tags: ['identicon']);
 }
 
 String _toCssColor(Color color) {

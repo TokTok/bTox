@@ -1,18 +1,25 @@
+import 'dart:convert';
 // The analyzer resolves ToxLibrary's conditional export to the stub.
 // ignore_for_file: argument_type_not_assignable
 
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:btox/db/database.dart';
 import 'package:btox/ffi/generated/toxcore.ffi.dart' as gen;
 import 'package:btox/ffi/tox_library.ffi.dart' as tox_lib;
 import 'package:btox/ffi/toxcore.dart';
-import 'package:btox/models/content.dart';
 import 'package:btox/models/crypto.dart';
 import 'package:btox/models/id.dart';
 import 'package:btox/models/persistence.dart';
 import 'package:btox/models/profile_settings.dart';
 import 'package:btox/services/backup.dart';
+import 'package:btox/sync/account.dart';
+import 'package:btox/sync/event.dart';
+import 'package:btox/sync/fact.dart';
+import 'package:btox/sync/home.dart';
+import 'package:btox/sync/setting.dart';
+import 'package:btox/sync/store.dart';
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:ffi/ffi.dart';
@@ -20,36 +27,63 @@ import 'package:flutter_test/flutter_test.dart';
 
 PublicKey _key(int n) => PublicKey(Uint8List.fromList(List.filled(32, n)));
 
-/// An account with a friend, two messages (the second a reply to the
-/// first) and the first one read.
+/// An account with a friend who sent two messages, the first one read, and
+/// the chat being unmuted.
 Future<Id<Profiles>> _addAccount(Database db, String name, int key) async {
+  final settings = ProfileSettings(nickname: name, statusMessage: '');
   final id = await db.addProfile(
     ProfilesCompanion.insert(
-      settings: ProfileSettings(nickname: name, statusMessage: ''),
+      settings: settings,
       secretKey: SecretKey(Uint8List(32)),
       publicKey: _key(key),
       nospam: ToxAddressNospam(0),
     ),
   );
-  final contact = await db.addContact(
-    ContactsCompanion.insert(
-      profileId: id,
-      publicKey: _key(key + 1),
-      name: Value("$name's friend"),
+  final account = AccountWriter(_key(key), settings);
+  final friend = _key(key + 1);
+  final chat = GraphId.friend(_key(key), friend);
+  final time = DateTime.utc(2026);
+  Received said(String text) => Received(
+    sender: "$name's friend",
+    message: utf8.encode(text),
+    kind: Tox_Message_Type.TOX_MESSAGE_TYPE_NORMAL,
+  );
+  account
+    ..add(account.account, time, WantFriend(pk: friend))
+    ..add(
+      account.account,
+      time,
+      FactContent(
+        subject: Subject.friend(friend),
+        value: FactValue.name("$name's friend"),
+      ),
+    );
+  final first = account.add(chat, time, said('Hi $name'));
+  account
+    ..add(chat, time, said('Reply'))
+    ..add(account.account, time, ReadUpTo(graph: chat, event: first, rank: 0));
+  await db.addSyncEvents(id, account.events);
+  await db.clearSetting(id, Scope.conversation(chat), Setting.muteKind);
+  return id;
+}
+
+Future<AccountState> _account(Database db, Id<Profiles> id) async {
+  final profile = await db.watchProfile(id).first;
+  return AccountState.of(
+    rankOrder(
+      await db.watchSyncEvents(id, GraphId.account(profile.publicKey)).first,
     ),
   );
-  MessagesCompanion message(String text) => MessagesCompanion.insert(
-    contactId: contact,
-    author: _key(key + 1),
-    sha: Sha256(Uint8List(32)),
-    timestamp: DateTime(2026),
-    content: TextContent(text: text),
-  );
-  final first = await db.addMessage(message('Hi $name'));
-  await db.addMessage(message('Reply').copyWith(parent: Value(first)));
-  await (db.update(db.contacts)..where((c) => c.id.equals(contact.value)))
-      .write(ContactsCompanion(lastReadMessage: Value(first)));
-  return id;
+}
+
+Future<List<String>> _said(Database db, Id<Profiles> id, PublicKey to) async {
+  final profile = await db.watchProfile(id).first;
+  return [
+    for (final (_, event) in rankOrder(
+      await db.watchSyncEvents(id, GraphId.friend(profile.publicKey, to)).first,
+    ))
+      if (event.content case Received(:final message)) utf8.decode(message),
+  ];
 }
 
 void main() {
@@ -72,30 +106,57 @@ void main() {
     await target.close();
   });
 
-  Future<Map<String, dynamic>> backup([Set<Id<Profiles>>? profiles]) async =>
+  Future<Backup> backup([Set<Id<Profiles>>? profiles]) async =>
       readBackup(await exportBackup(source, profiles ?? {alice, bob}))!;
 
   test('restores everything into an empty bTox', () async {
-    final tables = await backup();
-    expect(await restoreBackup(target, tables, {alice.value, bob.value}), 2);
+    final backedUp = await backup();
+    expect(await restoreBackup(target, backedUp, {alice.value, bob.value}), 2);
     expect(
       await exportBackup(target, {alice, bob}),
       await exportBackup(source, {alice, bob}),
     );
   });
 
-  test('exports every table', () async {
+  test("a file the backup didn't bring is left out", () async {
+    final kept = File('${Directory.systemTemp.createTempSync().path}/cat.png')
+      ..writeAsStringSync('meow');
+    for (final path in [kept.path, '/gone/dog.png']) {
+      await source.addTransfer(
+        TransfersCompanion.insert(
+          profileId: alice,
+          graph: GraphId.friend(_key(1), _key(2)),
+          incoming: true,
+          name: path,
+          size: 4,
+          path: path,
+          state: FileState.done,
+        ),
+      );
+    }
+
+    await restoreBackup(target, await backup({alice}), {alice.value});
     expect(
-      (await backup()).keys,
-      unorderedEquals(source.allTables.map((t) => t.actualTableName)),
+      [for (final t in await target.select(target.transfers).get()) t.path],
+      [kept.path],
     );
   });
 
+  test('exports every table', () async {
+    expect({
+      ...(await backup()).tables.keys,
+      'live_facts',
+    }, unorderedEquals(source.allTables.map((t) => t.actualTableName)));
+  });
+
   test('exports only the chosen accounts', () async {
-    final tables = await backup({bob});
+    final (version: _, :tables) = await backup({bob});
     expect(backupAccounts(tables).values, ['Bob']);
-    expect([for (final c in tables['contacts']) c['name']], ["Bob's friend"]);
-    expect(tables['messages'], hasLength(2));
+    expect(
+      {for (final e in tables['sync_events']) e['profile_id']},
+      {bob.value},
+    );
+    expect(tables['sync_events'], hasLength(7));
   });
 
   test('adds the chosen accounts next to existing ones', () async {
@@ -107,35 +168,30 @@ void main() {
     expect([for (final p in profiles) p.settings.nickname], ['Carol', 'Bob']);
     expect((await target.watchAppSettings().first).currentProfile, carol);
 
-    final contact = await (target.select(
-      target.contacts,
-    )..where((c) => c.profileId.equals(profiles.last.id.value))).getSingle();
-    expect(contact.name, "Bob's friend");
-    final messages = await (target.select(
-      target.messages,
-    )..where((m) => m.contactId.equals(contact.id.value))).get();
-    expect(messages, hasLength(2));
-    expect(messages.last.parent, messages.first.id);
-    expect(contact.lastReadMessage, messages.first.id);
+    final restored = profiles.last.id;
+    final account = await _account(target, restored);
+    expect(account.friends[_key(4)]?.name, "Bob's friend");
+    expect(account.read, hasLength(1));
+    expect(await _said(target, restored, _key(4)), ['Hi Bob', 'Reply']);
   });
 
   test('skips accounts that are already there', () async {
-    final tables = await backup();
-    await restoreBackup(target, tables, {alice.value, bob.value});
-    expect(await restoreBackup(target, tables, {alice.value, bob.value}), 0);
-    expect(await target.select(target.contacts).get(), hasLength(2));
+    final backedUp = await backup();
+    await restoreBackup(target, backedUp, {alice.value, bob.value});
+    expect(await restoreBackup(target, backedUp, {alice.value, bob.value}), 0);
+    expect(await target.select(target.syncEvents).get(), hasLength(14));
   });
 
   test('restores a backup from an older or newer schema', () async {
-    final tables = await backup({alice});
-    final contact = (tables['contacts'] as List).single as Map;
-    contact['removed_column'] = 1;
-    contact.remove('online');
+    final backedUp = await backup({alice});
+    final profile = (backedUp.tables['profiles'] as List).single as Map;
+    profile['removed_column'] = 1;
+    profile.remove('signed_in');
 
-    await restoreBackup(target, tables, {alice.value});
-    final contacts = await target.select(target.contacts).get();
-    expect(contacts.single.name, "Alice's friend");
-    expect(contacts.single.online, isFalse);
+    await restoreBackup(target, backedUp, {alice.value});
+    final restored = await target.select(target.profiles).getSingle();
+    expect(restored.settings.nickname, 'Alice');
+    expect(restored.signedIn, isFalse);
   });
 
   test('other files are not backups', () {

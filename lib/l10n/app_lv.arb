@@ -31,10 +31,6 @@
   "@profileTextFieldUserStatusMessage": {
     "description": "The text for the status message field"
   },
-  "title": "bTox (mēs joprojām strādājam pie tā)",
-  "@title": {
-    "description": "The title of the application"
-  },
   "message": "Ziņojums",
   "@message": {
     "description": "The text for the message field"

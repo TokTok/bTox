@@ -1,12 +1,21 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:btox/attachments/attachments.dart';
 import 'package:btox/db/database.dart';
 import 'package:btox/models/id.dart';
 import 'package:btox/models/persistence.dart';
-import 'package:drift/drift.dart' show Variable;
+import 'package:drift/drift.dart' show DriftSqlType, Variable;
 
 const _format = 'btox-backup';
+
+/// Tables of the profiles' own rows, by profile ID. Online states are left
+/// out: they're only true while Tox runs.
+Iterable<String> _ownedTables(Database db) => [
+  for (final table in db.allTables)
+    if (table.columnsByName.containsKey('profile_id') && table != db.liveFacts)
+      table.actualTableName,
+];
 
 /// The rows of [profiles] and everything that belongs to them, as JSON.
 Future<Uint8List> exportBackup(Database db, Set<Id<Profiles>> profiles) {
@@ -14,8 +23,17 @@ Future<Uint8List> exportBackup(Database db, Set<Id<Profiles>> profiles) {
   Future<List<Map<String, Object?>>> rows(String table, [String where = '1']) =>
       db
           .customSelect('SELECT * FROM "$table" WHERE $where')
-          .map((row) => row.data)
+          .map(
+            (row) => row.data.map(
+              (column, value) => MapEntry(
+                column,
+                value is Uint8List ? base64Encode(value) : value,
+              ),
+            ),
+          )
           .get();
+  Future<List<Map<String, Object?>>> owned(String table) =>
+      rows(table, 'profile_id IN ($ids)');
 
   return db.transaction(() async {
     return utf8.encode(
@@ -26,28 +44,27 @@ Future<Uint8List> exportBackup(Database db, Set<Id<Profiles>> profiles) {
           'app_settings': await rows('app_settings'),
           'cached_bootstrap_nodes': await rows('cached_bootstrap_nodes'),
           'profiles': await rows('profiles', 'id IN ($ids)'),
-          'contacts': await rows('contacts', 'profile_id IN ($ids)'),
-          'friend_requests': await rows(
-            'friend_requests',
-            'profile_id IN ($ids)',
-          ),
-          'messages': await rows(
-            'messages',
-            'contact_id IN (SELECT id FROM contacts WHERE profile_id IN ($ids))',
-          ),
+          for (final table in _ownedTables(db)) table: await owned(table),
         },
       }),
     );
   });
 }
 
-/// The tables in [bytes] if they are a backup.
-Map<String, dynamic>? readBackup(Uint8List bytes) {
+/// A backup's tables, from the database's schema [version].
+typedef Backup = ({int version, Map<String, dynamic> tables});
+
+/// The backup [bytes] are, if they are one.
+Backup? readBackup(Uint8List bytes) {
   try {
-    final json = jsonDecode(utf8.decode(bytes));
-    return json is Map<String, dynamic> && json['format'] == _format
-        ? json['tables'] as Map<String, dynamic>
-        : null;
+    if (jsonDecode(utf8.decode(bytes)) case {
+      'format': _format,
+      'schema': final int version,
+      'tables': final Map<String, dynamic> tables,
+    }) {
+      return (version: version, tables: tables);
+    }
+    return null;
   } on FormatException {
     return null;
   }
@@ -62,11 +79,8 @@ Map<Object?, String> backupAccounts(Map<String, dynamic> tables) => {
 /// Adds the [accounts] from a backup that the database doesn't have yet,
 /// with new IDs. Columns the schema no longer has are dropped, and new ones
 /// get their defaults. Returns how many accounts were added.
-Future<int> restoreBackup(
-  Database db,
-  Map<String, dynamic> tables,
-  Set<Object?> accounts,
-) {
+Future<int> restoreBackup(Database db, Backup backup, Set<Object?> accounts) {
+  final tables = backup.tables;
   return db.transaction(() async {
     final existing = {
       for (final row
@@ -89,11 +103,21 @@ Future<int> restoreBackup(
       if (!keepIds) {
         columns.remove('id');
       }
+      final blobs = {
+        for (final c in info.$columns)
+          if (c.type == DriftSqlType.blob) c.name,
+      };
       final ids = <Object?, int>{};
       for (final Map row in tables[table] as List? ?? const []) {
         final values = {
           for (final column in columns)
-            if (row.containsKey(column)) column: row[column],
+            if (row.containsKey(column))
+              column: switch (row[column]) {
+                final String blob when blobs.contains(column) => base64Decode(
+                  blob,
+                ),
+                final value => value,
+              },
         };
         if (owner case (final column, final owners)) {
           if (owners[row[column]] case final id?) {
@@ -144,20 +168,18 @@ Future<int> restoreBackup(
       where: (p) =>
           accounts.contains(p['id']) && !existing.contains(p['public_key']),
     );
-    final contacts = await insert(
-      'contacts',
-      owner: ('profile_id', profiles),
-      later: {'last_read_message'},
-    );
-    await insert('friend_requests', owner: ('profile_id', profiles));
-    final messages = await insert(
-      'messages',
-      owner: ('contact_id', contacts),
-      later: {'parent', 'merged'},
-    );
-    await relink('contacts', contacts, 'last_read_message', messages);
-    await relink('messages', messages, 'parent', messages);
-    await relink('messages', messages, 'merged', messages);
+    for (final table in _ownedTables(db)) {
+      await insert(
+        table,
+        owner: ('profile_id', profiles),
+        // Not the files the backup didn't bring.
+        where: table == 'transfers'
+            ? (row) => attachmentExists(row['path'] as String)
+            : null,
+        // An event's ID is its hash, not a row number.
+        keepIds: table == 'sync_events',
+      );
+    }
     await insert('cached_bootstrap_nodes', keepIds: true);
     // A bTox with accounts keeps its own app settings.
     final settings = await insert(

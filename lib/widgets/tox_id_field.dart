@@ -7,8 +7,10 @@ final _hex = RegExp(r'^[0-9A-Fa-f]*$');
 
 final class ToxIdField extends StatelessWidget {
   final TextEditingController controller;
+  // Our own keys, which can't be added.
+  final Set<PublicKey> own;
 
-  const ToxIdField({super.key, required this.controller});
+  const ToxIdField({super.key, required this.controller, this.own = const {}});
 
   @override
   Widget build(BuildContext context) {
@@ -24,8 +26,12 @@ final class ToxIdField extends StatelessWidget {
                 .toxIdLengthError(toxAddressSize * 2);
             return '$msg (${value.length}/${toxAddressSize * 2})';
           }
-          if (!ToxAddress.fromString(value).hasValidChecksum) {
+          final address = ToxAddress.fromString(value);
+          if (!address.hasValidChecksum) {
             return AppLocalizations.of(context)!.toxIdChecksumError;
+          }
+          if (own.contains(address.publicKey)) {
+            return AppLocalizations.of(context)!.ownToxIdError;
           }
           return null;
         },

@@ -5,11 +5,11 @@ import 'package:btox/models/crypto.dart';
 import 'package:btox/models/id.dart';
 import 'package:btox/models/persistence.dart';
 import 'package:btox/models/profile_settings.dart';
+import 'package:btox/providers/database.dart';
+import 'package:btox/providers/tox.dart';
 import 'package:btox/widgets/import_profile.dart';
 import 'package:btox/widgets/nickname_field.dart';
 import 'package:btox/widgets/status_message_field.dart';
-import 'package:btox/providers/database.dart';
-import 'package:btox/providers/tox.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -21,87 +21,86 @@ final class CreateProfilePage extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final database = ref.watch(databaseProvider).asData?.value;
     final nicknameController = useTextEditingController(text: 'Yanciman');
     final statusMessageController = useTextEditingController(
       text: 'Producing works of art in Kannywood',
     );
     final creating = useState(false);
 
-    if (database == null) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
-
     return Scaffold(
       appBar: AppBar(
         title: Text(AppLocalizations.of(context)!.newProfile),
         actions: [
           IconButton(
-            tooltip: AppLocalizations.of(context)!.importProfile,
-            onPressed: () => importProfileFile(context, ref, database),
+            tooltip: AppLocalizations.of(context)!.importData,
+            onPressed: () => importProfileFile(context, ref),
             icon: const Icon(Icons.file_open),
           ),
         ],
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 24),
-            child: Image.asset(
-              'assets/images/btox-icon.png',
-              width: 200,
-              height: 200,
+      // The keyboard, a small screen or large text may not leave it room.
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              child: Image.asset(
+                'assets/images/btox-icon.png',
+                width: 200,
+                height: 200,
+              ),
             ),
-          ),
-          NicknameField(controller: nicknameController),
-          const Padding(padding: EdgeInsets.all(8)),
-          StatusMessageField(controller: statusMessageController),
-          const Padding(padding: EdgeInsets.all(8)),
-          FilledButton(
-            key: const Key('createProfileButton'),
-            onPressed: creating.value
-                ? null
-                : () async {
-                    // A second tap can come before the button is disabled.
-                    if (creating.value) {
-                      return;
-                    }
-                    creating.value = true;
-                    _logger.d('Creating new profile');
-                    final Id<Profiles> id;
-                    try {
-                      final (secretKey, publicKey) = await ref.read(
-                        newKeyPairProvider.future,
-                      );
-                      id = await database.transaction(() async {
-                        final id = await database.addProfile(
-                          ProfilesCompanion.insert(
-                            settings: ProfileSettings(
-                              nickname: nicknameController.text,
-                              statusMessage: statusMessageController.text,
-                            ),
-                            secretKey: secretKey,
-                            publicKey: publicKey,
-                            nospam: ToxAddressNospam(0),
-                          ),
+            NicknameField(controller: nicknameController),
+            const Padding(padding: EdgeInsets.all(8)),
+            StatusMessageField(controller: statusMessageController),
+            const Padding(padding: EdgeInsets.all(8)),
+            FilledButton(
+              key: const Key('createProfileButton'),
+              onPressed: creating.value
+                  ? null
+                  : () async {
+                      // A second tap can come before the button is disabled.
+                      if (creating.value) {
+                        return;
+                      }
+                      creating.value = true;
+                      _logger.d('Creating new profile');
+                      final Id<Profiles> id;
+                      try {
+                        final (secretKey, publicKey) = await ref.read(
+                          newKeyPairProvider.future,
                         );
-                        await database.signIn(id);
-                        return id;
-                      });
-                    } catch (e) {
-                      _logger.e('Failed to create profile: $e');
-                      creating.value = false;
-                      return;
-                    }
-                    _logger.d('Created new profile with ID $id');
-                    // On first start, this page is the home page instead.
-                    if (context.mounted) {
-                      Navigator.popUntil(context, (route) => route.isFirst);
-                    }
-                  },
-            child: Text(AppLocalizations.of(context)!.create),
-          ),
-        ],
+                        final db = await ref.read(databaseProvider.future);
+                        id = await db.transaction(() async {
+                          final id = await db.addProfile(
+                            ProfilesCompanion.insert(
+                              settings: ProfileSettings(
+                                nickname: nicknameController.text,
+                                statusMessage: statusMessageController.text,
+                              ),
+                              secretKey: secretKey,
+                              publicKey: publicKey,
+                              nospam: ToxAddressNospam(0),
+                            ),
+                          );
+                          await db.signIn(id);
+                          return id;
+                        });
+                      } catch (e) {
+                        _logger.e('Failed to create profile: $e');
+                        creating.value = false;
+                        return;
+                      }
+                      _logger.d('Created new profile with ID $id');
+                      // On first start, this page is the home page instead.
+                      if (context.mounted) {
+                        Navigator.popUntil(context, (route) => route.isFirst);
+                      }
+                    },
+              child: Text(AppLocalizations.of(context)!.create),
+            ),
+          ],
+        ),
       ),
     );
   }

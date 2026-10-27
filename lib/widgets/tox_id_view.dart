@@ -1,7 +1,7 @@
 import 'package:btox/l10n/generated/app_localizations.dart';
 import 'package:btox/models/crypto.dart';
+import 'package:btox/widgets/copy_text.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 final class ToxIdView extends StatelessWidget {
@@ -20,14 +20,11 @@ final class ToxIdView extends StatelessWidget {
           trailing: IconButton(
             icon: const Icon(Icons.copy),
             tooltip: AppLocalizations.of(context)!.copyToxId,
-            onPressed: () {
-              Clipboard.setData(ClipboardData(text: toxId));
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(AppLocalizations.of(context)!.toxIdCopied),
-                ),
-              );
-            },
+            onPressed: () => copyText(
+              ScaffoldMessenger.of(context),
+              toxId,
+              AppLocalizations.of(context)!.toxIdCopied,
+            ),
           ),
         ),
         // Same as qTox, so its users can scan it.

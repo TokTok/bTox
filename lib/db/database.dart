@@ -1,26 +1,41 @@
+import 'dart:async';
 import 'dart:convert';
 
+import 'package:btox/messages/message_format.dart';
+import 'package:btox/messages/split_message.dart';
 import 'package:btox/models/app_defaults.dart';
 import 'package:btox/models/bootstrap_nodes.dart';
+import 'package:btox/models/chat_log.dart';
+import 'package:btox/models/chat_view.dart';
 import 'package:btox/models/content.dart';
 import 'package:btox/models/crypto.dart';
 import 'package:btox/models/id.dart';
 import 'package:btox/models/persistence.dart';
 import 'package:btox/models/profile_settings.dart';
+import 'package:btox/sync/event.dart';
+import 'package:btox/sync/fact.dart';
+import 'package:btox/sync/setting.dart';
+import 'package:btox/sync/store.dart';
 import 'package:drift/drift.dart';
 
 export 'package:drift/drift.dart' show Value;
 
-part 'database.g.dart';
+part 'database.drift.dart';
 
 @DriftDatabase(
   tables: [
     AppSettings,
     CachedBootstrapNodes,
-    Contacts,
-    FriendRequests,
-    Messages,
+    ChatDrafts,
+    DeletedChats,
+    FriendChanges,
+    LiveFacts,
+    ChatReads,
+    ChatSends,
     Profiles,
+    SettingChanges,
+    SyncEvents,
+    Transfers,
   ],
 )
 final class Database extends _$Database {
@@ -30,32 +45,11 @@ final class Database extends _$Database {
   @override
   int get schemaVersion => 1;
 
-  Future<Id<Contacts>> acceptFriendRequest(FriendRequest request) =>
-      transaction(() async {
-        await deleteFriendRequest(request.id);
-        return addContact(
-          ContactsCompanion.insert(
-            profileId: request.profileId,
-            publicKey: request.publicKey,
-          ),
-        );
-      });
-
-  Future<Id<Contacts>> addContact(ContactsCompanion entry) async =>
-      Id(await into(contacts).insert(entry));
-
-  Future<void> addFriendRequest(FriendRequestsCompanion entry) async {
-    await into(friendRequests).insert(
-      entry,
-      onConflict: DoUpdate(
-        (_) => entry,
-        target: [friendRequests.profileId, friendRequests.publicKey],
-      ),
-    );
-  }
-
-  Future<Id<Messages>> addMessage(MessagesCompanion entry) async =>
-      Id(await into(messages).insert(entry));
+  // Events never change, so each is decoded once.
+  final _decoded = <EventId, SyncEvent?>{};
+  // Each chat's latest events of one rank, with how many events it had, and
+  // the one it showed last: the same while it has no others.
+  final _lastOfTied = <GraphId, (Set<EventId>, int, EventId)>{};
 
   Future<Id<Profiles>> addProfile(ProfilesCompanion entry) async =>
       Id(await into(profiles).insert(entry));
@@ -69,101 +63,130 @@ final class Database extends _$Database {
     );
   }
 
-  /// Toxcore forgets unfinished incoming files when it stops.
-  Future<void> cancelIncomingFiles(Id<Profiles> profileId) async {
-    await (update(messages)..where(
-          (m) =>
-              m.delivered.isNull() &
-              m.fileState.isInValues([FileState.offered, FileState.active]) &
-              m.contactId.isInQuery(_contactsOf(profileId)),
+  /// Returns the paths of the profile's files, for the caller to delete.
+  Future<List<String>> deleteProfile(Id<Profiles> id) => transaction(() async {
+    // What belongs to the profile goes first, as it refers to the profile.
+    final files = await _deleteWhere({'profile_id': Variable<int>(id.value)});
+    await (delete(profiles)..where((p) => p.id.equals(id.value))).go();
+    return files;
+  });
+
+  /// Deletes the rows with these [values] from every table that has their
+  /// columns, apart from the [kept] ones, and returns the paths of the files
+  /// whose transfers or drafts went.
+  Future<List<String>> _deleteWhere(
+    Map<String, Variable> values, {
+    Set<TableInfo> kept = const {},
+  }) async {
+    final where = values.keys.map((column) => '$column = ?').join(' AND ');
+    final files = [
+      for (final row in await customSelect(
+        'SELECT path FROM "${transfers.actualTableName}" WHERE $where',
+        variables: [...values.values],
+        readsFrom: {transfers},
+      ).get())
+        row.read<String>('path'),
+      for (final row in await customSelect(
+        'SELECT attachments FROM "${chatDrafts.actualTableName}" '
+        'WHERE $where',
+        variables: [...values.values],
+        readsFrom: {chatDrafts},
+      ).get())
+        for (final content in const ContentListConverter().fromSql(
+          row.read<String>('attachments'),
         ))
-        .write(MessagesCompanion(fileState: Value(FileState.cancelled)));
+          if (content case FileContent(:final path)) path,
+    ];
+    for (final table in allTables) {
+      if (!kept.contains(table) &&
+          values.keys.every(table.columnsByName.containsKey)) {
+        await customUpdate(
+          'DELETE FROM "${table.actualTableName}" WHERE $where',
+          variables: [...values.values],
+          updates: {table},
+          updateKind: UpdateKind.delete,
+        );
+      }
+    }
+    return files;
   }
 
-  Future<void> clearContactsOnline(Id<Profiles> profileId) async {
-    await (update(contacts)..where((c) => c.profileId.equals(profileId.value)))
-        .write(const ContactsCompanion(online: Value(false)));
-  }
+  Future<void> addSyncEvents(
+    Id<Profiles> profileId,
+    Iterable<NewEvent> events,
+  ) => batch((batch) {
+    batch.insertAll(syncEvents, [
+      for (final (id, event, bytes) in events)
+        SyncEventsCompanion.insert(
+          profileId: profileId,
+          id: id,
+          graph: event.graph,
+          rank: event.rank,
+          received: isIncoming(event.content),
+          shown: Value(entryOf(id, event, MessageFormats.none) != null),
+          bytes: bytes,
+        ),
+    ], mode: InsertMode.insertOrIgnore);
+  });
 
-  Future<void> clearFriendRequest(Id<Contacts> id) async {
-    await (update(contacts)..where((c) => c.id.equals(id.value))).write(
-      const ContactsCompanion(
-        friendRequestAddress: Value(null),
-        friendRequestMessage: Value(null),
-      ),
-    );
-  }
-
-  Future<void> deleteContact(Id<Contacts> id) async {
-    await transaction(() async {
-      await (delete(messages)..where((m) => m.contactId.equals(id.value))).go();
-      await (delete(contacts)..where((c) => c.id.equals(id.value))).go();
-    });
-  }
-
-  Future<void> deleteFriendRequest(Id<FriendRequests> id) async {
-    await (delete(friendRequests)..where((r) => r.id.equals(id.value))).go();
-  }
-
-  Future<void> deleteProfile(Id<Profiles> id) async {
-    await transaction(() async {
-      // Delete all their messages.
-      await (delete(
-        messages,
-      )..where((m) => m.contactId.isInQuery(_contactsOf(id)))).go();
-      // Delete the friend requests.
-      await (delete(
-        friendRequests,
-      )..where((r) => r.profileId.equals(id.value))).go();
-      // Then delete the contacts.
-      await (delete(contacts)..where((c) => c.profileId.equals(id.value))).go();
-      // Finally delete the profile.
-      await (delete(profiles)..where((p) => p.id.equals(id.value))).go();
-    });
-  }
+  /// The latest entry of each chat, as the chat shows it.
+  Stream<Map<GraphId, ChatEntry>> watchLatestEntries(
+    Id<Profiles> profileId,
+    MessageFormats formats,
+  ) =>
+      customSelect(
+        'SELECT e.id, e.bytes FROM sync_events e JOIN ('
+        'SELECT graph, MAX(rank) AS rank FROM sync_events '
+        'WHERE profile_id = ?1 AND shown GROUP BY graph'
+        ') latest ON e.graph = latest.graph AND e.rank = latest.rank '
+        'WHERE e.profile_id = ?1 AND e.shown',
+        variables: [Variable<int>(profileId.value)],
+        readsFrom: {syncEvents},
+      ).watch().asyncMap((rows) async {
+        final candidates = <GraphId, Map<EventId, ChatEntry>>{};
+        for (final row in rows) {
+          final id = EventId.fromJson(row.read<String>('id'));
+          final event = _decoded[id] ??= _readable(
+            row.read<Uint8List>('bytes'),
+          );
+          if (event case final event?) {
+            if (entryOf(id, event, formats) case final entry?) {
+              (candidates[event.graph] ??= {})[id] = entry;
+            }
+          }
+        }
+        final latest = <GraphId, ChatEntry>{};
+        for (final MapEntry(key: graph, value: entries) in candidates.entries) {
+          var last = entries.keys.last;
+          if (entries.length > 1) {
+            final ids = entries.keys.toSet();
+            final count = await _countIn(profileId, graph);
+            last = switch (_lastOfTied[graph]) {
+              (final tied, final events, final known)
+                  when events == count &&
+                      tied.length == ids.length &&
+                      tied.containsAll(ids) =>
+                known,
+              // Of events of the same rank, the one the chat shows last: it
+              // also orders them by when they came after their parents.
+              _ =>
+                ChatLog(formats)
+                    .update(await _syncEventsIn(profileId, graph))
+                    .map((e) => e.event)
+                    .lastWhere(entries.containsKey, orElse: () => last),
+            };
+            _lastOfTied[graph] = (ids, count, last);
+          }
+          latest[graph] = entries[last]!;
+        }
+        return latest;
+      });
 
   Future<BootstrapNodeList?> getCachedBootstrapNodes() async {
     final row = await select(cachedBootstrapNodes).getSingleOrNull();
     return row == null
         ? null
         : BootstrapNodeList.fromJson(jsonDecode(row.json));
-  }
-
-  Future<Message> getMessage(Id<Messages> id) async =>
-      (select(messages)..where((m) => m.id.equals(id.value))).getSingle();
-
-  Future<void> markContactRead(Id<Contacts> id) async {
-    await customUpdate(
-      'UPDATE contacts SET last_read_message = '
-      '(SELECT MAX(id) FROM messages WHERE contact_id = ?1) WHERE id = ?1',
-      variables: [Variable(id.value)],
-      updates: {contacts},
-    );
-  }
-
-  Future<void> markMessageDelivered(Id<Messages> id) async {
-    await (update(messages)..where((m) => m.id.equals(id.value))).write(
-      const MessagesCompanion(delivered: Value(true)),
-    );
-  }
-
-  Future<void> setFileState(
-    Id<Messages> id,
-    FileState state, {
-    int? transferred,
-  }) async {
-    await (update(messages)..where((m) => m.id.equals(id.value))).write(
-      MessagesCompanion(
-        fileState: Value(state),
-        fileTransferred: Value.absentIfNull(transferred),
-      ),
-    );
-  }
-
-  Future<void> setFileTransferred(Id<Messages> id, int transferred) async {
-    await (update(messages)..where((m) => m.id.equals(id.value))).write(
-      MessagesCompanion(fileTransferred: Value(transferred)),
-    );
   }
 
   /// Signs the profile in and shows it.
@@ -187,40 +210,364 @@ final class Database extends _$Database {
     );
   }
 
-  Future<void> updateContactName(
-    Id<Profiles> profileId,
-    PublicKey publicKey,
-    String name,
-  ) async {
-    await (update(contacts)..where(
-          (c) =>
-              c.profileId.equals(profileId.value) &
-              c.publicKey.equals(publicKey.toJson()),
-        ))
-        .write(ContactsCompanion(name: Value(name.isEmpty ? null : name)));
-  }
-
-  Future<void> updateContactOnline(
-    Id<Profiles> profileId,
-    PublicKey publicKey,
-    bool online,
-  ) async {
-    await (update(contacts)..where(
-          (c) =>
-              c.profileId.equals(profileId.value) &
-              c.publicKey.equals(publicKey.toJson()),
-        ))
-        .write(ContactsCompanion(online: Value(online)));
-  }
-
+  /// Changes the settings as they are now, so quick changes don't undo
+  /// each other.
   Future<void> updateProfileSettings(
     Id<Profiles> id,
-    ProfileSettings settings,
+    ProfileSettings Function(ProfileSettings) change,
+  ) => transaction(() async {
+    final row = profiles.id.equals(id.value);
+    final current = await (select(profiles)..where((_) => row)).getSingle();
+    await (update(profiles)..where((_) => row)).write(
+      ProfilesCompanion(settings: Value(change(current.settings))),
+    );
+  });
+
+  Future<List<Uint8List>> getSyncEvents(Id<Profiles> profileId) async =>
+      (selectOnly(syncEvents)
+            ..addColumns([syncEvents.bytes])
+            ..where(syncEvents.profileId.equals(profileId.value)))
+          .map((row) => row.read(syncEvents.bytes)!)
+          .get();
+
+  /// Sends [message], as several where it's longer than an event takes.
+  Future<void> addSend(Id<Profiles> profileId, GraphId graph, String message) =>
+      batch(
+        (batch) => batch.insertAll(chatSends, [
+          for (final part in splitMessage(utf8.encode(message), maxSendBytes))
+            ChatSendsCompanion.insert(
+              profileId: profileId,
+              graph: graph,
+              message: utf8.decode(part),
+            ),
+        ]),
+      );
+
+  Future<void> addFileSend(
+    Id<Profiles> profileId,
+    GraphId graph,
+    FileContent file,
+  ) => addTransfer(
+    TransfersCompanion.insert(
+      profileId: profileId,
+      graph: graph,
+      incoming: false,
+      name: file.name,
+      size: file.size,
+      path: file.path,
+      state: FileState.active,
+    ),
+  );
+
+  Future<void> setRead(
+    Id<Profiles> profileId,
+    GraphId graph,
+    (int, EventId) upTo,
   ) async {
-    await (update(profiles)..where((p) => p.id.equals(id.value))).write(
-      ProfilesCompanion(settings: Value(settings)),
+    await into(chatReads).insertOnConflictUpdate(
+      ChatReadsCompanion.insert(
+        profileId: profileId,
+        graph: graph,
+        event: upTo.$2,
+        rank: upTo.$1,
+      ),
     );
   }
+
+  Stream<List<ChatRead>> watchReads(Id<Profiles> profileId) => (select(
+    chatReads,
+  )..where((r) => r.profileId.equals(profileId.value))).watch();
+
+  Future<StoredDraft?> getDraft(Id<Profiles> profileId, GraphId graph) =>
+      (select(chatDrafts)..where(
+            (d) =>
+                d.profileId.equals(profileId.value) &
+                d.graph.equalsValue(graph),
+          ))
+          .getSingleOrNull();
+
+  Stream<Map<GraphId, StoredDraft>> watchDrafts(Id<Profiles> profileId) =>
+      (select(chatDrafts)..where((d) => d.profileId.equals(profileId.value)))
+          .watch()
+          .map((drafts) => {for (final draft in drafts) draft.graph: draft});
+
+  Future<void> setDraft(StoredDraft draft) async {
+    await into(chatDrafts).insertOnConflictUpdate(draft);
+  }
+
+  Future<void> clearDraft(Id<Profiles> profileId, GraphId graph) async {
+    await (delete(chatDrafts)..where(
+          (d) =>
+              d.profileId.equals(profileId.value) & d.graph.equalsValue(graph),
+        ))
+        .go();
+  }
+
+  /// The ranks of others' messages and files, by conversation, but for
+  /// messages that repeat an earlier one as [formats] read them.
+  Stream<Map<GraphId, List<int>>> watchReceivedRanks(
+    Id<Profiles> profileId,
+    MessageFormats formats,
+  ) {
+    var received = _Received(formats);
+    return _addedEvents('profile_id = ? AND received', [
+      Variable<int>(profileId.value),
+    ]).map((added) {
+      if (added.all) {
+        received = _Received(formats);
+      }
+      added.events.forEach(received.add);
+      return received.ranks;
+    });
+  }
+
+  Stream<List<ChatSend>> watchSends(Id<Profiles> profileId) =>
+      (select(chatSends)
+            ..where((s) => s.profileId.equals(profileId.value))
+            ..orderBy([(s) => OrderingTerm(expression: s.id)]))
+          .watch();
+
+  /// Stores [event] in place of the [send] it was written for, so a send is
+  /// written exactly once.
+  Future<void> writeSend(ChatSend send, NewEvent event) =>
+      _replace(chatSends, send, send.profileId, event);
+
+  /// Stores [event] in place of the [row] of [table] it was written for.
+  Future<void> _replace<T extends Table, D extends Insertable<D>>(
+    TableInfo<T, D> table,
+    D row,
+    Id<Profiles> profileId,
+    NewEvent event,
+  ) => transaction(() async {
+    await addSyncEvents(profileId, [event]);
+    await delete(table).delete(row);
+  });
+
+  Future<void> addFriendChange(
+    Id<Profiles> profileId,
+    PublicKey publicKey, {
+    required bool wanted,
+    ToxAddressNospam? nospam,
+    String? message,
+    bool deleteChat = false,
+  }) async {
+    await into(friendChanges).insert(
+      FriendChangesCompanion.insert(
+        profileId: profileId,
+        publicKey: publicKey,
+        wanted: wanted,
+        nospam: Value(nospam),
+        message: Value(message),
+        deleteChat: Value(deleteChat),
+      ),
+    );
+  }
+
+  Stream<List<FriendChange>> watchFriendChanges(Id<Profiles> profileId) =>
+      (select(friendChanges)
+            ..where((c) => c.profileId.equals(profileId.value))
+            ..orderBy([(c) => OrderingTerm(expression: c.id)]))
+          .watch();
+
+  /// Stores [event] in place of the [change] it was written for, deletes the
+  /// chat it [deleted], and returns that chat's files.
+  Future<List<String>> writeFriendChange(
+    FriendChange change,
+    NewEvent event, {
+    (GraphId, int)? deleted,
+  }) => transaction(() async {
+    await _replace(friendChanges, change, change.profileId, event);
+    return deleted == null ? const [] : _deleteChat(change.profileId, deleted);
+  });
+
+  /// Deletes a [chat]'s rows, remembering the rank its next event takes, and
+  /// returns the paths of its files.
+  Future<List<String>> _deleteChat(
+    Id<Profiles> profileId,
+    (GraphId, int) chat,
+  ) async {
+    final (graph, rank) = chat;
+    final files = await _deleteWhere(
+      {
+        'profile_id': Variable<int>(profileId.value),
+        'graph': Variable<String>(graph.toJson()),
+      },
+      kept: {deletedChats},
+    );
+    await into(deletedChats).insertOnConflictUpdate(
+      DeletedChatsCompanion.insert(
+        profileId: profileId,
+        graph: graph,
+        rank: rank,
+      ),
+    );
+    return files;
+  }
+
+  /// The chats deleted on this device, by the rank their next event takes.
+  Future<Map<GraphId, int>> getDeletedChats(Id<Profiles> profileId) async => {
+    for (final row in await (select(
+      deletedChats,
+    )..where((c) => c.profileId.equals(profileId.value))).get())
+      row.graph: row.rank,
+  };
+
+  Future<void> setSetting(
+    Id<Profiles> profileId,
+    Scope scope,
+    Kept<Setting> setting,
+  ) async {
+    await settingChanges.insertOne(
+      SettingChangesCompanion.insert(
+        profileId: profileId,
+        scope: scope,
+        kind: setting.value.kind,
+        setting: Value(setting),
+      ),
+    );
+  }
+
+  Future<void> clearSetting(Id<Profiles> profileId, Scope scope, int kind) =>
+      settingChanges.insertOne(
+        SettingChangesCompanion.insert(
+          profileId: profileId,
+          scope: scope,
+          kind: kind,
+        ),
+      );
+
+  Stream<List<SettingChange>> watchSettingChanges(Id<Profiles> profileId) =>
+      (select(settingChanges)
+            ..where((s) => s.profileId.equals(profileId.value))
+            ..orderBy([(s) => OrderingTerm(expression: s.id)]))
+          .watch();
+
+  /// Stores [event] in place of the [change] it was written for.
+  Future<void> writeSetting(SettingChange change, NewEvent event) =>
+      _replace(settingChanges, change, change.profileId, event);
+
+  Future<Id<Transfers>> addTransfer(TransfersCompanion entry) async =>
+      Id(await into(transfers).insert(entry));
+
+  /// The latest file from a friend in [graph] under [fileId], of [size],
+  /// that stopped before it arrived whole, to go on with it. One cancelled
+  /// or declined is offered again as a new one.
+  Future<Transfer?> unfinishedTransfer(
+    Id<Profiles> profileId,
+    GraphId graph,
+    FileId fileId,
+    int size,
+  ) =>
+      (select(transfers)
+            ..where(
+              (t) =>
+                  t.profileId.equals(profileId.value) &
+                  t.graph.equalsValue(graph) &
+                  t.incoming &
+                  t.fileId.equalsValue(fileId) &
+                  t.size.equals(size) &
+                  t.state.isNotInValues([FileState.done, FileState.cancelled]),
+            )
+            ..orderBy([
+              (t) => OrderingTerm(expression: t.id, mode: OrderingMode.desc),
+            ])
+            ..limit(1))
+          .getSingleOrNull();
+
+  Stream<List<Transfer>> watchTransfers(Id<Profiles> profileId) =>
+      (select(transfers)
+            ..where((t) => t.profileId.equals(profileId.value))
+            ..orderBy([(t) => OrderingTerm(expression: t.id)]))
+          .watch();
+
+  /// Saves [event], which started [transfer], with the blob it names.
+  Future<void> writeTransferEvent(Id<Transfers> transfer, NewEvent event) =>
+      transaction(() async {
+        final row = await (select(
+          transfers,
+        )..where((t) => t.id.equals(transfer.value))).getSingle();
+        await addSyncEvents(row.profileId, [event]);
+        await (update(transfers)..where((t) => t.id.equals(transfer.value)))
+            .write(TransfersCompanion(event: Value(event.$1)));
+      });
+
+  Future<void> setTransferState(
+    Id<Transfers> id,
+    FileState state, {
+    int? transferred,
+  }) async {
+    await (update(transfers)..where((t) => t.id.equals(id.value))).write(
+      TransfersCompanion(
+        state: Value(state),
+        transferred: Value.absentIfNull(transferred),
+      ),
+    );
+  }
+
+  /// Accepts a file offered here, or declines one not yet ended, unless it
+  /// ended meanwhile.
+  Future<void> answerTransfer(Id<Transfers> id, {required bool accept}) async {
+    await (update(transfers)..where(
+          (t) =>
+              t.id.equals(id.value) &
+              t.state.isInValues([
+                FileState.offered,
+                if (!accept) ...[FileState.active, FileState.paused],
+              ]),
+        ))
+        .write(
+          TransfersCompanion(
+            state: Value(accept ? FileState.active : FileState.cancelled),
+          ),
+        );
+  }
+
+  Future<void> setTransferred(Id<Transfers> id, int transferred) async {
+    await (update(transfers)..where((t) => t.id.equals(id.value))).write(
+      TransfersCompanion(transferred: Value(transferred)),
+    );
+  }
+
+  Future<void> clearLiveFacts(Id<Profiles> profileId) async {
+    await (delete(
+      liveFacts,
+    )..where((f) => f.profileId.equals(profileId.value))).go();
+  }
+
+  /// Takes in live facts as [Facts.update] does. With [all], they're all
+  /// there are.
+  Future<void> updateLiveFacts(
+    Id<Profiles> profileId,
+    Iterable<Fact> facts, {
+    bool all = false,
+  }) => transaction(() async {
+    if (all) {
+      await clearLiveFacts(profileId);
+    }
+    for (final (subject, value) in facts) {
+      // A newer home device's, which shows nothing here.
+      if (value is UnknownValue) {
+        continue;
+      }
+      final key = encodeSubject(subject);
+      if (value == const FactValue.present(false)) {
+        await (delete(liveFacts)..where(
+              (f) =>
+                  f.profileId.equals(profileId.value) & f.subject.equals(key),
+            ))
+            .go();
+      } else {
+        await into(liveFacts).insertOnConflictUpdate(
+          LiveFactsCompanion.insert(
+            profileId: profileId,
+            subject: key,
+            kind: value.kind,
+            fact: encodeFact(subject, value).encode(),
+          ),
+        );
+      }
+    }
+  });
 
   Stream<AppSetting> watchAppSettings() =>
       select(appSettings).watchSingleOrNull().map(
@@ -233,74 +580,154 @@ final class Database extends _$Database {
             ),
       );
 
-  Stream<Contact> watchContact(Id<Contacts> id) =>
-      (select(contacts)..where((c) => c.id.equals(id.value))).watchSingle();
+  Stream<Facts> watchLiveFacts(Id<Profiles> id) =>
+      (select(liveFacts)..where((f) => f.profileId.equals(id.value)))
+          .watch()
+          .map((rows) => Facts.of(rows.map((row) => decodeFact(row.fact))));
 
-  Stream<List<Contact>> watchContactsFor(Id<Profiles> id) =>
-      (select(contacts)
-            ..where((c) => c.profileId.equals(id.value))
-            ..orderBy([(c) => OrderingTerm(expression: c.name)]))
-          .watch();
+  Stream<List<(EventId, SyncEvent)>> watchSyncEvents(
+    Id<Profiles> id,
+    GraphId graph,
+  ) {
+    var events = const <(EventId, SyncEvent)>[];
+    return _addedEvents('profile_id = ? AND graph = ?', [
+      Variable<int>(id.value),
+      Variable<String>(graph.toJson()),
+    ]).map(
+      (added) =>
+          events = added.all ? added.events : [...events, ...added.events],
+    );
+  }
 
-  Stream<List<FriendRequest>> watchFriendRequestsFor(Id<Profiles> id) =>
-      (select(friendRequests)
-            ..where((r) => r.profileId.equals(id.value))
-            ..orderBy([(r) => OrderingTerm(expression: r.timestamp)]))
-          .watch();
+  /// The readable events [where] picks, each read from the database once:
+  /// first all of them, then those added since, in the order they were.
+  /// Deleting events starts over with all.
+  Stream<({bool all, List<(EventId, SyncEvent)> events})> _addedEvents(
+    String where,
+    List<Variable> variables,
+  ) {
+    late final StreamController<({bool all, List<(EventId, SyncEvent)> events})>
+    controller;
+    StreamSubscription<Set<TableUpdate>>? updates;
+    var last = 0;
+    var fetching = Future<void>.value();
+    void fetch({required bool all}) {
+      fetching = fetching
+          .then((_) async {
+            final rows = await customSelect(
+              'SELECT rowid, id, bytes FROM sync_events '
+              'WHERE $where AND rowid > ? ORDER BY rowid',
+              variables: [...variables, Variable<int>(all ? 0 : last)],
+              readsFrom: {syncEvents},
+            ).get();
+            if (rows.isNotEmpty) {
+              last = rows.last.read<int>('rowid');
+            } else if (all) {
+              // Rows deleted from the end leave their rowids to new ones.
+              last = 0;
+            }
+            if (all || rows.isNotEmpty) {
+              controller.add((
+                all: all,
+                events: [for (final row in rows) ?_decodedRow(row)],
+              ));
+            }
+          })
+          .catchError(controller.addError);
+    }
 
-  /// Files offered to us or being received, with their state.
-  Stream<List<Message>> watchIncomingFilesFor(Id<Profiles> id) =>
-      (select(messages)..where(
-            (m) =>
-                m.delivered.isNull() &
-                m.fileState.isNotNull() &
-                m.contactId.isInQuery(_contactsOf(id)),
-          ))
-          .watch();
+    controller = StreamController(
+      onListen: () {
+        // Listened to first, so nothing added meanwhile is missed.
+        updates = tableUpdates(TableUpdateQuery.onTable(syncEvents)).listen(
+          (changes) => fetch(
+            all: changes.any(
+              (change) =>
+                  change.kind != UpdateKind.insert &&
+                  change.kind != UpdateKind.update,
+            ),
+          ),
+        );
+        fetch(all: true);
+      },
+      onCancel: () => updates?.cancel(),
+    );
+    return controller.stream;
+  }
 
-  Stream<List<Message>> watchMessagesFor(Id<Contacts> id) =>
-      (select(messages)..where((m) => m.contactId.equals(id.value))).watch();
+  Future<int> _countIn(Id<Profiles> id, GraphId graph) async =>
+      (await customSelect(
+        'SELECT COUNT(*) AS count FROM sync_events '
+        'WHERE profile_id = ? AND graph = ?',
+        variables: [Variable<int>(id.value), Variable<String>(graph.toJson())],
+        readsFrom: {syncEvents},
+      ).getSingle()).read<int>('count');
+
+  Future<List<(EventId, SyncEvent)>> _syncEventsIn(
+    Id<Profiles> id,
+    GraphId graph,
+  ) async => [
+    for (final row in await customSelect(
+      'SELECT id, bytes FROM sync_events WHERE profile_id = ? AND graph = ?',
+      variables: [Variable<int>(id.value), Variable<String>(graph.toJson())],
+      readsFrom: {syncEvents},
+    ).get())
+      ?_decodedRow(row),
+  ];
+
+  (EventId, SyncEvent)? _decodedRow(QueryRow row) {
+    final id = EventId.fromJson(row.read<String>('id'));
+    return switch (_decoded[id] ??= _readable(row.read<Uint8List>('bytes'))) {
+      final event? => (id, event),
+      null => null,
+    };
+  }
 
   Stream<Profile> watchProfile(Id<Profiles> id) =>
       (select(profiles)..where((p) => p.id.equals(id.value))).watchSingle();
 
   Stream<List<Profile>> watchProfiles() => select(profiles).watch();
+}
 
-  Stream<Map<Id<Contacts>, int>> watchUnreadCountsFor(Id<Profiles> id) {
-    final unread = messages.id.count();
-    final query =
-        selectOnly(messages).join([
-            innerJoin(contacts, contacts.id.equalsExp(messages.contactId)),
-            innerJoin(profiles, profiles.id.equalsExp(contacts.profileId)),
-          ])
-          ..addColumns([contacts.id, unread])
-          ..where(
-            contacts.profileId.equals(id.value) &
-                messages.author.equalsExp(profiles.publicKey).not() &
-                messages.id.isBiggerThan(
-                  coalesce([contacts.lastReadMessage, const Constant(0)]),
-                ),
-          )
-          ..groupBy([contacts.id]);
-    return query.watch().map(
-      (rows) => {
-        for (final row in rows)
-          row.readWithConverter(contacts.id)!: row.read(unread)!,
-      },
-    );
+/// Null for an event this version can't read, which the background service
+/// drops to sync again.
+SyncEvent? _readable(Uint8List bytes) {
+  try {
+    return SyncEvent.decode(bytes);
+  } on FormatException {
+    return null;
   }
+}
 
-  Stream<List<Message>> watchUndeliveredMessagesFor(Id<Profiles> id) =>
-      (select(messages)
-            ..where(
-              (m) =>
-                  m.delivered.equals(false) &
-                  m.contactId.isInQuery(_contactsOf(id)),
-            )
-            ..orderBy([(m) => OrderingTerm(expression: m.id)]))
-          .watch();
+/// The ranks of received messages and files, by conversation, as they come
+/// in any order: of messages with the same key, only the first counts.
+final class _Received {
+  final MessageFormats _formats;
+  final _ranks = <GraphId, List<int>>{};
+  final _first = <GraphId, Map<MessageKey, (int, EventId)>>{};
 
-  BaseSelectStatement _contactsOf(Id<Profiles> id) => selectOnly(contacts)
-    ..addColumns([contacts.id])
-    ..where(contacts.profileId.equals(id.value));
+  _Received(this._formats);
+
+  Map<GraphId, List<int>> get ranks => {
+    for (final MapEntry(:key, :value) in _ranks.entries) key: [...value],
+  };
+
+  void add((EventId, SyncEvent) received) {
+    final (id, event) = received;
+    final ranks = _ranks.putIfAbsent(event.graph, () => []);
+    final key = keyOf(event.content, _formats);
+    if (key == null) {
+      ranks.add(event.rank);
+      return;
+    }
+    final firsts = _first.putIfAbsent(event.graph, () => {});
+    final first = firsts[key];
+    if (first == null || compareRanks((event.rank, id), first) < 0) {
+      if (first != null) {
+        ranks.remove(first.$1);
+      }
+      firsts[key] = (event.rank, id);
+      ranks.add(event.rank);
+    }
+  }
 }

@@ -90,6 +90,25 @@ void main() {
     ]);
   });
 
+  test('with no publisher for a while, it asks for one', () async {
+    var asked = 0;
+    final subscription = watchConnectionStatuses(
+      whenMissing: () => asked++,
+      missingAfter: const Duration(milliseconds: 500),
+    ).listen(statuses.add);
+    addTearDown(subscription.cancel);
+    while (asked == 0) {
+      await Future.delayed(const Duration(milliseconds: 10));
+    }
+
+    final publisher = ConnectionStatusPublisher()..publish({});
+    addTearDown(publisher.close);
+    await untilReceived(1);
+    asked = 0;
+    await Future.delayed(const Duration(seconds: 1));
+    expect(asked, 0);
+  });
+
   test('publisher counts subscribers until their isolates exit', () async {
     final counts = <int>[];
     final publisher = ConnectionStatusPublisher(

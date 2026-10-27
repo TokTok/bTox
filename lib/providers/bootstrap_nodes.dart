@@ -113,7 +113,7 @@ final fallbackBootstrapNodes = BootstrapNodeList(
   ],
 );
 
-@Riverpod(keepAlive: true)
+@riverpod
 http.Client httpClient(Ref ref, NetworkSettings network) {
   final client = proxyClient(network);
   ref.onDispose(client.close);
@@ -123,7 +123,7 @@ http.Client httpClient(Ref ref, NetworkSettings network) {
 /// The cached (or built-in) nodes right away, then freshly fetched ones. A
 /// list without nodes, as nodes.tox.chat serves when its scan finds none,
 /// never takes the place of one with nodes.
-@Riverpod(keepAlive: true)
+@riverpod
 Stream<BootstrapNodeList> bootstrapNodes(
   Ref ref,
   NetworkSettings network,

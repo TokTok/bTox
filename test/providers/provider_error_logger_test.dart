@@ -2,8 +2,8 @@ import 'dart:io';
 
 import 'package:btox/providers/provider_error_logger.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:riverpod/riverpod.dart';
 
 void main() {
   late List<String> logged;

@@ -1,15 +1,7 @@
-// ignore_for_file: invalid_annotation_target
-
 import 'dart:convert';
 
 import 'package:btox/logger.dart';
-import 'package:btox/models/crypto.dart';
-import 'package:btox/packets/messagepack/message_data.dart';
-import 'package:btox/packets/messagepack/message_data_json_converter.dart';
-import 'package:btox/packets/messagepack/packer.dart';
-import 'package:btox/packets/messagepack/unpacker.dart';
-import 'package:btox/packets/packet.dart';
-import 'package:drift/drift.dart' hide JsonKey;
+import 'package:drift/drift.dart' show JsonTypeConverter2, TypeConverter;
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'content.freezed.dart';
@@ -17,43 +9,41 @@ part 'content.g.dart';
 
 const _logger = Logger(['Content']);
 
-sealed class Content extends Packet {
+const _maxLatitude = 90;
+const _maxLongitude = 180;
+
+final _geo = RegExp(r'^geo:(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)$');
+
+/// [content] as a message's text, where it can be one. Until clients can
+/// agree on richer content, locations travel as text.
+String? messageTextOf(Content content) => switch (content) {
+  TextContent(:final text) => text,
+  LocationContent(:final latitude, :final longitude) =>
+    'geo:$latitude,$longitude',
+  FileContent() => null,
+};
+
+/// [text] as Tox clients quote it: each line after "> ".
+String quoted(String text) =>
+    [for (final line in text.split('\n')) '> $line'].join('\n');
+
+/// The content a message's [text] stands for: a place on Earth, or else the
+/// text as it is.
+Content contentOfMessage(String text) {
+  if (_geo.firstMatch(text) case final match?) {
+    final latitude = double.parse(match[1]!);
+    final longitude = double.parse(match[2]!);
+    if (latitude.abs() <= _maxLatitude && longitude.abs() <= _maxLongitude) {
+      return LocationContent(latitude: latitude, longitude: longitude);
+    }
+  }
+  return TextContent(text: text);
+}
+
+sealed class Content {
   const Content();
 
-  factory Content.decode(Uint8List data) => Content.unpack(Unpacker(data));
-
-  factory Content.unpack(Unpacker unpacker) {
-    final int length = unpacker.unpackListLength();
-    if (length != 2) {
-      throw Exception('Invalid content packet');
-    }
-
-    final int index = unpacker.unpackInt()!;
-    final ContentType type =
-        ContentType.values.elementAtOrNull(index) ?? ContentType.unknown;
-    return switch (type) {
-      ContentType.unknown => UnknownContent.unpack(unpacker),
-      ContentType.text => TextContent.unpack(unpacker),
-      ContentType.edit => EditContent.unpack(unpacker),
-      ContentType.delete => DeleteContent.unpack(unpacker),
-      ContentType.reaction => ReactionContent.unpack(unpacker),
-      ContentType.media => MediaContent.unpack(unpacker),
-      ContentType.file => FileContent.unpack(unpacker),
-      ContentType.location => LocationContent.unpack(unpacker),
-    };
-  }
-
   ContentType get type;
-
-  @override
-  void pack(Packer packer) {
-    packer
-      ..packListLength(2)
-      ..packInt(type.index);
-    packContent(packer);
-  }
-
-  void packContent(Packer packer);
 
   Map<String, dynamic> toJson();
 
@@ -61,12 +51,11 @@ sealed class Content extends Packet {
   String get plainText => switch (this) {
     TextContent(:final text) => text,
     FileContent(:final name) => name,
-    LocationContent(:final latitude, :final longitude) =>
-      'geo:$latitude,$longitude',
-    _ => toString(),
+    LocationContent() => messageTextOf(this)!,
   };
 }
 
+/// Content as drafts keep it.
 final class ContentConverter extends TypeConverter<Content, String>
     with JsonTypeConverter2<Content, String, Map<String, dynamic>> {
   const ContentConverter();
@@ -75,13 +64,9 @@ final class ContentConverter extends TypeConverter<Content, String>
   Content fromJson(Map<String, dynamic> json) =>
       switch (ContentType.values.asNameMap()[json['_type']]) {
         ContentType.text => TextContent.fromJson(json),
-        ContentType.edit => EditContent.fromJson(json),
-        ContentType.delete => DeleteContent.fromJson(json),
-        ContentType.reaction => ReactionContent.fromJson(json),
-        ContentType.media => MediaContent.fromJson(json),
         ContentType.file => FileContent.fromJson(json),
         ContentType.location => LocationContent.fromJson(json),
-        ContentType.unknown || null => UnknownContent.fromJson(json),
+        null => throw FormatException('Unknown content ${json['_type']}'),
       };
 
   @override
@@ -105,72 +90,31 @@ final class ContentConverter extends TypeConverter<Content, String>
   String toSql(Content value) => jsonEncode(toJson(value));
 }
 
-enum ContentType {
-  unknown,
-  text,
-  edit,
-  delete,
-  reaction,
-  media,
-  file,
-  location,
-}
+final class ContentListConverter extends TypeConverter<List<Content>, String> {
+  const ContentListConverter();
 
-@freezed
-sealed class DeleteContent extends Content with _$DeleteContent {
-  @JsonSerializable(explicitToJson: true)
-  const factory DeleteContent({required Sha256 message}) = _DeleteContent;
-
-  factory DeleteContent.fromJson(Map<String, dynamic> json) =>
-      _$DeleteContentFromJson(json);
-
-  factory DeleteContent.unpack(Unpacker unpacker) =>
-      DeleteContent(message: Sha256.unpack(unpacker));
-
-  const DeleteContent._();
-
+  /// Leaves out what this version can't read, as a newer one's.
   @override
-  ContentType get type => ContentType.delete;
+  List<Content> fromSql(String fromDb) => [
+    for (final json in jsonDecode(fromDb) as List) ?_read(json),
+  ];
 
-  @override
-  void packContent(Packer packer) {
-    packer.pack(message);
-  }
-}
-
-@freezed
-sealed class EditContent extends Content with _$EditContent {
-  @JsonSerializable(explicitToJson: true)
-  const factory EditContent({required Sha256 message, required String text}) =
-      _EditContent;
-
-  factory EditContent.fromJson(Map<String, dynamic> json) =>
-      _$EditContentFromJson(json);
-
-  factory EditContent.unpack(Unpacker unpacker) {
-    final length = unpacker.unpackListLength();
-    if (length != 2) {
-      throw Exception('Invalid edit content');
+  static Content? _read(Object? json) {
+    try {
+      return const ContentConverter().fromJson(json as Map<String, dynamic>);
+    } on Object catch (e) {
+      _logger.w('Left out content this version can\'t read: $e');
+      return null;
     }
-    return EditContent(
-      message: Sha256.unpack(unpacker),
-      text: utf8.decode(unpacker.unpackBinary()!),
-    );
   }
 
-  const EditContent._();
-
   @override
-  ContentType get type => ContentType.edit;
-
-  @override
-  void packContent(Packer packer) {
-    packer
-      ..packListLength(2)
-      ..pack(message)
-      ..packBinary(utf8.encode(text));
-  }
+  String toSql(List<Content> value) => jsonEncode([
+    for (final content in value) const ContentConverter().toJson(content),
+  ]);
 }
+
+enum ContentType { text, file, location }
 
 @freezed
 sealed class FileContent extends Content with _$FileContent {
@@ -184,31 +128,10 @@ sealed class FileContent extends Content with _$FileContent {
   factory FileContent.fromJson(Map<String, dynamic> json) =>
       _$FileContentFromJson(json);
 
-  factory FileContent.unpack(Unpacker unpacker) {
-    final length = unpacker.unpackListLength();
-    if (length != 3) {
-      throw Exception('Invalid file content');
-    }
-    return FileContent(
-      name: utf8.decode(unpacker.unpackBinary()!),
-      size: unpacker.unpackInt()!,
-      path: utf8.decode(unpacker.unpackBinary()!),
-    );
-  }
-
   const FileContent._();
 
   @override
   ContentType get type => ContentType.file;
-
-  @override
-  void packContent(Packer packer) {
-    packer
-      ..packListLength(3)
-      ..packBinary(utf8.encode(name))
-      ..packInt(size)
-      ..packBinary(utf8.encode(path));
-  }
 }
 
 @freezed
@@ -221,86 +144,10 @@ sealed class LocationContent extends Content with _$LocationContent {
   factory LocationContent.fromJson(Map<String, dynamic> json) =>
       _$LocationContentFromJson(json);
 
-  factory LocationContent.unpack(Unpacker unpacker) {
-    final length = unpacker.unpackListLength();
-    if (length != 2) {
-      throw Exception('Invalid location content');
-    }
-    return LocationContent(
-      latitude: unpacker.unpackDouble()!,
-      longitude: unpacker.unpackDouble()!,
-    );
-  }
-
   const LocationContent._();
 
   @override
   ContentType get type => ContentType.location;
-
-  @override
-  void packContent(Packer packer) {
-    packer
-      ..packListLength(2)
-      ..packDouble(latitude)
-      ..packDouble(longitude);
-  }
-}
-
-@freezed
-sealed class MediaContent extends Content with _$MediaContent {
-  const factory MediaContent({required String url}) = _MediaContent;
-
-  factory MediaContent.fromJson(Map<String, dynamic> json) =>
-      _$MediaContentFromJson(json);
-
-  factory MediaContent.unpack(Unpacker unpacker) =>
-      MediaContent(url: utf8.decode(unpacker.unpackBinary()!));
-
-  const MediaContent._();
-
-  @override
-  ContentType get type => ContentType.media;
-
-  @override
-  void packContent(Packer packer) {
-    packer.packBinary(utf8.encode(url));
-  }
-}
-
-@freezed
-sealed class ReactionContent extends Content with _$ReactionContent {
-  @JsonSerializable(explicitToJson: true)
-  const factory ReactionContent({
-    required Sha256 message,
-    required String emoji,
-  }) = _ReactionContent;
-
-  factory ReactionContent.fromJson(Map<String, dynamic> json) =>
-      _$ReactionContentFromJson(json);
-
-  factory ReactionContent.unpack(Unpacker unpacker) {
-    final length = unpacker.unpackListLength();
-    if (length != 2) {
-      throw Exception('Invalid reaction content');
-    }
-    return ReactionContent(
-      message: Sha256.unpack(unpacker),
-      emoji: utf8.decode(unpacker.unpackBinary()!),
-    );
-  }
-
-  const ReactionContent._();
-
-  @override
-  ContentType get type => ContentType.reaction;
-
-  @override
-  void packContent(Packer packer) {
-    packer
-      ..packListLength(2)
-      ..pack(message)
-      ..packBinary(utf8.encode(emoji));
-  }
 }
 
 @freezed
@@ -310,41 +157,8 @@ sealed class TextContent extends Content with _$TextContent {
   factory TextContent.fromJson(Map<String, dynamic> json) =>
       _$TextContentFromJson(json);
 
-  factory TextContent.unpack(Unpacker unpacker) =>
-      TextContent(text: utf8.decode(unpacker.unpackBinary()!));
-
   const TextContent._();
 
   @override
   ContentType get type => ContentType.text;
-
-  @override
-  void packContent(Packer packer) {
-    packer.packBinary(utf8.encode(text));
-  }
-}
-
-@freezed
-sealed class UnknownContent extends Content with _$UnknownContent {
-  @JsonSerializable(
-    explicitToJson: true,
-    converters: [MessageDataJsonConverter()],
-  )
-  const factory UnknownContent({required MessageData data}) = _UnknownContent;
-
-  factory UnknownContent.fromJson(Map<String, dynamic> json) =>
-      _$UnknownContentFromJson(json);
-
-  factory UnknownContent.unpack(Unpacker unpacker) =>
-      UnknownContent(data: unpacker.unpack());
-
-  const UnknownContent._();
-
-  @override
-  ContentType get type => ContentType.unknown;
-
-  @override
-  void packContent(Packer packer) {
-    packer.packMessageData(data);
-  }
 }

@@ -4,19 +4,18 @@ import 'dart:typed_data';
 import 'package:btox/api/toxcore/tox_events.dart';
 import 'package:btox/db/database.dart';
 import 'package:btox/ffi/toxcore.dart';
-import 'package:btox/models/content.dart';
 import 'package:btox/models/crypto.dart';
 import 'package:btox/models/id.dart';
-import 'package:btox/models/messaging.dart';
 import 'package:btox/models/persistence.dart';
 import 'package:btox/models/profile_settings.dart';
 import 'package:btox/providers/bootstrap_nodes.dart';
 import 'package:btox/providers/database.dart';
 import 'package:btox/providers/tox.dart';
 import 'package:btox/services/tox_session.dart';
+import 'package:btox/sync/event.dart';
 import 'package:drift/native.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:riverpod/riverpod.dart';
 
 import '../mocks/fake_bootstrap_nodes.dart';
 import '../mocks/fake_toxcore.dart';
@@ -31,6 +30,8 @@ Future<void> _until(bool Function() condition) async {
 void main() {
   late Database db;
   late FakeToxcore tox;
+  GraphId chat() =>
+      GraphId.friend(PublicKey(Uint8List(32)), tox.friendGetPublicKey(0));
   late List<Tox_Connection?> statuses;
   late Id<Profiles> profileId;
 
@@ -61,12 +62,10 @@ void main() {
         nospam: ToxAddressNospam(0),
       ),
     );
-    await db.addContact(
-      ContactsCompanion.insert(
-        profileId: profileId,
-        name: Value('Friend'),
-        publicKey: tox.friendGetPublicKey(0),
-      ),
+    await db.addFriendChange(
+      profileId,
+      tox.friendGetPublicKey(0),
+      wanted: true,
     );
 
     container.listen(
@@ -89,17 +88,7 @@ void main() {
 
   test('sends our messages until they are delivered', () async {
     await _until(() => tox.friends.isNotEmpty);
-    final contact = (await db.select(db.contacts).get()).single;
-    final id = await db.addMessage(
-      newMessage(
-        contactId: contact.id,
-        parent: null,
-        merged: null,
-        author: PublicKey(Uint8List(32)),
-        timestamp: DateTime.utc(2026),
-        content: TextContent(text: 'hi'),
-      ).copyWith(delivered: const Value(false)),
-    );
+    await db.addSend(profileId, chat(), 'hi');
 
     tox.pushEvent(
       ToxEventFriendConnectionStatus(
@@ -117,9 +106,8 @@ void main() {
       ),
     );
     await db
-        .watchMessagesFor(contact.id)
-        .firstWhere((messages) => messages.single.delivered == true);
-    expect((await db.getMessage(id)).delivered, isTrue);
+        .watchSyncEvents(profileId, chat())
+        .firstWhere((events) => events.any((e) => e.$2.content is Delivered));
   });
 
   test('stops Tox when the profile signs out', () async {
@@ -130,10 +118,8 @@ void main() {
     await _until(() => !tox.isAlive);
   });
 
-  // Riverpod drops a state equal to the last one unless told otherwise.
   test('saves repeated identical messages', () async {
     await _until(() => tox.friends.isNotEmpty);
-    final contact = (await db.select(db.contacts).get()).single;
 
     for (var i = 0; i < 2; i++) {
       tox.pushEvent(
@@ -144,12 +130,12 @@ void main() {
         ),
       );
     }
-    final messages = await db
-        .watchMessagesFor(contact.id)
-        .firstWhere((messages) => messages.length == 2);
+    final events = await db
+        .watchSyncEvents(profileId, chat())
+        .firstWhere((events) => events.length == 2);
     expect(
-      [for (final m in messages) (m.content as TextContent).text],
-      ['hi', 'hi'],
+      [for (final (_, event) in events) (event.content as Received).message],
+      [utf8.encode('hi'), utf8.encode('hi')],
     );
   });
 }

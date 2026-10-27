@@ -8,10 +8,6 @@
     "@menuProfile": {
         "description": "The text for the profile menu item"
     },
-    "title": "bTox (wir arbeiten noch dran)",
-    "@title": {
-        "description": "The title of the application"
-    },
     "message": "Nachricht",
     "@message": {
         "description": "The text for the message field"

@@ -1,7 +1,7 @@
 import 'package:btox/models/connection_status.dart';
 import 'package:btox/providers/connection_status.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 final class ConnectionStatusIcon extends ConsumerWidget {
   const ConnectionStatusIcon({super.key});

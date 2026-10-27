@@ -3,10 +3,6 @@
   "@defaultContactName": {
     "description": "The default name for a contact when the name is not yet known"
   },
-  "title": "BTOX (வேலை தலைப்பு)",
-  "@title": {
-    "description": "The title of the application"
-  },
   "addContact": "தொடர்பைச் சேர்க்கவும்",
   "@addContact": {
     "description": "The text for the button to add a contact"

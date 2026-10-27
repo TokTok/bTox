@@ -13,10 +13,6 @@
   "@defaultContactName": {
     "description": "The default name for a contact when the name is not yet known"
   },
-  "title": "bTox (работно заглавие)",
-  "@title": {
-    "description": "The title of the application"
-  },
   "addContact": "Добавяне на контакт",
   "@addContact": {
     "description": "The text for the button to add a contact"
