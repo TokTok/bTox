@@ -1,3 +1,4 @@
+import 'package:btox/attachments/attachments.dart';
 import 'package:btox/background_service.dart';
 import 'package:btox/db/database.dart';
 import 'package:btox/l10n/generated/app_localizations.dart';
@@ -6,6 +7,8 @@ import 'package:btox/models/chat_view.dart';
 import 'package:btox/models/content.dart';
 import 'package:btox/models/crypto.dart';
 import 'package:btox/pages/chat_details_page.dart';
+import 'package:btox/pages/forward_page.dart';
+import 'package:btox/providers/attachments.dart';
 import 'package:btox/providers/chats.dart';
 import 'package:btox/providers/database.dart';
 import 'package:btox/providers/drafts.dart';
@@ -62,6 +65,56 @@ final class ChatPage extends HookConsumerWidget {
     );
     final summaryAsync = ref.watch(chatProvider(chat));
     final entriesAsync = ref.watch(chatEntriesProvider(chat));
+    final selected = useState(const <EventId>{});
+    final chosen = [
+      for (final entry in entriesAsync.value ?? const <ChatEntry>[])
+        if (selected.value.contains(entry.event)) entry,
+    ];
+    void unselect() => selected.value = const {};
+
+    Future<void> forward(List<ChatEntry> entries) async {
+      final messenger = ScaffoldMessenger.of(context);
+      final l10n = AppLocalizations.of(context)!;
+      final files = entries.any((e) => e.content is FileContent);
+      // Read now, as the chat may close while the user is picking.
+      final opened = ref.read(databaseProvider.future);
+      final directory = files
+          ? ref.read(attachmentsDirectoryProvider.future)
+          : null;
+      final to = await Navigator.push(
+        context,
+        ForwardPage.route(chat.profile, files: files),
+      );
+      if (to == null) {
+        return;
+      }
+      try {
+        final database = await opened;
+        for (final entry in entries) {
+          switch (entry.content) {
+            case final FileContent file:
+              await database.addFileSend(
+                to.profile,
+                to.graph,
+                await copyAttachment((await directory)!, file),
+              );
+            case final content:
+              if (messageTextOf(content) case final text?) {
+                await database.addSend(to.profile, to.graph, text);
+              }
+          }
+        }
+        messenger
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            SnackBar(content: Text(l10n.messagesForwarded(entries.length))),
+          );
+      } on Exception catch (e) {
+        _logger.e('Failed to forward to ${to.graph}: $e');
+        messenger.showSnackBar(SnackBar(content: Text(l10n.sendFailed)));
+      }
+    }
+
     final lifecycle = useAppLifecycleState();
     final newest = ref.watch(newestEventsProvider(chat));
     useEffect(
@@ -102,74 +155,138 @@ final class ChatPage extends HookConsumerWidget {
       return null;
     }, [chat.profile]);
 
+    String? selfName;
+    if (chosen.isNotEmpty) {
+      final profile = ref.watch(profileProvider(chat.profile)).value;
+      selfName =
+          ref.watch(chatDetailsProvider(chat)).value?.selfName ??
+          (profile == null
+              ? null
+              : ref.watch(profileIdentityProvider(profile)).name);
+    }
+
     return summaryAsync.when(
-      data: (summary) => Scaffold(
-        // The input makes room for the keyboard, or a panel in its place.
-        resizeToAvoidBottomInset: false,
-        appBar: AppBar(
-          title: Tooltip(
-            message: AppLocalizations.of(context)!.chatDetails,
-            child: InkWell(
-              onTap: () => Navigator.push(context, ChatDetailsPage.route(chat)),
-              child: Row(
-                children: [
-                  if (MediaQuery.of(context).size.width > 150)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 16),
-                      child: ChatAvatar(
-                        bytes: summary.key,
-                        online: summary.online,
+      data: (summary) => PopScope(
+        canPop: chosen.isEmpty,
+        onPopInvokedWithResult: (didPop, _) {
+          if (!didPop) {
+            unselect();
+          }
+        },
+        child: Scaffold(
+          // The input makes room for the keyboard, or a panel in its place.
+          resizeToAvoidBottomInset: false,
+          appBar: chosen.isNotEmpty
+              ? AppBar(
+                  leading: CloseButton(onPressed: unselect),
+                  title: Text(
+                    AppLocalizations.of(context)!
+                        .messagesSelected(chosen.length),
+                  ),
+                  actions: [
+                    IconButton(
+                      icon: const Icon(Icons.forward_outlined),
+                      tooltip: AppLocalizations.of(context)!.forward,
+                      onPressed: chosen.every((e) => e.forwardable)
+                          ? () {
+                              unselect();
+                              forward(chosen);
+                            }
+                          : null,
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.copy),
+                      tooltip: AppLocalizations.of(context)!.copy,
+                      onPressed:
+                          chosen.any((e) => messageTextOf(e.content) != null)
+                          ? () {
+                              _copy(
+                                context,
+                                chosen,
+                                nameOf: (entry) =>
+                                    (entry.mine
+                                        ? selfName
+                                        : entry.sender ?? summary.name) ??
+                                    AppLocalizations.of(context)!
+                                        .defaultContactName,
+                              );
+                              unselect();
+                            }
+                          : null,
+                    ),
+                  ],
+                )
+              : AppBar(
+                  title: Tooltip(
+                    message: AppLocalizations.of(context)!.chatDetails,
+                    child: InkWell(
+                      onTap: () =>
+                          Navigator.push(context, ChatDetailsPage.route(chat)),
+                      child: Row(
+                        children: [
+                          if (MediaQuery.of(context).size.width > 150)
+                            Padding(
+                              padding: const EdgeInsets.only(right: 16),
+                              child: ChatAvatar(
+                                bytes: summary.key,
+                                online: summary.online,
+                              ),
+                            ),
+                          Expanded(
+                            child: Text(
+                              summary.name ??
+                                  AppLocalizations.of(context)!
+                                      .defaultContactName,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
+                  ),
+                ),
+          body: entriesAsync.when(
+            data: (entries) => LayoutBuilder(
+              builder: (context, constraints) => Column(
+                children: [
                   Expanded(
-                    child: Text(
-                      summary.name ??
-                          AppLocalizations.of(context)!.defaultContactName,
+                    child: _Messages(
+                      chat: chat,
+                      entries: entries,
+                      draft: draft,
+                      controller: messages,
+                      selected: selected,
+                      onForward: forward,
                     ),
                   ),
+                  if (summary.closed)
+                    const _Closed()
+                  else if (chosen.isNotEmpty)
+                    const SafeArea(top: false, child: SizedBox.shrink())
+                  else
+                    // On a short screen, the input may take it all.
+                    ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxHeight: constraints.maxHeight,
+                      ),
+                      child: _Input(
+                        chat: chat,
+                        files: summary.key is PublicKey,
+                        draft: draft,
+                        recentEmojis: recentEmojis,
+                        // What's sent shows at the bottom.
+                        onSent: () {
+                          if (messages.hasClients) {
+                            messages.jumpTo(messages.position.minScrollExtent);
+                          }
+                        },
+                      ),
+                    ),
                 ],
               ),
             ),
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (_, _) => const LoadFailed(),
           ),
-        ),
-        body: entriesAsync.when(
-          data: (entries) => LayoutBuilder(
-            builder: (context, constraints) => Column(
-              children: [
-                Expanded(
-                  child: _Messages(
-                    chat: chat,
-                    entries: entries,
-                    draft: draft,
-                    controller: messages,
-                  ),
-                ),
-                if (summary.closed)
-                  const _Closed()
-                else
-                  // On a short screen, the input may take it all.
-                  ConstrainedBox(
-                    constraints: BoxConstraints(
-                      maxHeight: constraints.maxHeight,
-                    ),
-                    child: _Input(
-                      chat: chat,
-                      files: summary.key is PublicKey,
-                      draft: draft,
-                      recentEmojis: recentEmojis,
-                      // What's sent shows at the bottom.
-                      onSent: () {
-                        if (messages.hasClients) {
-                          messages.jumpTo(messages.position.minScrollExtent);
-                        }
-                      },
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (_, _) => const LoadFailed(),
         ),
       ),
       loading: () =>
@@ -179,12 +296,24 @@ final class ChatPage extends HookConsumerWidget {
   }
 }
 
-/// Copies the [text] of a message.
-void _copy(BuildContext context, String text) => copyText(
-  ScaffoldMessenger.of(context),
-  text,
-  AppLocalizations.of(context)!.messagesCopied(1),
-);
+void _copy(
+  BuildContext context,
+  List<ChatEntry> entries, {
+  String Function(ChatEntry entry)? nameOf,
+}) {
+  final texts = [
+    for (final entry in entries)
+      if (messageTextOf(entry.content) case final text?) (entry, text),
+  ];
+  copyText(
+    ScaffoldMessenger.of(context),
+    [
+      for (final (entry, text) in texts)
+        nameOf != null && texts.length > 1 ? '${nameOf(entry)}: $text' : text,
+    ].join('\n'),
+    AppLocalizations.of(context)!.messagesCopied(texts.length),
+  );
+}
 
 final class _Input extends ConsumerWidget {
   final ChatRef chat;
@@ -246,12 +375,16 @@ final class _Messages extends HookWidget {
   final List<ChatEntry> entries;
   final ChatDraft draft;
   final ScrollController controller;
+  final ValueNotifier<Set<EventId>> selected;
+  final void Function(List<ChatEntry> entries) onForward;
 
   const _Messages({
     required this.chat,
     required this.entries,
     required this.draft,
     required this.controller,
+    required this.selected,
+    required this.onForward,
   });
 
   @override
@@ -273,6 +406,8 @@ final class _Messages extends HookWidget {
     final waiting = entries.length - 1 - newest;
     final unseen = entries.skip(newest + 1).where((e) => !e.mine).length;
 
+    final selecting = entries.any((e) => selected.value.contains(e.event));
+
     Widget item(int i) {
       final entry = entries[i];
       final day = localDay(entry.timestamp);
@@ -291,11 +426,16 @@ final class _Messages extends HookWidget {
               joinsAbove: i > 0 && inRun(entries[i - 1], entry),
               joinsBelow:
                   i + 1 < entries.length && inRun(entry, entries[i + 1]),
+              selected: selecting ? selected.value.contains(entry.event) : null,
               onReply: () => draft.replyingTo.value = entry.content,
-              onCopy: switch (messageTextOf(entry.content)) {
-                final text? => () => _copy(context, text),
-                null => null,
-              },
+              onSelect: () =>
+                  selected.value = selected.value.contains(entry.event)
+                  ? ({...selected.value}..remove(entry.event))
+                  : {...selected.value, entry.event},
+              onForward: entry.forwardable ? () => onForward([entry]) : null,
+              onCopy: messageTextOf(entry.content) == null
+                  ? null
+                  : () => _copy(context, [entry]),
             ),
         ],
       );

@@ -60,6 +60,7 @@ dependencies:
   qr_flutter: ^4.1.0
   flutter_local_notifications: ^22.3.2
   flutter_secure_storage: ^10.3.4
+  url_launcher: ^6.3.3
 
 dev_dependencies:
   flutter_test:
@@ -77,6 +78,7 @@ dev_dependencies:
   path_provider_platform_interface: ^2.1.2
   plugin_platform_interface: ^2.1.8
   riverpod_generator: ^4.0.0
+  url_launcher_platform_interface: ^2.3.2
 
 # dart run flutter_launcher_icons
 flutter_launcher_icons:

@@ -6,7 +6,7 @@ final class ChatContextMenu {
     BuildContext context,
     Offset position, {
     required void Function() onReply,
-    required void Function() onForward,
+    required void Function()? onForward,
     // Null for a message without text.
     required void Function()? onCopy,
     required void Function() onSelect,
@@ -28,7 +28,8 @@ final class ChatContextMenu {
       items: [
         for (final (label, icon, action) in [
           (l10n.reply, Icons.reply_outlined, onReply),
-          (l10n.forward, Icons.forward_outlined, onForward),
+          if (onForward != null)
+            (l10n.forward, Icons.forward_outlined, onForward),
           if (onCopy != null) (l10n.copy, Icons.copy, onCopy),
           (l10n.select, Icons.check_circle_outline, onSelect),
           (l10n.info, Icons.info_outline, onInfo),

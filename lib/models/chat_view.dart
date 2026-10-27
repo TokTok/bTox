@@ -86,6 +86,12 @@ abstract class ChatEntry with _$ChatEntry {
 
   const ChatEntry._();
 
+  bool get forwardable => switch (content) {
+    FileContent(:final path) =>
+      path.isNotEmpty && (mine || file?.state == FileState.done),
+    final content => messageTextOf(content) != null,
+  };
+
   /// How far a message of ours got: a file has arrived when it has all been
   /// sent.
   ChatContentState get delivery => switch ((file, mine)) {

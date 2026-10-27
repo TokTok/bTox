@@ -452,6 +452,10 @@
   "@notImplemented": {
     "description": "Shown for a menu item that doesn't work yet"
   },
+  "openLinkFailed": "No app can open this link",
+  "@openLinkFailed": {
+    "description": "Shown when tapping a link in a message opens nothing"
+  },
   "reply": "Reply",
   "@reply": {
     "description": "Message menu item to reply to the message"
@@ -558,6 +562,52 @@
   "select": "Select",
   "@select": {
     "description": "Message menu item to select messages"
+  },
+  "forwardTo": "Forward to",
+  "@forwardTo": {
+    "description": "The title of the page that picks a chat to forward messages to"
+  },
+  "messagesForwarded": "{count, plural, =1{Message forwarded} other{{count} messages forwarded}}",
+  "@messagesForwarded": {
+    "description": "The message shown after forwarding messages",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "messageInfo": "Message details",
+  "@messageInfo": {
+    "description": "The title of the page a message's Info opens"
+  },
+  "messageSent": "Sent",
+  "@messageSent": {
+    "description": "On a message's details, when ours was sent"
+  },
+  "messageSending": "Sending",
+  "@messageSending": {
+    "description": "On a message's details, in place of messageSent while ours waits to go"
+  },
+  "messageDelivered": "Delivered",
+  "@messageDelivered": {
+    "description": "On a message's details, when ours arrived"
+  },
+  "messageReceived": "Received",
+  "@messageReceived": {
+    "description": "On a message's details, when someone else's came"
+  },
+  "messageFrom": "From",
+  "@messageFrom": {
+    "description": "On a message's details, the heading of who sent someone else's"
+  },
+  "messagesSelected": "{count} selected",
+  "@messagesSelected": {
+    "description": "The chat's title while messages are selected",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "messagesCopied": "{count, plural, =1{Message copied} other{{count} messages copied}}",
   "@messagesCopied": {

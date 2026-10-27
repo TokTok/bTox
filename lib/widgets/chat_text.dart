@@ -1,8 +1,13 @@
+import 'package:btox/l10n/generated/app_localizations.dart';
+import 'package:btox/messages/links.dart';
 import 'package:btox/widgets/bubble_footer.dart';
 import 'package:btox/widgets/chat_text_bubble.dart';
 import 'package:btox/widgets/chat_text_emoji.dart';
 import 'package:emoji_regex/emoji_regex.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// Matches one single emoji.
 final _emojiRegex = RegExp('^(?:${emojiRegex().pattern})\$');
@@ -10,7 +15,19 @@ final _emojiRegex = RegExp('^(?:${emojiRegex().pattern})\$');
 // Between the text and the footer on its last line.
 const _kFooterGap = 8.0;
 
-final class ChatText extends StatelessWidget {
+const _kLinkStyle = TextStyle(decoration: TextDecoration.underline);
+
+Future<void> _open(BuildContext context, Uri uri) async {
+  final messenger = ScaffoldMessenger.of(context);
+  final failed = AppLocalizations.of(context)!.openLinkFailed;
+  if (!await launchUrl(uri)) {
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(failed)));
+  }
+}
+
+final class ChatText extends HookWidget {
   final BubbleFooter? footer;
   final String text;
   final Color color;
@@ -31,6 +48,22 @@ final class ChatText extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final footer = this.footer;
+    final links = useMemoized(() => findLinks(text), [text]);
+    final recognizers = useMemoized(
+      () => [
+        for (final link in links)
+          TapGestureRecognizer()..onTap = () => _open(context, link.uri),
+      ],
+      [links],
+    );
+    useEffect(
+      () => () {
+        for (final recognizer in recognizers) {
+          recognizer.dispose();
+        }
+      },
+      [recognizers],
+    );
     if (_emojiRegex.hasMatch(text)) {
       return IntrinsicWidth(
         child: Column(
@@ -53,7 +86,17 @@ final class ChatText extends StatelessWidget {
       child: Text.rich(
         TextSpan(
           children: [
-            TextSpan(text: text),
+            for (final (i, link) in links.indexed) ...[
+              TextSpan(
+                text: text.substring(i == 0 ? 0 : links[i - 1].end, link.start),
+              ),
+              TextSpan(
+                text: text.substring(link.start, link.end),
+                style: _kLinkStyle,
+                recognizer: recognizers[i],
+              ),
+            ],
+            TextSpan(text: text.substring(links.lastOrNull?.end ?? 0)),
             if (footer != null)
               WidgetSpan(
                 child: Padding(

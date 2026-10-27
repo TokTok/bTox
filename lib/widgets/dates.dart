@@ -26,6 +26,10 @@ String dayText(BuildContext context, DateTime day) {
       : dates.formatFullDate(day);
 }
 
+String dayAndTimeText(BuildContext context, DateTime time) =>
+    AppLocalizations.of(context)!
+        .dayAndTime(dayText(context, localDay(time)), timeText(context, time));
+
 /// When [time] was, as briefly as a chat list says it: the time today, the
 /// weekday this week, else the date.
 String recentText(BuildContext context, DateTime time) =>
