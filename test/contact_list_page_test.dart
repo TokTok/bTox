@@ -1,13 +1,17 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:btox/db/database.dart';
+import 'package:btox/ffi/toxcore.dart' show Tox_Message_Type;
 import 'package:btox/l10n/generated/app_localizations.dart';
 import 'package:btox/models/crypto.dart';
 import 'package:btox/models/profile_settings.dart';
 import 'package:btox/pages/contact_list_page.dart';
+import 'package:btox/pages/merge_chat_page.dart';
 import 'package:btox/providers/connection_status.dart';
 import 'package:btox/providers/database.dart';
 import 'package:btox/sync/event.dart';
+import 'package:btox/sync/fact.dart';
 import 'package:btox/sync/home.dart';
 import 'package:btox/sync/setting.dart';
 import 'package:btox/widgets/chat_list_item.dart';
@@ -120,6 +124,123 @@ void main() {
       (alice, false, true),
     ]);
     expect(find.text('Contact "Unknown" deleted'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpAndSettle();
+    await tester.runAsync(db.close);
+  });
+
+  testWidgets('group chats merge, show apart, and show relayed names', (
+    tester,
+  ) async {
+    final db = Database(NativeDatabase.memory());
+    final group = GroupChat(GroupChatId(Uint8List(32)..[0] = 1));
+    final conference = ConferenceChat(ConferenceId(Uint8List(32)..[0] = 2));
+    final groupBot = PublicKey(Uint8List(32)..[0] = 3);
+    final conferenceBot = PublicKey(Uint8List(32)..[0] = 4);
+    final home = (await tester.runAsync(() async {
+      final profileId = await db.addProfile(
+        ProfilesCompanion.insert(
+          signedIn: const Value(true),
+          settings: ProfileSettings(nickname: 'Me', statusMessage: ''),
+          secretKey: SecretKey(Uint8List(32)),
+          publicKey: PublicKey(Uint8List(32)),
+          nospam: ToxAddressNospam(0),
+        ),
+      );
+      final home = await Home.load(db, await db.watchProfile(profileId).first);
+      for (final (chat, name, bot) in [
+        (group, 'Group', groupBot),
+        (conference, 'Conference', conferenceBot),
+      ]) {
+        for (final value in [
+          FactValue.name(name),
+          const FactValue.joined(true),
+        ]) {
+          await home.record(
+            home.account,
+            FactContent(subject: Subject.chat(chat), value: value),
+          );
+        }
+        await home.record(
+          chat.graph,
+          Received(
+            from: bot,
+            sender: 'bot',
+            message: utf8.encode('<Bob> hi'),
+            kind: Tox_Message_Type.TOX_MESSAGE_TYPE_NORMAL,
+          ),
+        );
+      }
+      return home;
+    }))!;
+    Finder chat(String name) => find.widgetWithText(ChatListItem, name);
+    Future<void> pick(String name, String action) async {
+      await tester.longPress(chat(name));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(action));
+      await tester.pumpAndSettle();
+    }
+
+    MergeChat merge({required bool merged}) => MergeChat(
+      chat: conference,
+      bot: conferenceBot,
+      into: group,
+      intoBot: groupBot,
+      merged: merged,
+    );
+    RelayBot relayBot({required bool relays}) =>
+        RelayBot(chat: conference, bot: conferenceBot, relays: relays);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          databaseProvider.overrideWith((ref) => db),
+          connectionStatusProvider.overrideWithValue(null),
+        ],
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          home: const ContactListPage(),
+        ),
+      ),
+    );
+    await settle(tester, until: () => chat('Conference').evaluate().isNotEmpty);
+
+    await pick('Group', 'Merge with another chat');
+    expect(find.byType(MergeChatPage), findsOneWidget);
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    // As the background service records it.
+    home.record(home.account, merge(merged: true));
+    await settle(tester, until: () => chat('Conference').evaluate().isEmpty);
+
+    await pick('Group', 'Show the chats apart');
+    Future<List<MergeChange>> merges() => db.select(db.chatMerges).get();
+    await settle(tester, until: () async => (await merges()).isNotEmpty);
+    expect(
+      [for (final m in (await tester.runAsync(merges))!) (m.chat, m.merged)],
+      [(conference.graph, false)],
+    );
+    home.record(home.account, merge(merged: false));
+    await settle(tester, until: () => chat('Conference').evaluate().isNotEmpty);
+
+    final relayed = find.text('Bob: hi', findRichText: true);
+    await pick('Conference', 'Names from a relay bot');
+    expect(find.byType(RelayBotPage), findsOneWidget);
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    home.record(home.account, relayBot(relays: true));
+    await settle(tester, until: () => relayed.evaluate().isNotEmpty);
+
+    await pick('Conference', 'Stop showing names from the relay bot');
+    Future<List<RelayBotChange>> bots() => db.select(db.relayBots).get();
+    await settle(tester, until: () async => (await bots()).isNotEmpty);
+    expect(
+      [for (final b in (await tester.runAsync(bots))!) (b.chat, b.relays)],
+      [(conference.graph, false)],
+    );
+    home.record(home.account, relayBot(relays: false));
+    await settle(tester, until: () => relayed.evaluate().isEmpty);
 
     await tester.pumpWidget(const SizedBox());
     await tester.pumpAndSettle();

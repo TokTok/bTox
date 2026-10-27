@@ -46,6 +46,10 @@ const _vectorSend = '920193a24d65c40568690000ff01';
 const _vectorFileAnswered =
     '920792c42001000000000000000000000000000000000000000000000000000000000000'
     '00c3';
+const _vectorRelayBot =
+    '9245939201c4200101010101010101010101010101010101010101010101010101010101'
+    '010101c42002020202020202020202020202020202020202020202020202020202020202'
+    '02c3';
 const _vectorMute =
     '924b929201c4200101010101010101010101010101010101010101010101010101010101'
     '01010192009291cf0000018bcfe56800c3';
@@ -58,6 +62,11 @@ const _vectorClearSetting =
 const _vectorUnreadableMute =
     '924b929201c4200101010101010101010101010101010101010101010101010101010101'
     '010101920091a178';
+const _vectorMergeChat =
+    '9244959201c4200101010101010101010101010101010101010101010101010101010101'
+    '010101c42002020202020202020202020202020202020202020202020202020202020202'
+    '029200c42003030303030303030303030303030303030303030303030303030303030303'
+    '03c4200303030303030303030303030303030303030303030303030303030303030303c3';
 
 // A mute with a third field, from a newer version, and with `mentions`
 // changed by this one.
@@ -145,6 +154,27 @@ void main() {
     );
     expect(hex.encode(answered.encode()), endsWith(_vectorFileAnswered));
     expect(SyncEvent.decode(answered.encode()), answered);
+    final three = Uint8List(32)..fillRange(0, 32, 3);
+    final merge = event.copyWith(
+      content: MergeChat(
+        chat: ConferenceChat(ConferenceId(Uint8List.fromList(_alice.bytes))),
+        bot: _bob,
+        into: GroupChat(GroupChatId(three)),
+        intoBot: PublicKey(three),
+        merged: true,
+      ),
+    );
+    expect(hex.encode(merge.encode()), endsWith(_vectorMergeChat));
+    expect(SyncEvent.decode(merge.encode()), merge);
+    final relay = event.copyWith(
+      content: RelayBot(
+        chat: ConferenceChat(ConferenceId(Uint8List.fromList(_alice.bytes))),
+        bot: _bob,
+        relays: true,
+      ),
+    );
+    expect(hex.encode(relay.encode()), endsWith(_vectorRelayBot));
+    expect(SyncEvent.decode(relay.encode()), relay);
     final scope = Scope.conversation(GraphId(Uint8List.fromList(_alice.bytes)));
     for (final (content, vector) in [
       (

@@ -448,6 +448,18 @@
   "@linkFailed": {
     "description": "Error when a linked account couldn't be added"
   },
+  "relayBotNames": "Names from a relay bot",
+  "@relayBotNames": {
+    "description": "The action, and its page, that shows the names a bot relays from another chat in a group chat"
+  },
+  "stopRelayBotNames": "Stop showing names from the relay bot",
+  "@stopRelayBotNames": {
+    "description": "The action that shows a relay bot's messages as its own again"
+  },
+  "showNames": "Show names",
+  "@showNames": {
+    "description": "The button that starts showing the names a relay bot relays"
+  },
   "notImplemented": "Not available yet",
   "@notImplemented": {
     "description": "Shown for a menu item that doesn't work yet"
@@ -530,6 +542,25 @@
   "sendPicturesAsQoiHint": "Lossless, but larger, and not every app shows QOI",
   "@sendPicturesAsQoiHint": {
     "description": "Under the setting to send pictures as QOI"
+  },
+  "seenThrough": "Seen through {bot}",
+  "@seenThrough": {
+    "description": "Heading of the names a relay bot has relayed in the chat's history, under the bot among the people in a chat, though they may not be there now",
+    "placeholders": {
+      "bot": {
+        "type": "String",
+        "example": "EPiG-BrDG"
+      }
+    }
+  },
+  "showMoreSeen": "{count, plural, =1{Show 1 more} other{Show {count} more}}",
+  "@showMoreSeen": {
+    "description": "Shows the names a relay bot relayed longer ago",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "roleFounder": "Founder",
   "@roleFounder": {
@@ -719,6 +750,52 @@
         "example": "Alice"
       }
     }
+  },
+  "mergeChat": "Merge with another chat",
+  "@mergeChat": {
+    "description": "Action on a group chat to show it together with another that a bot relays messages between"
+  },
+  "unmergeChat": "Show the chats apart",
+  "@unmergeChat": {
+    "description": "Action on merged chats to show them as separate chats again"
+  },
+  "mergeChatTitle": "Merge chats",
+  "@mergeChatTitle": {
+    "description": "Title of the page that merges two chats"
+  },
+  "mergeWith": "Merge with",
+  "@mergeWith": {
+    "description": "Heading of the chats one can merge with"
+  },
+  "relayBotIn": "Bot in {chat}",
+  "@relayBotIn": {
+    "description": "Heading of the members of a chat to pick the bot from that relays messages to the other chat",
+    "placeholders": {
+      "chat": {
+        "type": "String",
+        "example": "Tox"
+      }
+    }
+  },
+  "relayedMessages": "{relayed} of {count} messages relayed",
+  "@relayedMessages": {
+    "description": "How many of a chat member's messages look like a bot relayed them",
+    "placeholders": {
+      "relayed": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "noChatsToMerge": "No other group chats",
+  "@noChatsToMerge": {
+    "description": "Shown when there are no chats to merge with"
+  },
+  "merge": "Merge",
+  "@merge": {
+    "description": "Button that merges the chats"
   },
   "exported": "Data exported",
   "@exported": {

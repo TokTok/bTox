@@ -27,6 +27,8 @@ const _tagWantFriend = 64;
 const _tagUnwantFriend = 65;
 const _tagReadUpTo = 66;
 const _tagFriendRequested = 67;
+const _tagMergeChat = 68;
+const _tagRelayBot = 69;
 const _tagFact = 70;
 const _tagWant = 71;
 const _tagChatInvite = 72;
@@ -78,6 +80,22 @@ sealed class EventContent with _$EventContent {
     required PublicKey pk,
     required String message,
   }) = FriendRequested;
+  // [chat] shows with [into], as [bot] in [chat] and [intoBot] in [into]
+  // relay messages between them, or unmerged where [merged] is false.
+  const factory EventContent.mergeChat({
+    required ChatId chat,
+    required PublicKey bot,
+    required ChatId into,
+    required PublicKey intoBot,
+    required bool merged,
+  }) = MergeChat;
+  // [bot] in [chat] relays messages from another chat as `<name> text`, or
+  // no more where [relays] is false.
+  const factory EventContent.relayBot({
+    required ChatId chat,
+    required PublicKey bot,
+    required bool relays,
+  }) = RelayBot;
   // What Tox says [subject] has.
   const factory EventContent.fact({
     required Subject subject,
@@ -211,6 +229,26 @@ ArrayWriter _encodeContent(EventContent content) {
       _tagFriendRequested,
       f.bin(pk.bytes).string(message),
     ),
+    MergeChat(
+      :final chat,
+      :final bot,
+      :final into,
+      :final intoBot,
+      :final merged,
+    ) =>
+      of(
+        _tagMergeChat,
+        f
+            .array(encodeChat(chat))
+            .bin(bot.bytes)
+            .array(encodeChat(into))
+            .bin(intoBot.bytes)
+            .flag(merged),
+      ),
+    RelayBot(:final chat, :final bot, :final relays) => of(
+      _tagRelayBot,
+      f.array(encodeChat(chat)).bin(bot.bytes).flag(relays),
+    ),
     FactContent(:final subject, :final value) => of(
       _tagFact,
       encodeFact(subject, value),
@@ -314,6 +352,22 @@ EventContent _decodeContent(Fields event) => event.variant<EventContent>(
     ),
     _tagFriendRequested => c.fields(
       (f) => FriendRequested(pk: PublicKey(f.bin()), message: f.string()),
+    ),
+    _tagMergeChat => c.fields(
+      (f) => MergeChat(
+        chat: decodeChat(f),
+        bot: PublicKey(f.bin()),
+        into: decodeChat(f),
+        intoBot: PublicKey(f.bin()),
+        merged: f.flag(),
+      ),
+    ),
+    _tagRelayBot => c.fields(
+      (f) => RelayBot(
+        chat: decodeChat(f),
+        bot: PublicKey(f.bin()),
+        relays: f.flag(),
+      ),
     ),
     _tagFact => c.fields((f) {
       final (subject, value) = readFact(f);

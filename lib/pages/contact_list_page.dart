@@ -5,6 +5,7 @@ import 'package:btox/models/chat_view.dart';
 import 'package:btox/models/crypto.dart';
 import 'package:btox/pages/add_contact_page.dart';
 import 'package:btox/pages/chat_page.dart';
+import 'package:btox/pages/merge_chat_page.dart';
 import 'package:btox/providers/chats.dart';
 import 'package:btox/providers/database.dart';
 import 'package:btox/providers/profiles.dart';
@@ -212,6 +213,13 @@ final class ContactListPage extends ConsumerWidget {
     Future<void> Function(bool deleteChat)? delete,
   }) async {
     final l10n = AppLocalizations.of(context)!;
+    final account = ref.read(accountProvider(chat.ref.profile)).value;
+    final merged =
+        (ref.read(chatMergeProvider(chat.ref))?.sides.length ?? 0) > 1;
+    final relayBot = account?.relayBots.entries
+        .where((r) => r.key.graph == chat.ref.graph)
+        .firstOrNull
+        ?.value;
     final picked = await showModalBottomSheet<_ChatAction>(
       context: context,
       builder: (context) => SafeArea(
@@ -236,6 +244,34 @@ final class ContactListPage extends ConsumerWidget {
                 title: Text(l10n.deleteContact),
                 onTap: () => Navigator.pop(context, _ChatAction.delete),
               ),
+            if (chat.key is! PublicKey)
+              ListTile(
+                leading: Icon(merged ? Icons.call_split : Icons.merge),
+                title: Text(merged ? l10n.unmergeChat : l10n.mergeChat),
+                onTap: () => Navigator.pop(
+                  context,
+                  merged ? _ChatAction.unmerge : _ChatAction.merge,
+                ),
+              ),
+            if (chat.key is! PublicKey && !merged)
+              ListTile(
+                leading: Icon(
+                  relayBot == null
+                      ? Icons.smart_toy_outlined
+                      : Icons.person_off_outlined,
+                ),
+                title: Text(
+                  relayBot == null
+                      ? l10n.relayBotNames
+                      : l10n.stopRelayBotNames,
+                ),
+                onTap: () => Navigator.pop(
+                  context,
+                  relayBot == null
+                      ? _ChatAction.relayBot
+                      : _ChatAction.noRelayBot,
+                ),
+              ),
           ],
         ),
       ),
@@ -252,6 +288,36 @@ final class ContactListPage extends ConsumerWidget {
         return;
       case _ChatAction.delete:
         await _confirmDelete(context, delete!, chat.name);
+        return;
+      case _ChatAction.merge:
+        await Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => MergeChatPage(chat: chat)),
+        );
+        return;
+      case _ChatAction.relayBot:
+        await Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => RelayBotPage(chat: chat)),
+        );
+        return;
+      case _ChatAction.noRelayBot:
+        _logger.i('No more names from the relay bot in ${chat.ref.graph}');
+        final db = await ref.read(databaseProvider.future);
+        await db.addRelayBot(
+          chat.ref.profile,
+          chat: chat.ref.graph,
+          bot: relayBot!,
+          relays: false,
+        );
+        return;
+      case _ChatAction.unmerge:
+        final db = await ref.read(databaseProvider.future);
+        await db.showApart(
+          chat.ref.profile,
+          chat.ref.graph,
+          account?.merges ?? const {},
+        );
     }
   }
 
@@ -281,7 +347,7 @@ final class ContactListPage extends ConsumerWidget {
   }
 }
 
-enum _ChatAction { mute, unmute, delete }
+enum _ChatAction { mute, unmute, delete, merge, unmerge, relayBot, noRelayBot }
 
 /// What a tab shows with nothing in it.
 final class _Empty extends StatelessWidget {

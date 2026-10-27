@@ -12,6 +12,7 @@ import 'package:btox/models/crypto.dart';
 import 'package:btox/models/id.dart';
 import 'package:btox/models/persistence.dart';
 import 'package:btox/models/profile_settings.dart';
+import 'package:btox/sync/account.dart';
 import 'package:btox/sync/event.dart';
 import 'package:btox/sync/fact.dart';
 import 'package:btox/sync/setting.dart';
@@ -30,6 +31,7 @@ const _idsPerStatement = 500;
     AppSettings,
     CachedBootstrapNodes,
     ChatDrafts,
+    ChatMerges,
     DeletedChats,
     FileAnswers,
     InviteAnswers,
@@ -39,6 +41,7 @@ const _idsPerStatement = 500;
     ChatReads,
     ChatSends,
     Profiles,
+    RelayBots,
     SettingChanges,
     SyncEvents,
     Transfers,
@@ -511,6 +514,71 @@ final class Database extends _$Database {
   Future<void> writeInviteAnswer(InviteAnswer answer, NewEvent event) =>
       _replace(inviteAnswers, answer, answer.profileId, event);
 
+  Future<void> addChatMerge(
+    Id<Profiles> profileId, {
+    required GraphId chat,
+    required PublicKey bot,
+    required GraphId into,
+    required PublicKey intoBot,
+    required bool merged,
+  }) async {
+    await chatMerges.insertOne(
+      ChatMergesCompanion.insert(
+        profileId: profileId,
+        chat: chat,
+        bot: bot,
+        into: into,
+        intoBot: intoBot,
+        merged: merged,
+      ),
+    );
+  }
+
+  Future<void> showApart(
+    Id<Profiles> profileId,
+    GraphId chat,
+    Map<ChatId, AccountMerge> merges,
+  ) async {
+    for (final MapEntry(key: other, value: merge) in merges.entries) {
+      if (merge.into.graph == chat) {
+        await addChatMerge(
+          profileId,
+          chat: other.graph,
+          bot: merge.bot,
+          into: merge.into.graph,
+          intoBot: merge.intoBot,
+          merged: false,
+        );
+      }
+    }
+  }
+
+  Future<void> addRelayBot(
+    Id<Profiles> profileId, {
+    required GraphId chat,
+    required PublicKey bot,
+    required bool relays,
+  }) async {
+    await relayBots.insertOne(
+      RelayBotsCompanion.insert(
+        profileId: profileId,
+        chat: chat,
+        bot: bot,
+        relays: relays,
+      ),
+    );
+  }
+
+  Stream<List<RelayBotChange>> watchRelayBots(Id<Profiles> profileId) =>
+      (select(relayBots)
+            ..where((r) => r.profileId.equals(profileId.value))
+            ..orderBy([(r) => OrderingTerm(expression: r.id)]))
+          .watch();
+
+  /// Stores [event] in place of the [change] for which it was written.
+  Future<void> writeRelayBot(RelayBotChange change, NewEvent event) =>
+      _replace(relayBots, change, change.profileId, event);
+
   Future<void> setSetting(
     Id<Profiles> profileId,
     Scope scope,
@@ -544,6 +612,16 @@ final class Database extends _$Database {
   /// Stores [event] in place of the [change] it was written for.
   Future<void> writeSetting(SettingChange change, NewEvent event) =>
       _replace(settingChanges, change, change.profileId, event);
+
+  Stream<List<MergeChange>> watchChatMerges(Id<Profiles> profileId) =>
+      (select(chatMerges)
+            ..where((m) => m.profileId.equals(profileId.value))
+            ..orderBy([(m) => OrderingTerm(expression: m.id)]))
+          .watch();
+
+  /// Stores [event] in place of the [change] for which it was written.
+  Future<void> writeChatMerge(MergeChange change, NewEvent event) =>
+      _replace(chatMerges, change, change.profileId, event);
 
   Future<Id<Transfers>> addTransfer(TransfersCompanion entry) async =>
       Id(await into(transfers).insert(entry));

@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:btox/db/database.dart';
+import 'package:btox/ffi/toxcore.dart' show Tox_Message_Type;
 import 'package:btox/l10n/generated/app_localizations.dart';
 import 'package:btox/models/chat_view.dart';
 import 'package:btox/models/crypto.dart';
@@ -22,6 +25,27 @@ final _bob = PublicKey(Uint8List(32)..fillRange(0, 32, 2));
 final _carol = PublicKey(Uint8List(32)..fillRange(0, 32, 3));
 final _group = GroupChat(GroupChatId(Uint8List(32)..fillRange(0, 32, 4)));
 
+/// [contents] in [graph], each after the one before, at its time.
+List<(EventId, SyncEvent, Uint8List)> _events(
+  GraphId graph,
+  List<(int, EventContent)> contents,
+) {
+  final events = <(EventId, SyncEvent, Uint8List)>[];
+  for (final (time, content) in contents) {
+    final event = SyncEvent(
+      graph: graph,
+      author: _self,
+      parents: [?events.lastOrNull?.$1],
+      rank: events.length,
+      time: time,
+      content: content,
+    );
+    final bytes = event.encode();
+    events.add((EventId.of(bytes), event, bytes));
+  }
+  return events;
+}
+
 /// A profile whose account has [contents], each after the one before.
 Future<Id<Profiles>> _account(Database db, List<EventContent> contents) async {
   final id = await db.addProfile(
@@ -33,20 +57,12 @@ Future<Id<Profiles>> _account(Database db, List<EventContent> contents) async {
       nospam: ToxAddressNospam(0),
     ),
   );
-  final events = <(EventId, SyncEvent, Uint8List)>[];
-  for (final content in contents) {
-    final event = SyncEvent(
-      graph: GraphId.account(_self),
-      author: _self,
-      parents: [?events.lastOrNull?.$1],
-      rank: events.length,
-      time: 1700000000000 + events.length,
-      content: content,
-    );
-    final bytes = event.encode();
-    events.add((EventId.of(bytes), event, bytes));
-  }
-  await db.addSyncEvents(id, events);
+  await db.addSyncEvents(
+    id,
+    _events(GraphId.account(_self), [
+      for (final (i, content) in contents.indexed) (1700000000000 + i, content),
+    ]),
+  );
   return id;
 }
 
@@ -118,6 +134,63 @@ void main() {
       find.text("Who is here shows while the account's home device is online"),
       findsOneWidget,
     );
+
+    await _close(tester, db);
+  });
+
+  testWidgets('the names a relay bot relayed show under it, recent first', (
+    tester,
+  ) async {
+    final db = Database(NativeDatabase.memory());
+    final profile = (await tester.runAsync(() async {
+      final id = await _account(db, [
+        FactContent(
+          subject: Subject.chat(_group),
+          value: const FactValue.joined(true),
+        ),
+        RelayBot(chat: _group, bot: _bob, relays: true),
+      ]);
+      await db.addSyncEvents(
+        id,
+        _events(_group.graph, [
+          for (final (time, text) in [
+            (1700000000000, '<Eve> hi'),
+            (DateTime.now().millisecondsSinceEpoch, '<Dan> yo'),
+          ])
+            (
+              time,
+              Received(
+                from: _bob,
+                sender: 'relay',
+                message: utf8.encode(text),
+                kind: Tox_Message_Type.TOX_MESSAGE_TYPE_NORMAL,
+              ),
+            ),
+        ]),
+      );
+      await db.updateLiveFacts(id, [
+        (const Subject.account(), const FactValue.connection(Connection.udp)),
+        (Subject.peer(_group, _bob), const FactValue.name('relay')),
+      ], all: true);
+      return id;
+    }))!;
+
+    await _show(tester, db, ChatRef(profile, _group.graph));
+    await settle(
+      tester,
+      until: () => find.text('Seen through relay').evaluate().isNotEmpty,
+    );
+    expect(find.text('Dan'), findsOneWidget);
+    expect(find.text('Eve'), findsNothing);
+    await tester.tap(find.text('Show 1 more'));
+    await tester.pump();
+    expect(find.text('Eve'), findsOneWidget);
+
+    // From history, when the bot is gone.
+    await tester.runAsync(() => db.clearLiveFacts(profile));
+    await settle(tester, until: () => find.text('relay').evaluate().isEmpty);
+    expect(find.text('Seen through relay'), findsOneWidget);
+    expect(find.text('Dan'), findsOneWidget);
 
     await _close(tester, db);
   });

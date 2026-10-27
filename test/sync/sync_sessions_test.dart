@@ -12,6 +12,7 @@ import 'package:btox/models/id.dart';
 import 'package:btox/models/persistence.dart';
 import 'package:btox/models/profile_settings.dart';
 import 'package:btox/services/tox_sync.dart';
+import 'package:btox/sync/account.dart';
 import 'package:btox/sync/event.dart';
 import 'package:btox/sync/fact.dart';
 import 'package:btox/sync/frames.dart';
@@ -637,6 +638,160 @@ void main() {
     await _settle();
     expect(cancelled, [ChatRef(profileId, chat)]);
   });
+
+  test(
+    'merged chats notify once, as who said it, and merge on request',
+    () async {
+      final account = GraphId.account(_home);
+      final group = GroupChat(GroupChatId(Uint8List(32)..[0] = 1));
+      final conference = ConferenceChat(ConferenceId(Uint8List(32)..[0] = 2));
+      final groupBot = PublicKey(Uint8List(32)..fillRange(0, 32, 4));
+      final conferenceBot = PublicKey(Uint8List(32)..fillRange(0, 32, 5));
+      final ranks = <GraphId, int>{};
+      Uint8List add(GraphId graph, int time, EventContent content) => SyncEvent(
+        graph: graph,
+        author: _home,
+        parents: const [],
+        rank: ranks[graph] = (ranks[graph] ?? -1) + 1,
+        time: time,
+        content: content,
+      ).encode();
+      Received said(PublicKey from, String sender, String text) => Received(
+        from: from,
+        sender: sender,
+        message: utf8.encode(text),
+        kind: Tox_Message_Type.TOX_MESSAGE_TYPE_NORMAL,
+      );
+
+      from(_home, const Hello(features: Features.accountSync));
+      from(
+        _home,
+        Events([
+          add(account, 0, WantFriend(pk: PublicKey(Uint8List(32)))),
+          for (final chat in [group, conference])
+            for (final value in [FactValue.name('Tox'), FactValue.joined(true)])
+              add(
+                account,
+                0,
+                FactContent(subject: Subject.chat(chat), value: value),
+              ),
+          add(
+            account,
+            0,
+            MergeChat(
+              chat: conference,
+              bot: conferenceBot,
+              into: group,
+              intoBot: groupBot,
+              merged: true,
+            ),
+          ),
+        ]),
+      );
+      await _settle();
+      for (final event in [
+        add(group.graph, 100, said(_bob, 'Bob', 'hi')),
+        add(conference.graph, 101, said(conferenceBot, '!', '<Bob> hi')),
+        add(conference.graph, 200, said(conferenceBot, '!', '<Carol> yo')),
+      ]) {
+        from(_home, Events([event]));
+        await _settle();
+      }
+      expect(shown, [
+        for (final text in ['Bob: hi', 'Carol: yo'])
+          (ChatRef(profileId, group.graph), 'Tox', text, null),
+      ]);
+
+      sentTo(_home);
+      await db.showApart(
+        profileId,
+        group.graph,
+        AccountState.of(await db.watchSyncEvents(profileId, account).first)
+            .merges,
+      );
+      await _settle();
+      expect(await db.select(db.chatMerges).get(), isEmpty);
+      final [Events(events: [merge])] = sentTo(_home).cast<Events>();
+      expect(
+        SyncEvent.decode(merge).content,
+        MergeChat(
+          chat: conference,
+          bot: conferenceBot,
+          into: group,
+          intoBot: groupBot,
+          merged: false,
+        ),
+      );
+    },
+  );
+
+  test(
+    "a relay bot's chat notifies as who said it, and stops on request",
+    () async {
+      final account = GraphId.account(_home);
+      final conference = ConferenceChat(ConferenceId(Uint8List(32)..[0] = 2));
+      final bot = PublicKey(Uint8List(32)..fillRange(0, 32, 5));
+      final ranks = <GraphId, int>{};
+      Uint8List add(GraphId graph, int time, EventContent content) => SyncEvent(
+        graph: graph,
+        author: _home,
+        parents: const [],
+        rank: ranks[graph] = (ranks[graph] ?? -1) + 1,
+        time: time,
+        content: content,
+      ).encode();
+
+      from(_home, const Hello(features: Features.accountSync));
+      from(
+        _home,
+        Events([
+          add(account, 0, WantFriend(pk: PublicKey(Uint8List(32)))),
+          for (final value in [FactValue.name('Tox'), FactValue.joined(true)])
+            add(
+              account,
+              0,
+              FactContent(subject: Subject.chat(conference), value: value),
+            ),
+          add(account, 0, RelayBot(chat: conference, bot: bot, relays: true)),
+        ]),
+      );
+      await _settle();
+      from(
+        _home,
+        Events([
+          add(
+            conference.graph,
+            100,
+            Received(
+              from: bot,
+              sender: '!',
+              message: utf8.encode('<Carol> yo'),
+              kind: Tox_Message_Type.TOX_MESSAGE_TYPE_NORMAL,
+            ),
+          ),
+        ]),
+      );
+      await _settle();
+      expect(shown, [
+        (ChatRef(profileId, conference.graph), 'Tox', 'Carol: yo', null),
+      ]);
+
+      sentTo(_home);
+      await db.addRelayBot(
+        profileId,
+        chat: conference.graph,
+        bot: bot,
+        relays: false,
+      );
+      await _settle();
+      expect(await db.select(db.relayBots).get(), isEmpty);
+      final [Events(events: [stop])] = sentTo(_home).cast<Events>();
+      expect(
+        SyncEvent.decode(stop).content,
+        RelayBot(chat: conference, bot: bot, relays: false),
+      );
+    },
+  );
 
   test('a muted chat notifies only of mentions; settings go on '
       'request', () async {

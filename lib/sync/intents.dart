@@ -156,6 +156,60 @@ final class EventWriter {
     }
   }
 
+  /// Writes in [account] the chats merged and shown apart, of those
+  /// [chatOf] knows.
+  Future<void> merges(
+    GraphId account,
+    List<MergeChange> merges,
+    ChatId? Function(GraphId graph) chatOf,
+  ) async {
+    for (final merge in merges) {
+      await once(
+        merge.id,
+        () => write(
+          account,
+          () => switch ((chatOf(merge.chat), chatOf(merge.into))) {
+            (final chat?, final into?) => MergeChat(
+              chat: chat,
+              bot: merge.bot,
+              into: into,
+              intoBot: merge.intoBot,
+              merged: merge.merged,
+            ),
+            _ => null,
+          },
+          save: (event) => _db.writeChatMerge(merge, event),
+        ),
+      );
+    }
+  }
+
+  /// Writes in [account] the chats in which to show relay bots' names, or no
+  /// more, of those [chatOf] knows.
+  Future<void> relayBots(
+    GraphId account,
+    List<RelayBotChange> changes,
+    ChatId? Function(GraphId graph) chatOf,
+  ) async {
+    for (final change in changes) {
+      await once(
+        change.id,
+        () => write(
+          account,
+          () => switch (chatOf(change.chat)) {
+            final chat? => RelayBot(
+              chat: chat,
+              bot: change.bot,
+              relays: change.relays,
+            ),
+            null => null,
+          },
+          save: (event) => _db.writeRelayBot(change, event),
+        ),
+      );
+    }
+  }
+
   Future<void> settings(GraphId account, List<SettingChange> changes) async {
     for (final change in changes) {
       await once(

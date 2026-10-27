@@ -91,6 +91,73 @@ void main() {
     expect(names(), expected);
   });
 
+  test('merged chats show as one, counting each message once', () async {
+    final db = Database(NativeDatabase.memory());
+    addTearDown(db.close);
+    final id = await db.addProfile(
+      ProfilesCompanion.insert(
+        settings: const ProfileSettings(nickname: 'Me', statusMessage: ''),
+        secretKey: SecretKey(Uint8List(32)),
+        publicKey: PublicKey(Uint8List(32)),
+        nospam: ToxAddressNospam(0),
+      ),
+    );
+    final home = await Home.load(db, await db.watchProfile(id).first);
+    final group = GroupChat(GroupChatId(Uint8List(32)..[0] = 1));
+    final conference = ConferenceChat(ConferenceId(Uint8List(32)..[0] = 2));
+    final bot = PublicKey(Uint8List(32)..[0] = 3);
+    for (final chat in [group, conference]) {
+      await home.record(
+        home.account,
+        FactContent(subject: Subject.chat(chat), value: FactValue.name('Tox')),
+      );
+      await home.record(
+        home.account,
+        FactContent(subject: Subject.chat(chat), value: FactValue.joined(true)),
+      );
+    }
+    await home.record(
+      home.account,
+      MergeChat(
+        chat: conference,
+        bot: bot,
+        into: group,
+        intoBot: bot,
+        merged: true,
+      ),
+    );
+    for (final (chat, from, sender, text) in [
+      (group, PublicKey(Uint8List(32)..[0] = 4), 'Bob', 'hi'),
+      (conference, bot, 'bot', '<Bob> hi'),
+      (conference, PublicKey(Uint8List(32)..[0] = 5), 'Dan', 'yo'),
+    ]) {
+      await home.record(
+        chat.graph,
+        Received(
+          from: from,
+          sender: sender,
+          message: utf8.encode(text),
+          kind: Tox_Message_Type.TOX_MESSAGE_TYPE_NORMAL,
+        ),
+      );
+    }
+
+    final container = ProviderContainer(
+      overrides: [databaseProvider.overrideWith((ref) => db)],
+    );
+    addTearDown(container.dispose);
+    container.listen(chatsForProfileProvider(id), (_, _) {});
+    List<(GraphId, int)> chats() => [
+      for (final chat
+          in container.read(chatsForProfileProvider(id)).value ?? [])
+        (chat.ref.graph, chat.unread),
+    ];
+    for (var i = 0; i < 100 && chats().firstOrNull?.$2 != 2; i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+    }
+    expect(chats(), [(group.graph, 2)]);
+  });
+
   test("leaving a chat leaves none of the chat's providers alive", () async {
     final db = Database(NativeDatabase.memory());
     addTearDown(db.close);

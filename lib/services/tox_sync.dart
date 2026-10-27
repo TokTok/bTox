@@ -421,6 +421,12 @@ final class ToxSync {
               .listen(_syncSessions.inviteAnswersChanged),
         )
         ..add(
+          _db.watchChatMerges(_profileId).listen(_syncSessions.mergesChanged),
+        )
+        ..add(
+          _db.watchRelayBots(_profileId).listen(_syncSessions.relayBotsChanged),
+        )
+        ..add(
           _db
               .watchSettingChanges(_profileId)
               .listen(_syncSessions.settingsChanged),

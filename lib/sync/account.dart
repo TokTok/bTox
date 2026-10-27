@@ -48,6 +48,17 @@ abstract class AccountInvite with _$AccountInvite {
   }) = _AccountInvite;
 }
 
+/// A chat shown with another, [into], by the keys of the bot that relays
+/// between them.
+@freezed
+abstract class AccountMerge with _$AccountMerge {
+  const factory AccountMerge({
+    required PublicKey bot,
+    required ChatId into,
+    required PublicKey intoBot,
+  }) = _AccountMerge;
+}
+
 @freezed
 abstract class AccountState with _$AccountState {
   const factory AccountState({
@@ -55,6 +66,9 @@ abstract class AccountState with _$AccountState {
     String? statusMessage,
     @Default({}) Map<PublicKey, AccountFriend> friends,
     @Default({}) Map<ChatId, AccountChat> chats,
+    @Default({}) Map<ChatId, AccountMerge> merges,
+    // Per chat, the bot relaying another chat's messages in it.
+    @Default({}) Map<ChatId, PublicKey> relayBots,
     // Per conversation, the rank and ID of the last event read.
     @Default({}) Map<GraphId, (int, EventId)> read,
     // Per scope, its settings by kind.
@@ -93,6 +107,8 @@ abstract class AccountState with _$AccountState {
 final class AccountFold {
   var _facts = Facts();
   final _friends = <PublicKey, AccountFriend>{};
+  final _merges = <ChatId, AccountMerge>{};
+  final _relayBots = <ChatId, PublicKey>{};
   final _settings = <Scope, Map<int, Kept<Setting>>>{};
   final _read = <GraphId, (int, EventId)>{};
   final _invites = <EventId, AccountInvite>{};
@@ -108,7 +124,14 @@ final class AccountFold {
         (_events.isEmpty || events[_events.length - 1].$1 == _events.last.$1);
     if (!grown || !_addAll(events.skip(_events.length))) {
       _facts = Facts();
-      for (final map in [_friends, _settings, _read, _invites]) {
+      for (final map in [
+        _friends,
+        _merges,
+        _relayBots,
+        _settings,
+        _read,
+        _invites,
+      ]) {
         map.clear();
       }
       _last = null;
@@ -149,6 +172,24 @@ final class AccountFold {
         _friends[pk] = _friend(pk).copyWith(wanted: false, request: null);
       case FriendRequested(:final pk, :final message):
         _friends[pk] = _friend(pk).copyWith(request: message);
+      case MergeChat(
+        :final chat,
+        :final bot,
+        :final into,
+        :final intoBot,
+        :final merged,
+      ):
+        if (merged) {
+          _merges[chat] = AccountMerge(bot: bot, into: into, intoBot: intoBot);
+        } else {
+          _merges.remove(chat);
+        }
+      case RelayBot(:final chat, :final bot, :final relays):
+        if (relays) {
+          _relayBots[chat] = bot;
+        } else {
+          _relayBots.remove(chat);
+        }
       case SettingContent(:final scope, :final setting):
         (_settings[scope] ??= {})[setting.value.kind] = setting;
       case ClearSetting(:final scope, :final kind):
@@ -217,6 +258,8 @@ final class AccountFold {
               ),
             ),
       },
+      merges: {..._merges},
+      relayBots: {..._relayBots},
       read: {..._read},
       settings: {
         for (final MapEntry(:key, :value) in _settings.entries) key: {...value},
