@@ -49,6 +49,9 @@ const _vectorFileAnswered =
 const _vectorMute =
     '924b929201c4200101010101010101010101010101010101010101010101010101010101'
     '01010192009291cf0000018bcfe56800c3';
+const _vectorPictureFormat =
+    '924b929201c4200101010101010101010101010101010101010101010101010101010101'
+    '01010192019101';
 const _vectorClearSetting =
     '924c929201c4200101010101010101010101010101010101010101010101010101010101'
     '01010100';
@@ -155,6 +158,13 @@ void main() {
           ),
         ),
         _vectorMute,
+      ),
+      (
+        SettingContent(
+          scope: scope,
+          setting: const Kept(Setting.pictureFormat(PictureEncoding.qoi)),
+        ),
+        _vectorPictureFormat,
       ),
       (ClearSetting(scope: scope, kind: Setting.muteKind), _vectorClearSetting),
     ]) {
@@ -419,6 +429,10 @@ void main() {
             mentions: true,
           ),
         ),
+      ),
+      const SettingContent(
+        scope: Scope.account(),
+        setting: Kept(Setting.pictureFormat(PictureEncoding.qoi)),
       ),
       const ClearSetting(scope: Scope.account(), kind: Setting.muteKind),
       Received(

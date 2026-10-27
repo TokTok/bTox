@@ -37,6 +37,7 @@ final class MessageInput extends HookWidget {
   final bool recentEmojis;
   // Tox only sends files to friends.
   final bool files;
+  final bool picturesAsQoi;
 
   /// Whether [Content] was sent. What wasn't comes back to the draft.
   final Future<bool> Function(Content) onSend;
@@ -47,6 +48,7 @@ final class MessageInput extends HookWidget {
     required this.draft,
     required this.recentEmojis,
     this.files = true,
+    this.picturesAsQoi = false,
     required this.onSend,
   });
 
@@ -216,6 +218,7 @@ final class MessageInput extends HookWidget {
       ),
       _EditMode.attachment => AttachmentSelector(
         files: files,
+        picturesAsQoi: picturesAsQoi,
         onSelected: (attachments) {
           drafts.value = [...drafts.value, ...attachments];
           editMode.value = _EditMode.text;

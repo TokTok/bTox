@@ -56,6 +56,17 @@ Map<GraphId, (int, EventId)> newestEvents(Ref ref, ChatRef chat) {
   return newest;
 }
 
+@riverpod
+PictureEncoding pictureFormat(Ref ref, ChatRef chat) => ref.watch(
+  accountProvider(chat.profile).select(
+    (account) =>
+        account.value
+            ?.setting<PictureFormat>(Scope.conversation(chat.graph))
+            ?.format ??
+        PictureEncoding.original,
+  ),
+);
+
 bool isOnline(Facts live, PublicKey pk) =>
     live.find(
       Subject.friend(pk),

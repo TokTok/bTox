@@ -3,6 +3,8 @@ import 'package:btox/models/chat_details.dart';
 import 'package:btox/models/chat_view.dart';
 import 'package:btox/models/crypto.dart';
 import 'package:btox/providers/chats.dart';
+import 'package:btox/providers/database.dart';
+import 'package:btox/sync/setting.dart';
 import 'package:btox/sync/fact.dart';
 import 'package:btox/widgets/chat_avatar.dart';
 import 'package:btox/widgets/circle_identicon.dart';
@@ -86,6 +88,9 @@ final class _Details extends StatelessWidget {
           ),
         const SizedBox(height: 16),
         if (!summary.closed) _Mute(chat: summary),
+        // Tox only sends files to friends.
+        if (summary.key is PublicKey && !summary.closed)
+          _PicturesAsQoi(chat: summary.ref),
         if (summary.key case final PublicKey pk) _PublicKey(pk: pk),
         if (summary.key is! PublicKey) ...[
           const Divider(),
@@ -152,6 +157,34 @@ final class _Mute extends ConsumerWidget {
         onTap: () => unmuteChat(ref, chat.ref),
       ),
     };
+  }
+}
+
+final class _PicturesAsQoi extends ConsumerWidget {
+  final ChatRef chat;
+
+  const _PicturesAsQoi({required this.chat});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    return SwitchListTile(
+      secondary: const Icon(Icons.image_outlined),
+      title: Text(l10n.sendPicturesAsQoi),
+      subtitle: Text(l10n.sendPicturesAsQoiHint),
+      value: ref.watch(pictureFormatProvider(chat)) == PictureEncoding.qoi,
+      onChanged: (qoi) async {
+        final db = await ref.read(databaseProvider.future);
+        final scope = Scope.conversation(chat.graph);
+        await (qoi
+            ? db.setSetting(
+                chat.profile,
+                scope,
+                const Kept(Setting.pictureFormat(PictureEncoding.qoi)),
+              )
+            : db.clearSetting(chat.profile, scope, Setting.pictureFormatKind));
+      },
+    );
   }
 }
 

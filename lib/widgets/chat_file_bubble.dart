@@ -9,6 +9,7 @@ import 'package:btox/providers/attachments.dart';
 import 'package:btox/providers/database.dart';
 import 'package:btox/widgets/bubble_footer.dart';
 import 'package:btox/widgets/chat_text_bubble.dart';
+import 'package:btox/widgets/picture_view.dart';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
@@ -104,19 +105,27 @@ final class ChatFileBubble extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (preview != null)
-            ConstrainedBox(
-              constraints: const BoxConstraints(
-                maxWidth: _previewSize,
-                maxHeight: _previewSize,
+            GestureDetector(
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => PictureView(path: content.path),
+                ),
               ),
-              child: Stack(
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: preview,
-                  ),
-                  if (footer case final footer?) footer.overMedia(),
-                ],
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxWidth: _previewSize,
+                  maxHeight: _previewSize,
+                ),
+                child: Stack(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: preview,
+                    ),
+                    if (footer case final footer?) footer.overMedia(),
+                  ],
+                ),
               ),
             )
           else ...[

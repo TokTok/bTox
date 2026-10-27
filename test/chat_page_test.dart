@@ -16,6 +16,7 @@ import 'package:btox/providers/database.dart';
 import 'package:btox/providers/drafts.dart';
 import 'package:btox/providers/map_tile.dart';
 import 'package:btox/providers/profiles.dart';
+import 'package:btox/sync/setting.dart' show PictureEncoding;
 import 'package:btox/widgets/chat_text_bubble.dart';
 import 'package:btox/widgets/message_input.dart';
 import 'package:btox/widgets/system_gestures.dart';
@@ -70,6 +71,7 @@ void main() {
     ),
     chatEntriesProvider(chat).overrideWithValue(AsyncData(entries)),
     newestEventsProvider(chat).overrideWithValue(const {}),
+    pictureFormatProvider(chat).overrideWithValue(PictureEncoding.original),
   ];
 
   testWidgets('Empty chat page should display message entry box', (

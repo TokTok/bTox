@@ -16,11 +16,14 @@ const _logger = Logger(['AttachmentSelector']);
 final class AttachmentSelector extends ConsumerWidget {
   // Pictures and files too, besides a location.
   final bool files;
+  // Camera and gallery pictures as QOI.
+  final bool picturesAsQoi;
   final void Function(List<Content>) onSelected;
 
   const AttachmentSelector({
     super.key,
     this.files = true,
+    this.picturesAsQoi = false,
     required this.onSelected,
   });
 
@@ -29,7 +32,10 @@ final class AttachmentSelector extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
 
     // Picking or copying can fail, as with the camera refused or no room.
-    Future<void> attach(Future<List<XFile>?> Function() pick) async {
+    Future<void> attach(
+      Future<List<XFile>?> Function() pick, {
+      bool pictures = false,
+    }) async {
       final messenger = ScaffoldMessenger.of(context);
       try {
         final picked = await pick();
@@ -37,10 +43,13 @@ final class AttachmentSelector extends ConsumerWidget {
           return;
         }
         final directory = await ref.read(attachmentsDirectoryProvider.future);
+        final copy = pictures && picturesAsQoi
+            ? savePictureAsQoi
+            : saveAttachment;
         final copied = <FileContent>[];
         try {
           for (final file in picked) {
-            copied.add(await saveAttachment(directory, file));
+            copied.add(await copy(directory, file));
           }
         } on Exception {
           for (final FileContent(:path) in copied) {
@@ -60,6 +69,7 @@ final class AttachmentSelector extends ConsumerWidget {
         allowMultiple: true,
         type: type,
       ))?.files.map((file) => file.xFile).toList(),
+      pictures: type == FileType.image,
     );
 
     return Padding(
@@ -79,6 +89,7 @@ final class AttachmentSelector extends ConsumerWidget {
                       final image? => [image],
                       null => null,
                     },
+                    pictures: true,
                   ),
                 ),
               if (files && filesSupported)

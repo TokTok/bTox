@@ -13,6 +13,7 @@ import 'package:btox/providers/chats.dart';
 import 'package:btox/providers/database.dart';
 import 'package:btox/providers/drafts.dart';
 import 'package:btox/providers/profiles.dart';
+import 'package:btox/sync/setting.dart' show PictureEncoding;
 import 'package:btox/widgets/chat_avatar.dart';
 import 'package:btox/widgets/chat_item.dart';
 import 'package:btox/widgets/copy_text.dart';
@@ -342,6 +343,8 @@ final class _Input extends ConsumerWidget {
       draft: draft,
       recentEmojis: recentEmojis,
       files: files,
+      picturesAsQoi:
+          ref.watch(pictureFormatProvider(chat)) == PictureEncoding.qoi,
       onSend: (content) async {
         try {
           final database = await opened;

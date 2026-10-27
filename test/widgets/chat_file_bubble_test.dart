@@ -14,6 +14,7 @@ import 'package:btox/providers/database.dart';
 import 'package:btox/widgets/chat_file_bubble.dart';
 import 'package:btox/widgets/chat_item.dart';
 import 'package:btox/widgets/chat_text_bubble.dart';
+import 'package:btox/widgets/picture_view.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -141,7 +142,9 @@ void main() {
     );
   });
 
-  testWidgets('a photo of ours shows as it goes', (tester) async {
+  testWidgets('a photo of ours shows as it goes, and opens full screen', (
+    tester,
+  ) async {
     final photo = File('assets/images/btox-icon.png').absolute.path;
     Future<void> show(FileState state) async {
       await tester.pumpWidget(
@@ -190,6 +193,10 @@ void main() {
 
     await show(FileState.done);
     expect(find.byIcon(Icons.done_all), findsOneWidget);
+
+    await tester.tap(find.byType(Image));
+    await tester.pumpAndSettle();
+    expect(find.byType(PictureView), findsOneWidget);
   });
 
   testWidgets('a file offered to the home device is answered for it', (

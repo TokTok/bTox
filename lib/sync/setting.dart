@@ -23,6 +23,9 @@ sealed class Scope with _$Scope {
   const factory Scope.unknown(int tag) = UnknownScope;
 }
 
+/// How pictures are sent in a conversation.
+enum PictureEncoding { original, qoi }
+
 /// A setting, by kind. A scope has at most one of each kind.
 @freezed
 sealed class Setting with _$Setting {
@@ -30,16 +33,20 @@ sealed class Setting with _$Setting {
   /// but for messages naming the account where [mentions].
   const factory Setting.mute({DateTime? until, required bool mentions}) = Mute;
 
+  const factory Setting.pictureFormat(PictureEncoding format) = PictureFormat;
+
   /// Of a kind this version doesn't know, or that doesn't decode: kept and
   /// passed on, but not acted on.
   const factory Setting.unknown(int kind) = UnknownSetting;
 
   static const muteKind = 0;
+  static const pictureFormatKind = 1;
 
   const Setting._();
 
   int get kind => switch (this) {
     Mute() => muteKind,
+    PictureFormat() => pictureFormatKind,
     UnknownSetting(:final kind) => kind,
   };
 }
@@ -69,6 +76,7 @@ Scope readScope(Fields f) => f.variant<Scope>(
 ArrayWriter _fields(Setting setting) => switch (setting) {
   Mute(:final until, :final mentions) =>
     ArrayWriter().optUint(until?.millisecondsSinceEpoch).flag(mentions),
+  PictureFormat(:final format) => ArrayWriter().uint(format.index),
   // Never re-encoded: stores keep the bytes they received.
   UnknownSetting() => throw StateError('Unknown settings are not written'),
 };
@@ -97,6 +105,11 @@ Kept<Setting> readSetting(Fields f) {
               null => null,
             },
             mentions: s.flag(),
+          ),
+          // Unknown formats send pictures as they are.
+          Setting.pictureFormatKind => Setting.pictureFormat(
+            PictureEncoding.values.elementAtOrNull(s.uint()) ??
+                PictureEncoding.original,
           ),
           _ => null,
         },

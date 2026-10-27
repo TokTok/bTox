@@ -523,6 +523,14 @@
   "@mutedAlways": {
     "description": "A chat muted until it's unmuted"
   },
+  "sendPicturesAsQoi": "Send pictures as QOI",
+  "@sendPicturesAsQoi": {
+    "description": "A friend chat's setting: camera and gallery pictures sent as QOI"
+  },
+  "sendPicturesAsQoiHint": "Lossless, but larger, and not every app shows QOI",
+  "@sendPicturesAsQoiHint": {
+    "description": "Under the setting to send pictures as QOI"
+  },
   "roleFounder": "Founder",
   "@roleFounder": {
     "description": "The role of whoever created a group"
