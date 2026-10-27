@@ -13,6 +13,7 @@ import 'package:btox/models/crypto.dart';
 import 'package:btox/models/profile_settings.dart';
 import 'package:btox/pages/contact_list_page.dart';
 import 'package:btox/pages/create_profile_page.dart';
+import 'package:btox/pages/link_account_page.dart';
 import 'package:btox/providers/bootstrap_nodes.dart';
 import 'package:btox/providers/database.dart';
 import 'package:btox/providers/tox.dart';
@@ -89,30 +90,35 @@ void main() {
     await tester.runAsync(db.close);
   });
 
-  testWidgets('a new profile fits a small screen with the keyboard open and '
-      'large text', (tester) async {
+  testWidgets('new and linked profiles fit a small screen with the keyboard '
+      'open and large text', (tester) async {
     addTearDown(tester.view.reset);
     tester.view
       ..physicalSize = const Size(360, 560) * tester.view.devicePixelRatio
       ..viewInsets = FakeViewPadding(
         bottom: 300 * tester.view.devicePixelRatio,
       );
-    final button = find.byKey(const Key('createProfileButton'));
-    await tester.pumpWidget(
-      ProviderScope(
-        child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          builder: (context, child) => MediaQuery(
-            data: MediaQuery.of(context)
-                .copyWith(textScaler: const TextScaler.linear(1.5)),
-            child: child!,
+    for (final (page, button) in [
+      (const CreateProfilePage(), find.byKey(const Key('createProfileButton'))),
+      (const LinkAccountPage(), find.widgetWithText(FilledButton, 'Link')),
+    ]) {
+      await tester.pumpWidget(
+        ProviderScope(
+          key: UniqueKey(),
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(context)
+                  .copyWith(textScaler: const TextScaler.linear(1.5)),
+              child: child!,
+            ),
+            home: page,
           ),
-          home: const CreateProfilePage(),
         ),
-      ),
-    );
-    await tester.ensureVisible(button);
-    await tester.pump();
-    expect(tester.getRect(button).bottom, lessThanOrEqualTo(260));
+      );
+      await tester.ensureVisible(button);
+      await tester.pump();
+      expect(tester.getRect(button).bottom, lessThanOrEqualTo(260));
+    }
   });
 }

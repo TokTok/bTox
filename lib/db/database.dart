@@ -22,13 +22,19 @@ export 'package:drift/drift.dart' show Value;
 
 part 'database.drift.dart';
 
+// Within SQLite's limit on variables in one statement.
+const _idsPerStatement = 500;
+
 @DriftDatabase(
   tables: [
     AppSettings,
     CachedBootstrapNodes,
     ChatDrafts,
     DeletedChats,
+    FileAnswers,
+    InviteAnswers,
     FriendChanges,
+    LinkedNotified,
     LiveFacts,
     ChatReads,
     ChatSends,
@@ -230,6 +236,26 @@ final class Database extends _$Database {
           .map((row) => row.read(syncEvents.bytes)!)
           .get();
 
+  /// Forgets events this version can't read, which then sync again in a form
+  /// it can, and the read positions that name them.
+  Future<void> dropSyncEvents(
+    Id<Profiles> profileId,
+    List<EventId> ids,
+  ) => transaction(() async {
+    for (var i = 0; i < ids.length; i += _idsPerStatement) {
+      final batch = ids.skip(i).take(_idsPerStatement);
+      await (delete(syncEvents)..where(
+            (e) => e.profileId.equals(profileId.value) & e.id.isInValues(batch),
+          ))
+          .go();
+      await (delete(chatReads)..where(
+            (r) =>
+                r.profileId.equals(profileId.value) & r.event.isInValues(batch),
+          ))
+          .go();
+    }
+  });
+
   /// Sends [message], as several where it's longer than an event takes.
   Future<void> addSend(Id<Profiles> profileId, GraphId graph, String message) =>
       batch(
@@ -258,6 +284,27 @@ final class Database extends _$Database {
       state: FileState.active,
     ),
   );
+
+  Future<Map<GraphId, int>> getLinkedNotified(Id<Profiles> profileId) async => {
+    for (final row in await (select(
+      linkedNotified,
+    )..where((n) => n.profileId.equals(profileId.value))).get())
+      row.graph: row.rank,
+  };
+
+  Future<void> setLinkedNotified(
+    Id<Profiles> profileId,
+    GraphId graph,
+    int rank,
+  ) async {
+    await into(linkedNotified).insertOnConflictUpdate(
+      LinkedNotifiedCompanion.insert(
+        profileId: profileId,
+        graph: graph,
+        rank: rank,
+      ),
+    );
+  }
 
   Future<void> setRead(
     Id<Profiles> profileId,
@@ -412,6 +459,58 @@ final class Database extends _$Database {
       row.graph: row.rank,
   };
 
+  Future<void> addFileAnswer(
+    Id<Profiles> profileId,
+    GraphId graph,
+    EventId file, {
+    required bool accepted,
+  }) async {
+    await into(fileAnswers).insert(
+      FileAnswersCompanion.insert(
+        profileId: profileId,
+        graph: graph,
+        file: file,
+        accepted: accepted,
+      ),
+    );
+  }
+
+  Stream<List<FileAnswer>> watchFileAnswers(Id<Profiles> profileId) =>
+      (select(fileAnswers)
+            ..where((a) => a.profileId.equals(profileId.value))
+            ..orderBy([(a) => OrderingTerm(expression: a.id)]))
+          .watch();
+
+  /// Stores [event] in place of the [answer] it was written for.
+  Future<void> writeFileAnswer(FileAnswer answer, NewEvent event) =>
+      _replace(fileAnswers, answer, answer.profileId, event);
+
+  Future<void> addInviteAnswer(
+    Id<Profiles> profileId,
+    EventId invite, {
+    required bool accepted,
+    String? password,
+  }) async {
+    await into(inviteAnswers).insert(
+      InviteAnswersCompanion.insert(
+        profileId: profileId,
+        invite: invite,
+        accepted: accepted,
+        password: Value(password),
+      ),
+    );
+  }
+
+  Stream<List<InviteAnswer>> watchInviteAnswers(Id<Profiles> profileId) =>
+      (select(inviteAnswers)
+            ..where((a) => a.profileId.equals(profileId.value))
+            ..orderBy([(a) => OrderingTerm(expression: a.id)]))
+          .watch();
+
+  /// Stores [event] in place of the [answer] it was written for.
+  Future<void> writeInviteAnswer(InviteAnswer answer, NewEvent event) =>
+      _replace(inviteAnswers, answer, answer.profileId, event);
+
   Future<void> setSetting(
     Id<Profiles> profileId,
     Scope scope,
@@ -481,15 +580,56 @@ final class Database extends _$Database {
           .watch();
 
   /// Saves [event], which started [transfer], with the blob it names.
-  Future<void> writeTransferEvent(Id<Transfers> transfer, NewEvent event) =>
-      transaction(() async {
-        final row = await (select(
-          transfers,
-        )..where((t) => t.id.equals(transfer.value))).getSingle();
-        await addSyncEvents(row.profileId, [event]);
-        await (update(transfers)..where((t) => t.id.equals(transfer.value)))
-            .write(TransfersCompanion(event: Value(event.$1)));
-      });
+  Future<void> writeTransferEvent(
+    Id<Transfers> transfer,
+    NewEvent event, {
+    BlobId? blob,
+  }) => transaction(() async {
+    final row = await (select(
+      transfers,
+    )..where((t) => t.id.equals(transfer.value))).getSingle();
+    await addSyncEvents(row.profileId, [event]);
+    await (update(transfers)..where((t) => t.id.equals(transfer.value))).write(
+      TransfersCompanion(
+        event: Value(event.$1),
+        blobId: Value.absentIfNull(blob),
+      ),
+    );
+  });
+
+  /// Fetches a linked account's [file], which [event] started, into [path]
+  /// from the home device, unless it's fetched already.
+  Future<void> fetchFile(
+    Id<Profiles> profileId,
+    GraphId graph,
+    EventId event,
+    FileContent file,
+    BlobId blob,
+    String path,
+  ) => transaction(() async {
+    final fetched =
+        await (select(transfers)..where(
+              (t) =>
+                  t.profileId.equals(profileId.value) &
+                  t.event.equalsValue(event),
+            ))
+            .get();
+    if (fetched.isEmpty) {
+      await addTransfer(
+        TransfersCompanion.insert(
+          profileId: profileId,
+          graph: graph,
+          event: Value(event),
+          incoming: true,
+          name: file.name,
+          size: file.size,
+          path: path,
+          state: FileState.active,
+          blobId: Value(blob),
+        ),
+      );
+    }
+  });
 
   Future<void> setTransferState(
     Id<Transfers> id,
@@ -525,6 +665,12 @@ final class Database extends _$Database {
   Future<void> setTransferred(Id<Transfers> id, int transferred) async {
     await (update(transfers)..where((t) => t.id.equals(id.value))).write(
       TransfersCompanion(transferred: Value(transferred)),
+    );
+  }
+
+  Future<void> clearPairingMessage(Id<Profiles> id) async {
+    await (update(profiles)..where((p) => p.id.equals(id.value))).write(
+      const ProfilesCompanion(pairingMessage: Value(null)),
     );
   }
 

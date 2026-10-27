@@ -118,7 +118,33 @@ void main() {
     );
   });
 
-  test("a file the backup didn't bring is left out", () async {
+  test('a linked account comes back linked, to sync again', () async {
+    final home = ToxAddress.of(_key(9), ToxAddressNospam(0x01020304));
+    final linked = await source.addProfile(
+      ProfilesCompanion.insert(
+        settings: ProfileSettings(nickname: 'bTox', statusMessage: ''),
+        secretKey: SecretKey(Uint8List(32)..fillRange(0, 32, 5)),
+        publicKey: _key(5),
+        nospam: ToxAddressNospam(0),
+        home: Value(home),
+      ),
+    );
+    await source.updateLiveFacts(linked, [
+      (Subject.friend(_key(10)), const FactValue.connection(Connection.udp)),
+    ]);
+
+    final backedUp = await backup({linked});
+    expect(backupAccounts(backedUp.tables).values, [null]);
+    expect(await restoreBackup(target, backedUp, {linked.value}), 1);
+    final restored = await target.select(target.profiles).getSingle();
+    expect(
+      (restored.home, restored.publicKey, restored.secretKey),
+      (home, _key(5), SecretKey(Uint8List(32)..fillRange(0, 32, 5))),
+    );
+    expect(await target.select(target.liveFacts).get(), isEmpty);
+  });
+
+  test("a file the backup didn't bring is left to download again", () async {
     final kept = File('${Directory.systemTemp.createTempSync().path}/cat.png')
       ..writeAsStringSync('meow');
     for (final path in [kept.path, '/gone/dog.png']) {

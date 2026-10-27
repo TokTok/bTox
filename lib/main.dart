@@ -18,7 +18,7 @@ void main() async {
       final navigator? => ChatPage.open(navigator, chat),
       null => null,
     },
-    // Friend requests show above the profile's chats.
+    // Friend requests and invites show above the profile's chats.
     openRequests: (profile) async {
       _navigatorKey.currentState?.popUntil((route) => route.isFirst);
       final db = await container.read(databaseProvider.future);

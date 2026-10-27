@@ -84,6 +84,78 @@ final class EventWriter {
     }
   }
 
+  /// Writes the files the chat pages send, as [senderIn] each chat.
+  Future<void> files(
+    List<Transfer> transfers,
+    String Function(GraphId chat) senderIn,
+    Future<BlobId> Function(String path) blobOf,
+  ) async {
+    for (final transfer in transfers) {
+      if (transfer case Transfer(
+        incoming: false,
+        event: null,
+        state: FileState.active,
+      )) {
+        await once(transfer.id, () async {
+          final BlobId blob;
+          try {
+            blob = await blobOf(transfer.path);
+          } on Exception catch (e) {
+            _logger.w('Cannot read ${transfer.path}: $e');
+            await _db.setTransferState(transfer.id, FileState.cancelled);
+            return null;
+          }
+          return write(
+            transfer.graph,
+            () => FileStarted(
+              sender: senderIn(transfer.graph),
+              name: transfer.name,
+              size: transfer.size,
+              incoming: false,
+              blob: blob,
+            ),
+            save: (event) =>
+                _db.writeTransferEvent(transfer.id, event, blob: blob),
+          );
+        });
+      }
+    }
+  }
+
+  /// Writes the chat pages' answers to files offered to the home device.
+  Future<void> answers(List<FileAnswer> answers) async {
+    for (final answer in answers) {
+      await once(
+        answer.id,
+        () => write(
+          answer.graph,
+          () => FileAnswered(file: answer.file, accepted: answer.accepted),
+          save: (event) => _db.writeFileAnswer(answer, event),
+        ),
+      );
+    }
+  }
+
+  Future<void> inviteAnswers(
+    GraphId account,
+    List<InviteAnswer> answers,
+  ) async {
+    for (final answer in answers) {
+      await once(
+        answer.id,
+        () => write(
+          account,
+          () => AnswerInvite(
+            invite: answer.invite,
+            join: answer.accepted,
+            password: answer.password,
+          ),
+          save: (event) => _db.writeInviteAnswer(answer, event),
+        ),
+      );
+    }
+  }
+
   Future<void> settings(GraphId account, List<SettingChange> changes) async {
     for (final change in changes) {
       await once(

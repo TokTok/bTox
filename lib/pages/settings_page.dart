@@ -8,6 +8,7 @@ import 'package:btox/models/app_defaults.dart';
 import 'package:btox/models/connection_status.dart';
 import 'package:btox/models/profile_settings.dart';
 import 'package:btox/platform/any_platform.dart';
+import 'package:btox/providers/chats.dart';
 import 'package:btox/providers/connection_status.dart';
 import 'package:btox/providers/database.dart';
 import 'package:btox/providers/message_formats.dart';
@@ -42,7 +43,8 @@ final class SettingsPage extends ConsumerWidget {
     final status = ref.watch(connectionStatusProvider);
     final appSettings = ref.watch(appSettingsProvider).value;
     final l10n = AppLocalizations.of(context)!;
-    final name = profile.settings.nickname;
+    final name =
+        ref.watch(profileIdentityProvider(profile)).name ?? l10n.linkedAccount;
 
     void save(Future<void> Function(Database db) change) => _logger.unawaited(
       'save the settings',
@@ -242,7 +244,12 @@ final class _ExportTile extends HookConsumerWidget {
     final database = await ref.read(databaseProvider.future);
     final names = {
       for (final p in await database.select(database.profiles).get())
-        p.id: p.settings.nickname,
+        p.id: p.home == null
+            ? p.settings.nickname
+            : switch (await linkedAccountName(database, p)) {
+                final name? => l10n.linkedAccountName(name),
+                null => l10n.linkedAccount,
+              },
     };
     if (!context.mounted) {
       return false;

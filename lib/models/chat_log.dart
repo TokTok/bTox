@@ -1,8 +1,10 @@
+import 'package:btox/l10n/generated/app_localizations.dart';
 import 'package:btox/messages/message_format.dart';
 import 'package:btox/models/chat_view.dart';
 import 'package:btox/models/content.dart';
 import 'package:btox/models/crypto.dart';
 import 'package:btox/models/persistence.dart' show FileState;
+import 'package:btox/sync/account.dart';
 import 'package:btox/sync/event.dart';
 import 'package:btox/sync/setting.dart';
 import 'package:btox/sync/store.dart';
@@ -58,6 +60,15 @@ List<NotifiedMessage> notifying(
         : const [],
   _ => messages,
 };
+
+/// The text for an invite to a chat from the friend named [from].
+String inviteText(AppLocalizations l10n, AccountInvite invite, String? from) {
+  final friend = from ?? l10n.defaultContactName;
+  return switch (invite.kind) {
+    ChatKind.group => l10n.groupInvite(friend, invite.name),
+    ChatKind.conference => l10n.conferenceInvite(friend),
+  };
+}
 
 /// What a notification of incoming [content] says, without its sender.
 String notificationText(EventContent content, MessageFormats formats) =>
@@ -223,15 +234,27 @@ final class ChatLog {
             delivered: _timeOf(event),
           ),
         );
-      case FileEnded(:final file, :final ok):
+      case FileEnded(:final file, :final ok, :final blob):
         update(
           file,
           (e) => e.copyWith(
             delivered: ok && e.mine ? _timeOf(event) : null,
             file: FileProgress(
               state: ok ? FileState.done : FileState.cancelled,
+              blob: blob,
             ),
           ),
+        );
+      case FileAnswered(:final file, :final accepted):
+        update(
+          file,
+          (e) => e.file?.state == FileState.offered
+              ? e.copyWith(
+                  file: FileProgress(
+                    state: accepted ? FileState.active : FileState.cancelled,
+                  ),
+                )
+              : e,
         );
       default:
         break;

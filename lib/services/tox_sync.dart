@@ -27,8 +27,10 @@ import 'package:btox/services/file_transfers.dart';
 import 'package:btox/services/message_notifier.dart';
 import 'package:btox/sync/event.dart';
 import 'package:btox/sync/fact.dart';
+import 'package:btox/sync/frames.dart';
 import 'package:btox/sync/home.dart';
 import 'package:btox/sync/setting.dart';
+import 'package:btox/sync/sync_sessions.dart';
 import 'package:clock/clock.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -117,6 +119,7 @@ final class ToxSync {
   var _transfers = const <Transfer>[];
 
   late final FileTransfers _files;
+  final SyncSessions _syncSessions;
 
   ToxSync(
     this._db,
@@ -130,7 +133,20 @@ final class ToxSync {
   }) : _maxMessageLength = maxMessageLength,
        _retryDelay = retryDelay,
        _notifier = notifier,
-       _knownFormats = knownFormats {
+       _knownFormats = knownFormats,
+       _syncSessions = SyncSessions(
+         _db,
+         _tox,
+         _profileId,
+         directory: attachmentsDirectory,
+         notify: notifier?.notify,
+         read: notifier?.read,
+         invited: notifier == null
+             ? null
+             : (id, invite, from, account) =>
+                   notifier.invited(_profileId, id, invite, from, account),
+         uninvited: notifier?.uninvited,
+       ) {
     _files = FileTransfers(
       _db,
       _tox,
@@ -151,9 +167,10 @@ final class ToxSync {
     _subscriptions
       ..add(_db.watchProfile(_profileId).listen(_updateProfile))
       ..add(
-        _db.watchAppSettings().listen(
-          (settings) => _files.autoAcceptSize = settings.autoAcceptFileSize,
-        ),
+        _db.watchAppSettings().listen((settings) {
+          _files.autoAcceptSize = settings.autoAcceptFileSize;
+          _syncSessions.autoAcceptSize = settings.autoAcceptFileSize;
+        }),
       );
   }
 
@@ -165,6 +182,7 @@ final class ToxSync {
     }
     _subscriptions.clear();
     _files.dispose();
+    _syncSessions.dispose();
     _connectionChanges.close();
     _logger.unawaited('forget live facts', _db.clearLiveFacts(_profileId));
   }
@@ -179,7 +197,8 @@ final class ToxSync {
       ):
         final online = connectionStatus != Tox_Connection.TOX_CONNECTION_NONE;
         final publicKey = _publicKeyOf(friendNumber);
-        if (publicKey != null) {
+        // A linked account's friends' states come from its home device.
+        if (publicKey != null && _home != null) {
           _logger.unawaited(
             'update online state',
             _db.updateLiveFacts(_profileId, [
@@ -198,6 +217,7 @@ final class ToxSync {
         if (!online) {
           _onlineFriends.remove(friendNumber);
           _files.friendOffline(friendNumber);
+          _syncSessions.offline(friendNumber);
           // Tox forgets the messages it hasn't delivered yet.
           for (final message in _outgoing.values) {
             if (message.friendNumber == friendNumber) {
@@ -207,9 +227,15 @@ final class ToxSync {
         } else {
           _onlineFriends.add(friendNumber);
           if (publicKey != null) {
+            _syncSessions.online(friendNumber, publicKey);
             _accepted(publicKey);
           }
           _sendMessages();
+        }
+      case ToxEventFriendLosslessPacket(:final friendNumber, :final data)
+          when data.isNotEmpty && data[0] == syncPacketId:
+        if (_publicKeyOf(friendNumber) case final publicKey?) {
+          _syncSessions.received(friendNumber, publicKey, data);
         }
       case ToxEventFriendReadReceipt(:final friendNumber, :final messageId):
         for (final MapEntry(key: id, value: message) in _outgoing.entries) {
@@ -266,7 +292,12 @@ final class ToxSync {
       ):
         final home = _home;
         if (home == null) {
-          _files.decline(friendNumber, fileNumber);
+          // A linked account's files come from its home device.
+          if (_syncSessions.files case final files?) {
+            files.offered(friendNumber, fileNumber, kind, fileSize);
+          } else {
+            _files.decline(friendNumber, fileNumber);
+          }
         } else if (_publicKeyOf(friendNumber) case final pk?) {
           _logger.unawaited(
             'receive file',
@@ -282,11 +313,23 @@ final class ToxSync {
           );
         }
       case final ToxEventFileRecvChunk e:
-        _files.received(e.friendNumber, e.fileNumber, e.position, e.data);
+        if (_syncSessions.files case final files?) {
+          files.chunk(e.friendNumber, e.fileNumber, e.position, e.data);
+        } else {
+          _files.received(e.friendNumber, e.fileNumber, e.position, e.data);
+        }
       case final ToxEventFileChunkRequest e:
-        _files.requested(e.friendNumber, e.fileNumber, e.position, e.length);
+        if (_syncSessions.files case final files?) {
+          files.requested(e.friendNumber, e.fileNumber, e.position, e.length);
+        } else {
+          _files.requested(e.friendNumber, e.fileNumber, e.position, e.length);
+        }
       case final ToxEventFileRecvControl e:
-        _files.controlled(e.friendNumber, e.fileNumber, e.control);
+        if (_syncSessions.files case final files?) {
+          files.controlled(e.friendNumber, e.fileNumber, e.control);
+        } else {
+          _files.controlled(e.friendNumber, e.fileNumber, e.control);
+        }
       default:
         break;
     }
@@ -358,11 +401,41 @@ final class ToxSync {
       _logger.e('Failed to set profile info: $e');
     }
     _profile = profile;
+    _syncSessions
+      ..formats = _formats
+      ..link(profile.publicKey, profile.home?.publicKey);
     if (!first) {
       _home?.profileChanged(settings);
       return;
     }
-    _logger.unawaited('load the account', _startHome(profile));
+    if (profile.home case final home?) {
+      _subscriptions
+        ..add(_db.watchSends(_profileId).listen(_syncSessions.sendsChanged))
+        ..add(_db.watchReads(_profileId).listen(_syncSessions.readsChanged))
+        ..add(
+          _db.watchFileAnswers(_profileId).listen(_syncSessions.answersChanged),
+        )
+        ..add(
+          _db
+              .watchInviteAnswers(_profileId)
+              .listen(_syncSessions.inviteAnswersChanged),
+        )
+        ..add(
+          _db
+              .watchSettingChanges(_profileId)
+              .listen(_syncSessions.settingsChanged),
+        )
+        ..add(
+          _db.watchTransfers(_profileId).listen(_syncSessions.transfersChanged),
+        );
+      _addFriend(
+        home.publicKey,
+        profile.pairingMessage == null ? null : home,
+        profile.pairingMessage,
+      );
+    } else {
+      _logger.unawaited('load the account', _startHome(profile));
+    }
   }
 
   Future<void> _startHome(Profile profile) async {
@@ -482,6 +555,7 @@ final class ToxSync {
     final friendNumber = _friendNumbers.remove(publicKey)!;
     _requests.remove(publicKey);
     _onlineFriends.remove(friendNumber);
+    _syncSessions.offline(friendNumber);
     _outgoing.removeWhere((_, message) => message.friendNumber == friendNumber);
     _files.friendOffline(friendNumber);
     try {
@@ -493,6 +567,15 @@ final class ToxSync {
 
   /// A friend first coming online means they accepted our request.
   void _accepted(PublicKey pk) {
+    if (_profile?.home?.publicKey == pk) {
+      if (_profile?.pairingMessage != null) {
+        _logger.unawaited(
+          'clear the pairing request',
+          _db.clearPairingMessage(_profileId),
+        );
+      }
+      return;
+    }
     if (_requests.containsKey(pk)) {
       _requests[pk] = null;
     }

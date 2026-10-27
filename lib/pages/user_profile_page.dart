@@ -4,6 +4,7 @@ import 'package:btox/logger.dart';
 import 'package:btox/models/crypto.dart';
 import 'package:btox/models/id.dart';
 import 'package:btox/models/persistence.dart';
+import 'package:btox/providers/chats.dart';
 import 'package:btox/providers/database.dart';
 import 'package:btox/providers/profiles.dart';
 import 'package:btox/widgets/load_failed.dart';
@@ -26,7 +27,9 @@ final class UserProfilePage extends ConsumerWidget {
     final profileAsync = ref.watch(profileProvider(profileId));
 
     return profileAsync.when(
-      data: _ProfileForm.new,
+      data: (profile) => profile.home == null
+          ? _ProfileForm(profile)
+          : _LinkedProfile(profile),
       loading: () =>
           const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (_, _) => const Scaffold(body: LoadFailed()),
@@ -111,6 +114,32 @@ final class _ProfileForm extends HookConsumerWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Edited on the device that runs the account, for now.
+final class _LinkedProfile extends ConsumerWidget {
+  final Profile profile;
+
+  const _LinkedProfile(this.profile);
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final identity = ref.watch(profileIdentityProvider(profile));
+    return Scaffold(
+      appBar: AppBar(title: Text(l10n.menuProfile)),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          ListTile(
+            title: Text(identity.name ?? l10n.linkedAccount),
+            subtitle: Text(identity.statusMessage),
+          ),
+          ToxIdView(address: identity.address),
+        ],
       ),
     );
   }

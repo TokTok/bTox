@@ -3,8 +3,9 @@ import 'package:btox/l10n/generated/app_localizations.dart';
 import 'package:btox/logger.dart';
 import 'package:btox/models/chat_view.dart';
 import 'package:btox/models/content.dart';
-import 'package:btox/models/id.dart';
+import 'package:btox/models/crypto.dart';
 import 'package:btox/models/persistence.dart';
+import 'package:btox/providers/attachments.dart';
 import 'package:btox/providers/database.dart';
 import 'package:btox/widgets/bubble_footer.dart';
 import 'package:btox/widgets/chat_text_bubble.dart';
@@ -57,13 +58,39 @@ final class ChatFileBubble extends ConsumerWidget {
                 .round(),
           )
         : null;
+    final transfer = progress?.transfer;
 
-    void answer(Id<Transfers> transfer, {required bool accept}) {
+    // Where this device runs the transfer, it starts or stops it. Elsewhere
+    // the home device does, once it has the answer.
+    void answer({required bool accept}) {
       _logger.unawaited(
         'answer the file',
         ref
             .read(databaseProvider.future)
-            .then((db) => db.answerTransfer(transfer, accept: accept)),
+            .then(
+              (db) => transfer != null
+                  ? db.answerTransfer(transfer, accept: accept)
+                  : db.addFileAnswer(
+                      chat.profile,
+                      chat.graph,
+                      entry.event,
+                      accepted: accept,
+                    ),
+            ),
+      );
+    }
+
+    // A linked account's file, from its home device to here.
+    Future<void> download(BlobId blob) async {
+      final db = await ref.read(databaseProvider.future);
+      final directory = await ref.read(attachmentsDirectoryProvider.future);
+      await db.fetchFile(
+        chat.profile,
+        chat.graph,
+        entry.event,
+        content,
+        blob,
+        newAttachmentPath(directory, content.name),
       );
     }
 
@@ -107,21 +134,20 @@ final class ChatFileBubble extends ConsumerWidget {
             ),
           ],
           switch (progress) {
-            FileProgress(state: FileState.offered, :final transfer?)
-                when !isSender =>
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextButton(
-                    onPressed: () => answer(transfer, accept: true),
-                    child: Text(l10n.acceptFile),
-                  ),
-                  TextButton(
-                    onPressed: () => answer(transfer, accept: false),
-                    child: Text(l10n.declineFile),
-                  ),
-                ],
-              ),
+            FileProgress(state: FileState.offered) when !isSender => Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextButton(
+                  onPressed: () => answer(accept: true),
+                  child: Text(l10n.acceptFile),
+                ),
+                TextButton(
+                  onPressed: () => answer(accept: false),
+                  child: Text(l10n.declineFile),
+                ),
+              ],
+            ),
+            // Indeterminate when the home device moves it.
             FileProgress(state: FileState.active, :final transferred) =>
               SizedBox(
                 width: preview == null ? 160 : _previewSize,
@@ -139,6 +165,13 @@ final class ChatFileBubble extends ConsumerWidget {
               l10n.filePaused,
               style: Theme.of(context).textTheme.bodySmall,
             ),
+            FileProgress(state: FileState.done, :final blob?)
+                when content.path.isEmpty =>
+              TextButton(
+                onPressed: () =>
+                    _logger.unawaited('download the file', download(blob)),
+                child: Text(l10n.downloadFile),
+              ),
             _ => const SizedBox.shrink(),
           },
         ],

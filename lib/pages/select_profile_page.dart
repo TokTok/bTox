@@ -1,6 +1,7 @@
 import 'package:btox/l10n/generated/app_localizations.dart';
 import 'package:btox/logger.dart';
 import 'package:btox/pages/create_profile_page.dart';
+import 'package:btox/providers/chats.dart';
 import 'package:btox/providers/database.dart';
 import 'package:btox/providers/profiles.dart';
 import 'package:btox/widgets/delete_profile.dart';
@@ -21,9 +22,12 @@ final class SelectProfilePage extends ConsumerWidget {
         itemCount: profiles.length,
         itemBuilder: (context, index) {
           final profile = profiles[index];
+          final identity = ref.watch(profileIdentityProvider(profile));
+          final name =
+              identity.name ?? AppLocalizations.of(context)!.linkedAccount;
           return ListTile(
-            title: Text(profile.settings.nickname),
-            subtitle: Text(profile.settings.statusMessage),
+            title: Text(name),
+            subtitle: Text(identity.statusMessage),
             trailing: profile.signedIn
                 ? const Icon(Icons.check_circle, color: Colors.green)
                 : null,
@@ -35,12 +39,8 @@ final class SelectProfilePage extends ConsumerWidget {
                 Navigator.popUntil(context, (route) => route.isFirst);
               }
             },
-            onLongPress: () => deleteProfileIfConfirmed(
-              context,
-              ref,
-              profile,
-              profile.settings.nickname,
-            ),
+            onLongPress: () =>
+                deleteProfileIfConfirmed(context, ref, profile, name),
           );
         },
       ),

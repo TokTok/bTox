@@ -27,7 +27,7 @@ final class MainMenu extends ConsumerWidget {
         .watch(signedInProfilesProvider)
         .where((p) => p.id != profile.id);
     final l10n = AppLocalizations.of(context)!;
-    final me = profile.settings;
+    final me = ref.watch(profileIdentityProvider(profile));
 
     void open(Widget page) {
       Navigator.pop(context); // close drawer before navigating away
@@ -39,14 +39,14 @@ final class MainMenu extends ConsumerWidget {
         DrawerHeader(
           child: ListTile(
             title: Text(
-              me.nickname,
+              me.name ?? l10n.linkedAccount,
               style: Theme.of(context).textTheme.headlineSmall,
             ),
             subtitle: Text(
               me.statusMessage,
               style: Theme.of(context).textTheme.bodyMedium,
             ),
-            trailing: CircleIdenticon(bytes: profile.publicKey),
+            trailing: CircleIdenticon(bytes: me.address.publicKey),
             onTap: () => open(UserProfilePage(profileId: profile.id)),
           ),
         ),
@@ -54,9 +54,17 @@ final class MainMenu extends ConsumerWidget {
           ListTile(
             leading: SizedBox.square(
               dimension: 32,
-              child: CircleIdenticon(bytes: other.publicKey),
+              child: CircleIdenticon(
+                bytes: ref
+                    .watch(profileIdentityProvider(other))
+                    .address
+                    .publicKey,
+              ),
             ),
-            title: Text(other.settings.nickname),
+            title: Text(
+              ref.watch(profileIdentityProvider(other)).name ??
+                  l10n.linkedAccount,
+            ),
             subtitle: Text(
               connectionStatusText(
                 ref.watch(connectionStatusesProvider)?[other.id],
@@ -103,7 +111,7 @@ final class MainMenu extends ConsumerWidget {
             if (!await confirm(
               context,
               title: l10n.logout,
-              message: l10n.logoutMessage(me.nickname),
+              message: l10n.logoutMessage(me.name ?? l10n.linkedAccount),
               action: l10n.logout,
             )) {
               return;

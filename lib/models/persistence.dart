@@ -80,9 +80,40 @@ abstract class Transfers extends Table {
   TextColumn get path => text()();
   TextColumn get state => textEnum<FileState>()();
   IntColumn get transferred => integer().withDefault(const Constant(0))();
+  // A linked account's file: its blob, which moves between here and the
+  // home device.
+  TextColumn get blobId =>
+      text().map(const HexConverter(BlobId.fromJson)).nullable()();
   // A friend's file coming here: what their Tox calls it.
   TextColumn get fileId =>
       text().map(const HexConverter(FileId.fromJson)).nullable()();
+}
+
+/// Answers to files offered to a linked account's home device, until the
+/// background service writes them as events.
+abstract class FileAnswers extends Table {
+  IntColumn get id =>
+      integer().autoIncrement().map(const IdConverter<FileAnswers>())();
+  IntColumn get profileId =>
+      integer().references(Profiles, #id).map(const IdConverter<Profiles>())();
+  TextColumn get graph => text().map(const HexConverter(GraphId.fromJson))();
+  // The event that started the file.
+  TextColumn get file => text().map(const HexConverter(EventId.fromJson))();
+  BoolColumn get accepted => boolean()();
+}
+
+/// Answers to a linked account's invites to chats, until the background
+/// service writes them as events.
+abstract class InviteAnswers extends Table {
+  IntColumn get id =>
+      integer().autoIncrement().map(const IdConverter<InviteAnswers>())();
+  IntColumn get profileId =>
+      integer().references(Profiles, #id).map(const IdConverter<Profiles>())();
+  // The invite's event.
+  TextColumn get invite => text().map(const HexConverter(EventId.fromJson))();
+  BoolColumn get accepted => boolean()();
+  // To join a group that has one.
+  TextColumn get password => text().nullable()();
 }
 
 /// Settings of an account to set or clear, until the background service
@@ -129,6 +160,12 @@ abstract class Profiles extends Table {
   IntColumn get nospam => integer()
       .check(nospam.isBetweenValues(0, 0xFFFFFFFF))
       .map(const NospamConverter())();
+
+  // For an account linked from another device: that device.
+  TextColumn get home =>
+      text().map(const HexConverter(ToxAddress.fromString)).nullable()();
+  // Sent to that device with a friend request, until it first comes online.
+  TextColumn get pairingMessage => text().nullable()();
 }
 
 /// What a chat's page sends, until the background service writes it as an
@@ -163,6 +200,19 @@ abstract class SyncEvents extends Table {
 
   @override
   Set<Column> get primaryKey => {profileId, id};
+}
+
+/// How far each linked chat has been notified on this device, by rank, which
+/// stays the same when its events sync again.
+@DataClassName('NotifiedUpTo')
+abstract class LinkedNotified extends Table {
+  IntColumn get profileId =>
+      integer().references(Profiles, #id).map(const IdConverter<Profiles>())();
+  TextColumn get graph => text().map(const HexConverter(GraphId.fromJson))();
+  IntColumn get rank => integer()();
+
+  @override
+  Set<Column> get primaryKey => {profileId, graph};
 }
 
 /// How far each chat has been seen on this device. The background service

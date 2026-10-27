@@ -195,7 +195,8 @@ void main() {
       }
     });
 
-    test("a chat's events come as they're added", () async {
+    test("a chat's events come as they're added, and all again when some "
+        'go', () async {
       final id = await db.addProfile(
         ProfilesCompanion.insert(
           settings: const ProfileSettings(nickname: 'Me', statusMessage: ''),
@@ -233,13 +234,22 @@ void main() {
         home.chatWith(PublicKey(Uint8List(32)..[0] = 2)),
         const Notice(text: 'joined'),
       );
-      await receive('Bob');
-      await receive('Robert');
+      final first = await receive('Bob');
+      final second = await receive('Robert');
+      await db.dropSyncEvents(id, [first]);
+      await pumpEventQueue();
+      // Once all are gone, new events may reuse their rowids.
+      await db.dropSyncEvents(id, [second]);
+      await pumpEventQueue();
+      await receive('Bobby');
       await watching.cancel();
       expect(seen, [
         <String>[],
         ['Bob'],
         ['Bob', 'Robert'],
+        ['Robert'],
+        <String>[],
+        ['Bobby'],
       ]);
     });
 

@@ -4,7 +4,7 @@ import 'dart:typed_data';
 import 'package:btox/models/crypto.dart';
 import 'package:btox/sync/event.dart';
 
-/// The most an event takes, in bytes, as Rust's `MAX_EVENT`.
+/// The most an event takes, in bytes.
 const maxEventBytes = 64 * 1024;
 
 final class EventStore {

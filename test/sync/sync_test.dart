@@ -8,13 +8,25 @@ import 'package:btox/sync/account.dart';
 import 'package:btox/sync/codec.dart';
 import 'package:btox/sync/event.dart';
 import 'package:btox/sync/fact.dart';
+import 'package:btox/sync/frames.dart';
+import 'package:btox/sync/pairing.dart';
+import 'package:btox/sync/session_message.dart';
 import 'package:btox/sync/setting.dart';
+import 'package:btox/sync/store.dart';
 import 'package:convert/convert.dart';
 import 'package:crypto/crypto.dart' show sha256;
 import 'package:flutter_test/flutter_test.dart';
 
-// Shared with rs-toxcore-c's sync tests, so both encode and identify events
-// the same way.
+// Every device must encode and identify these the same way.
+final _helloPacket = Uint8List.fromList([
+  0xb0,
+  0x03,
+  0x92,
+  0x00,
+  0x92,
+  0x01,
+  0x01,
+]);
 const _vectorGraph =
     '6fcb85e59b8be9d9e8851d580aaa9237821cddedab6214ee43b0a08ccafbaadf';
 const _vectorEvent =
@@ -24,6 +36,12 @@ const _vectorEvent =
     '020202020202020202020202029200a3426f62';
 const _vectorId =
     '76128f570001c241a587d2c3d7db5da9cebbd7bcd07daa74084b10bde1e0f098';
+const _vectorLink =
+    'tox:0101010101010101010101010101010101010101010101010101010101010101010203'
+    '040206?pair=00112233445566778899aabbccddeeff';
+const _vectorSummary =
+    '92019192c4206fcb85e59b8be9d9e8851d580aaa9237821cddedab6214ee43b0a08ccafb'
+    'aadfc42081e78eb184795940d60d99e6491b4c553f45cb9c0912aea10a4ed737132f2512';
 const _vectorSend = '920193a24d65c40568690000ff01';
 const _vectorFileAnswered =
     '920792c42001000000000000000000000000000000000000000000000000000000000000'
@@ -67,6 +85,13 @@ const _vectorInviteJoinedOld =
     '924a92c42005050505050505050505050505050505050505050505050505050505050505'
     '05919200c420030303030303030303030303030303030303030303030303030303030303'
     '0303';
+const _vectorFacts =
+    '92089292929201c420020202020202020202020202020202020202020202020202020202'
+    '0202020202920302929203929201c4200101010101010101010101010101010101010101'
+    '010101010101010101010101c42003030303030303030303030303030303030303030303'
+    '03030303030303030303920ec2c2';
+const _vectorWantBlob =
+    '9206c42077af778b51abd4a3c51c5ddd97204a9c3ae614ebccb75a606c3b6865aed6744e';
 
 final _alice = PublicKey(Uint8List(32)..fillRange(0, 32, 1));
 final _bob = PublicKey(Uint8List(32)..fillRange(0, 32, 2));
@@ -74,7 +99,7 @@ final _bob = PublicKey(Uint8List(32)..fillRange(0, 32, 2));
 Uint8List _bytes(String value) => Uint8List.fromList(hex.decode(value));
 
 void main() {
-  test('encodes and identifies like rs-toxcore-c', () {
+  test('encodes and identifies events', () {
     final graph = GraphId.account(_alice);
     final bytes = _bytes(_vectorEvent);
     final event = SyncEvent.decode(bytes);
@@ -95,6 +120,12 @@ void main() {
     expect(event.encode(), bytes);
     expect(graph, GraphId.fromJson(_vectorGraph));
     expect(EventId.of(bytes), EventId.fromJson(_vectorId));
+    expect(
+      Summary([
+        (graph, HeadsDigest.of([EventId.of(bytes)])),
+      ]).encode(),
+      _bytes(_vectorSummary),
+    );
     final send = event.copyWith(
       content: Send(
         sender: 'Me',
@@ -180,6 +211,13 @@ void main() {
       SyncEvent.decode(Uint8List.fromList(hex.decode(unknownSize))).content,
       isA<FileStarted>().having((f) => f.size, 'size', 0x7fffffffffffffff),
     );
+    expect(
+      () => SessionMessage.decode(
+        Uint8List.fromList(hex.decode('9207c41f${'00' * 31}')),
+      ),
+      throwsFormatException,
+    );
+    expect(hex.encode(WantBlob(blob).encode()), _vectorWantBlob);
     final group = ChatId.group(GroupChatId(Uint8List(32)..fillRange(0, 32, 3)));
     final fact = event.copyWith(
       content: FactContent(
@@ -239,6 +277,73 @@ void main() {
         content,
       );
     }
+    final device = PublicKey(Uint8List(32)..fillRange(0, 32, 3));
+    final conference = ChatId.conference(
+      ConferenceId(Uint8List(32)..fillRange(0, 32, 1)),
+    );
+    final facts = FactsUpdate([
+      (Subject.friend(_bob), const FactValue.connection(Connection.udp)),
+      (Subject.peer(conference, device), const FactValue.present(false)),
+    ], all: false);
+    expect(hex.encode(facts.encode()), _vectorFacts);
+    expect(frames(const Hello(features: Features.accountSync).encode()), [
+      _helloPacket,
+    ]);
+  });
+
+  test('invites follow their last answer', () {
+    final store = EventStore();
+    final account = GraphId.account(_alice);
+    EventId add(EventContent content) {
+      final (id, _, bytes) = store.author(
+        account,
+        _alice,
+        DateTime(2026),
+        content,
+      );
+      store.insert(bytes);
+      return id;
+    }
+
+    EventId invite(String name) => add(
+      ChatInvite(
+        from: _bob,
+        kind: ChatKind.conference,
+        name: name,
+        invite: Uint8List.fromList([1, 2, 3]),
+      ),
+    );
+    InviteStatus? status(EventId id) =>
+        AccountState.of(rankOrder(store.eventsIn(account))).invites[id]?.status;
+
+    final refused = invite('refused');
+    final declined = invite('declined');
+    final pending = invite('pending');
+    final chat = ChatId.conference(
+      ConferenceId(Uint8List(32)..fillRange(0, 32, 4)),
+    );
+    add(AnswerInvite(invite: refused, join: true, password: 'secret'));
+    expect(status(refused), InviteStatus.joining);
+    add(InviteJoined(invite: refused, chat: chat));
+    expect(status(refused), InviteStatus.joined);
+    add(AnswerInvite(invite: declined, join: false));
+    expect(status(declined), InviteStatus.declined);
+    expect(status(pending), InviteStatus.pending);
+
+    // The chat can turn the account away later, and the invite keeps the
+    // chat it joined.
+    add(InviteJoined(invite: refused, needsPassword: true));
+    expect(
+      AccountState.of(rankOrder(store.eventsIn(account))).invites[refused],
+      AccountInvite(
+        from: _bob,
+        kind: ChatKind.conference,
+        name: 'refused',
+        status: InviteStatus.failed,
+        chat: chat,
+        needsPassword: true,
+      ),
+    );
   });
 
   test('concurrent settings end the same in any order', () {
@@ -352,7 +457,53 @@ void main() {
     }
   });
 
+  test('session messages round trip', () {
+    final id = EventId(Uint8List(32));
+    final graph = GraphId.account(_alice);
+    for (final message in [
+      const Hello(features: Features.accountSync),
+      Summary([
+        (graph, HeadsDigest.of([id])),
+      ]),
+      Heads(graph: graph, heads: [id]),
+      Want([id]),
+      Events([
+        Uint8List.fromList([1, 2, 3]),
+      ]),
+      History(graph: graph, before: [id], limit: 50),
+      FactsUpdate([
+        (Subject.friend(_alice), const FactValue.connection(Connection.udp)),
+        (
+          Subject.peer(ChatId.group(GroupChatId(Uint8List(32))), _bob),
+          const FactValue.role(Role.moderator),
+        ),
+      ], all: true),
+      WantBlob(BlobId(Uint8List(32))),
+      NoBlob(BlobId(Uint8List(32))),
+    ]) {
+      expect(SessionMessage.decode(message.encode()), message);
+    }
+  });
+
   test('newer and older versions are understood', () {
+    // Fields and messages this version doesn't know are skipped.
+    final newer = ArrayWriter()
+      ..uint(0)
+      ..array(
+        ArrayWriter()
+          ..uint(1)
+          ..uint(1)
+          ..string('future'),
+      );
+    expect(
+      SessionMessage.decode(newer.encode()),
+      const Hello(features: Features.accountSync),
+    );
+    final unknown = ArrayWriter()
+      ..uint(99)
+      ..string('?');
+    expect(SessionMessage.decode(unknown.encode()), isNull);
+
     // A field appended since is absent in an older event.
     final older = ArrayWriter()
       ..uint(eventVersion)
@@ -386,7 +537,7 @@ void main() {
     );
   });
 
-  test('what Rust reads as unknown or refuses is the same here', () {
+  test('reads newer or malformed values as unknown', () {
     T read<T>(T Function(Fields) reader, ArrayWriter value) =>
         reader(Fields(Unpacker((ArrayWriter()..array(value)).encode())));
     ArrayWriter mute(void Function(ArrayWriter) until) {
@@ -411,7 +562,7 @@ void main() {
       ),
       const FactValue.unknown(2),
     );
-    // Mutes Rust doesn't take as one.
+    // A mute with an until that isn't a time.
     for (final until in <void Function(ArrayWriter)>[
       (w) => w.array(
         ArrayWriter()
@@ -421,6 +572,25 @@ void main() {
       (w) => w.raw(Uint8List.fromList([0xc0])),
     ]) {
       expect(read(readSetting, mute(until)).value, const Setting.unknown(0));
+    }
+
+    // Extension values are skipped as any field this version doesn't know.
+    for (final extension in [
+      [0xd4, 0, 0],
+      [0xc7, 1, 5, 9],
+    ]) {
+      final hello = ArrayWriter()
+        ..uint(0)
+        ..array(
+          ArrayWriter()
+            ..uint(1)
+            ..uint(1)
+            ..raw(Uint8List.fromList(extension)),
+        );
+      expect(
+        SessionMessage.decode(hello.encode()),
+        const Hello(features: Features.accountSync),
+      );
     }
 
     // A time no date can be.
@@ -435,5 +605,49 @@ void main() {
       );
       expect(() => SyncEvent.decode(event.encode()), throwsFormatException);
     }
+  });
+
+  test('long messages are split and joined', () {
+    final message = Uint8List.fromList(List.generate(3000, (i) => i % 256));
+    final packets = frames(message);
+    expect(packets, hasLength(3));
+
+    final reassembler = Reassembler();
+    expect(reassembler.push(packets[0]), isNull);
+    expect(reassembler.push(packets[1]), isNull);
+    expect(reassembler.push(packets[2]), message);
+
+    final tooLong = frames(Uint8List(maxSyncMessage + 1));
+    var failed = false;
+    for (final packet in tooLong) {
+      try {
+        expect(reassembler.push(packet), isNull);
+      } on FormatException {
+        failed = true;
+      }
+    }
+    expect(failed, isTrue);
+    // Its own bytes, not a view of the packet's, which may be much more.
+    final packet = Uint8List.fromList(_helloPacket);
+    final hello = reassembler.push(packet)!;
+    packet.fillRange(0, packet.length, 0);
+    expect(hello, _helloPacket.sublist(2));
+
+    // A message cut off by a reconnect doesn't spoil the next one.
+    expect(reassembler.push(packets[0]), isNull);
+    expect(reassembler.push(_helloPacket), hasLength(5));
+    // Older versions mark only the final frame.
+    expect(
+      reassembler.push(Uint8List.fromList(_helloPacket)..[1] = 0x01),
+      hasLength(5),
+    );
+  });
+
+  test('reads pairing links', () {
+    final link = PairingLink.parse(_vectorLink)!;
+    expect(link.home, ToxAddress.of(_alice, ToxAddressNospam(0x01020304)));
+    expect(link.requestMessage, 'pair:00112233445566778899aabbccddeeff');
+    expect(PairingLink.parse(_vectorLink.replaceFirst('0206', '0207')), isNull);
+    expect(PairingLink.parse('tox:${'0' * 76}'), isNull);
   });
 }

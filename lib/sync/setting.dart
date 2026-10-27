@@ -23,8 +23,7 @@ sealed class Scope with _$Scope {
   const factory Scope.unknown(int tag) = UnknownScope;
 }
 
-/// A setting, by kind, as account-sync.md defines them. A scope has at most
-/// one of each kind.
+/// A setting, by kind. A scope has at most one of each kind.
 @freezed
 sealed class Setting with _$Setting {
   /// The conversation doesn't notify until [until], or ever where it's null,

@@ -6,6 +6,7 @@ import 'package:btox/ffi/toxcore.dart' show Tox_Message_Type;
 import 'package:btox/models/chat_view.dart';
 import 'package:btox/models/crypto.dart';
 import 'package:btox/models/id.dart';
+import 'package:btox/models/persistence.dart';
 import 'package:btox/models/profile_settings.dart';
 import 'package:btox/providers/chats.dart';
 import 'package:btox/providers/database.dart';
@@ -124,6 +125,114 @@ void main() {
     await pumpEventQueue();
 
     expect(alive.providers.where((p) => p.argument != null), isEmpty);
+  });
+  test("a linked account's files show this device's part on top of the "
+      "home device's", () async {
+    final db = Database(NativeDatabase.memory());
+    addTearDown(db.close);
+    final device = PublicKey(Uint8List(32));
+    final home = PublicKey(Uint8List(32)..fillRange(0, 32, 1));
+    final id = await db.addProfile(
+      ProfilesCompanion.insert(
+        settings: const ProfileSettings(nickname: 'bTox', statusMessage: ''),
+        secretKey: SecretKey(Uint8List(32)),
+        publicKey: device,
+        nospam: ToxAddressNospam(0),
+        home: Value(ToxAddress.of(home, ToxAddressNospam(0))),
+      ),
+    );
+    final chat = ChatRef(
+      id,
+      GraphId.friend(home, PublicKey(Uint8List(32)..[0] = 2)),
+    );
+    final events = <(EventId, SyncEvent, Uint8List)>[];
+    Future<EventId> add(PublicKey author, EventContent content) async {
+      final event = SyncEvent(
+        graph: chat.graph,
+        author: author,
+        parents: [?events.lastOrNull?.$1],
+        rank: events.length,
+        time: 0,
+        content: content,
+      );
+      final bytes = event.encode();
+      events.add((EventId.of(bytes), event, bytes));
+      await db.addSyncEvents(id, [events.last]);
+      return events.last.$1;
+    }
+
+    Future<Id<Transfers>> transfer(EventId event, {required bool incoming}) =>
+        db.addTransfer(
+          TransfersCompanion.insert(
+            profileId: id,
+            graph: chat.graph,
+            event: Value(event),
+            incoming: incoming,
+            name: '',
+            size: 3,
+            path: '',
+            state: FileState.active,
+            transferred: const Value(1),
+          ),
+        );
+
+    final dog = BlobId(Uint8List(32)..[0] = 1);
+    final offered = await add(
+      home,
+      const FileStarted(
+        sender: 'Bob',
+        name: 'dog.png',
+        size: 3,
+        incoming: true,
+      ),
+    );
+    await add(home, FileEnded(file: offered, ok: true, blob: dog));
+    final sent = await add(
+      device,
+      FileStarted(
+        sender: 'Me',
+        name: 'cat.png',
+        size: 3,
+        incoming: false,
+        blob: BlobId(Uint8List(32)..[0] = 2),
+      ),
+    );
+    final fetch = await transfer(offered, incoming: true);
+    final send = await transfer(sent, incoming: false);
+
+    final container = ProviderContainer(
+      overrides: [databaseProvider.overrideWith((ref) => db)],
+    );
+    addTearDown(container.dispose);
+    final shown = container.listen(chatEntriesProvider(chat), (_, _) {});
+    Future<void> expectFiles(List<FileProgress> expected) async {
+      List<FileProgress?> files() => [
+        for (final entry in shown.read().value ?? <ChatEntry>[]) entry.file,
+      ];
+      for (var i = 0; i < 100 && !listEquals(files(), expected); i++) {
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+      }
+      expect(files(), expected);
+    }
+
+    await expectFiles([
+      FileProgress(state: FileState.active, transferred: 1, blob: dog),
+      const FileProgress(state: FileState.active, transferred: 1),
+    ]);
+
+    // Ours is then the home device's to send on, which it doesn't show.
+    await db.setTransferState(fetch, FileState.done, transferred: 3);
+    await db.setTransferState(send, FileState.done, transferred: 3);
+    await expectFiles([
+      FileProgress(state: FileState.done, transferred: 3, blob: dog),
+      const FileProgress(state: FileState.active),
+    ]);
+
+    await add(home, FileEnded(file: sent, ok: true));
+    await expectFiles([
+      FileProgress(state: FileState.done, transferred: 3, blob: dog),
+      const FileProgress(state: FileState.done),
+    ]);
   });
 }
 

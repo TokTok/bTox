@@ -5,6 +5,7 @@ import 'package:btox/models/crypto.dart';
 import 'package:btox/models/id.dart';
 import 'package:btox/models/persistence.dart';
 import 'package:btox/models/profile_settings.dart';
+import 'package:btox/pages/link_account_page.dart';
 import 'package:btox/providers/database.dart';
 import 'package:btox/providers/tox.dart';
 import 'package:btox/widgets/import_profile.dart';
@@ -31,6 +32,14 @@ final class CreateProfilePage extends HookConsumerWidget {
       appBar: AppBar(
         title: Text(AppLocalizations.of(context)!.newProfile),
         actions: [
+          IconButton(
+            tooltip: AppLocalizations.of(context)!.linkAccount,
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const LinkAccountPage()),
+            ),
+            icon: const Icon(Icons.link),
+          ),
           IconButton(
             tooltip: AppLocalizations.of(context)!.importData,
             onPressed: () => importProfileFile(context, ref),

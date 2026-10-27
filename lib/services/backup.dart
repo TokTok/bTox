@@ -70,10 +70,13 @@ Backup? readBackup(Uint8List bytes) {
   }
 }
 
-/// The nicknames of the accounts in a backup, by their ID in it.
-Map<Object?, String> backupAccounts(Map<String, dynamic> tables) => {
+/// The nicknames of the accounts in a backup, by their ID in it. A linked
+/// account's is `null`: its name syncs from its home device.
+Map<Object?, String?> backupAccounts(Map<String, dynamic> tables) => {
   for (final Map p in tables['profiles'] as List)
-    p['id']: jsonDecode(p['settings'] as String)['nickname'] as String,
+    p['id']: p['home'] == null
+        ? jsonDecode(p['settings'] as String)['nickname'] as String
+        : null,
 };
 
 /// Adds the [accounts] from a backup that the database doesn't have yet,
@@ -172,7 +175,8 @@ Future<int> restoreBackup(Database db, Backup backup, Set<Object?> accounts) {
       await insert(
         table,
         owner: ('profile_id', profiles),
-        // Not the files the backup didn't bring.
+        // Files the backup didn't bring are left out. A linked account's
+        // come from its home device again.
         where: table == 'transfers'
             ? (row) => attachmentExists(row['path'] as String)
             : null,

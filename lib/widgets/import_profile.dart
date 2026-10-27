@@ -53,7 +53,8 @@ Future<void> importProfileFile(BuildContext context, WidgetRef ref) async {
         context,
         title: l10n.importData,
         action: l10n.import,
-        accounts: backupAccounts(backup.tables),
+        accounts: backupAccounts(backup.tables)
+            .map((id, name) => MapEntry(id, name ?? l10n.linkedAccount)),
       );
       if (accounts == null) {
         return;

@@ -1,5 +1,6 @@
 import 'package:btox/l10n/generated/app_localizations.dart';
 import 'package:btox/logger.dart';
+import 'package:btox/models/chat_log.dart';
 import 'package:btox/models/chat_view.dart';
 import 'package:btox/models/crypto.dart';
 import 'package:btox/pages/add_contact_page.dart';
@@ -7,6 +8,9 @@ import 'package:btox/pages/chat_page.dart';
 import 'package:btox/providers/chats.dart';
 import 'package:btox/providers/database.dart';
 import 'package:btox/providers/profiles.dart';
+import 'package:btox/sync/account.dart';
+import 'package:btox/sync/event.dart';
+import 'package:btox/widgets/chat_invite_list_item.dart';
 import 'package:btox/widgets/chat_list_item.dart';
 import 'package:btox/widgets/confirm_dialog.dart';
 import 'package:btox/widgets/connection_status_icon.dart';
@@ -14,6 +18,7 @@ import 'package:btox/widgets/friend_request_list_item.dart';
 import 'package:btox/widgets/load_failed.dart';
 import 'package:btox/widgets/main_menu.dart';
 import 'package:btox/widgets/mute_chat.dart';
+import 'package:btox/widgets/passphrase_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
@@ -24,16 +29,51 @@ final class ContactListPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final profile = ref.watch(currentProfileProvider);
 
     if (profile == null) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    final requests = ref
-        .watch(friendRequestsProvider(profile.id))
-        .entries
-        .toList();
+    // A linked account's friend requests go to its home device.
+    final local = profile.home == null;
+    final requests = local
+        ? ref.watch(friendRequestsProvider(profile.id)).entries.toList()
+        : const <MapEntry<PublicKey, String>>[];
+    final invites = ref.watch(chatInvitesProvider(profile.id));
+    final friends = ref.watch(accountProvider(profile.id)).value?.friends;
+    Future<void> answer(
+      EventId id,
+      AccountInvite invite, {
+      required bool join,
+    }) async {
+      String? password;
+      // Tox checks a group's password only after it takes the invite, which
+      // it takes only once.
+      if (join && invite.kind == ChatKind.group) {
+        final entered = await showPassphraseDialog(
+          context,
+          title: invite.name,
+          action: l10n.joinInvite,
+          run: (password) => password,
+          optional: true,
+          helper: l10n.groupPasswordHelper,
+        );
+        if (entered == null) {
+          return;
+        }
+        password = entered.isEmpty ? null : entered;
+      }
+      final db = await ref.read(databaseProvider.future);
+      await db.addInviteAnswer(
+        profile.id,
+        id,
+        accepted: join,
+        password: password,
+      );
+    }
+
     Future<void> want(
       PublicKey pk, {
       required bool wanted,
@@ -68,8 +108,10 @@ final class ContactListPage extends ConsumerWidget {
             ),
             Expanded(
               child: Text(
-                AppLocalizations.of(context)!
-                    .titleWithAccount(profile.settings.nickname),
+                AppLocalizations.of(context)!.titleWithAccount(
+                  ref.watch(profileIdentityProvider(profile)).name ??
+                      AppLocalizations.of(context)!.linkedAccount,
+                ),
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -78,14 +120,14 @@ final class ContactListPage extends ConsumerWidget {
       ),
       body: chats.when(
         data: (chats) {
-          if (requests.isEmpty && chats.isEmpty) {
+          if (requests.isEmpty && invites.isEmpty && chats.isEmpty) {
             return _Empty(
               icon: Icons.chat_bubble_outline,
               title: AppLocalizations.of(context)!.noChats,
-              hint: AppLocalizations.of(context)!.noChatsHint,
+              hint: local ? AppLocalizations.of(context)!.noChatsHint : null,
             );
           }
-          final above = requests.length;
+          final above = requests.length + invites.length;
           return ListView.builder(
             itemCount: above + chats.length,
             itemBuilder: (context, index) {
@@ -96,6 +138,15 @@ final class ContactListPage extends ConsumerWidget {
                   message: message,
                   onAccept: () => want(pk, wanted: true),
                   onReject: () => want(pk, wanted: false),
+                );
+              }
+              if (index < above) {
+                final (event, invite) = invites[index - requests.length];
+                return ChatInviteListItem(
+                  invite: invite,
+                  text: inviteText(l10n, invite, friends?[invite.from]?.name),
+                  onAnswer: ({required join}) =>
+                      answer(event, invite, join: join),
                 );
               }
               return ChatListItem(
@@ -109,7 +160,7 @@ final class ContactListPage extends ConsumerWidget {
                   ref,
                   chat,
                   delete: switch (chat.key) {
-                    final PublicKey pk => (deleteChat) => want(
+                    final PublicKey pk when local => (deleteChat) => want(
                       pk,
                       wanted: false,
                       deleteChat: deleteChat,
@@ -124,31 +175,33 @@ final class ContactListPage extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (_, _) => const LoadFailed(),
       ),
-      floatingActionButton: FloatingActionButton(
-        key: const Key('addContactButton'),
-        onPressed: () => Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => AddContactPage(
-              own: {profile.publicKey},
-              onAddContact: (address, message) async {
-                final db = await ref.read(databaseProvider.future);
-                await db.addFriendChange(
-                  profile.id,
-                  address.publicKey,
-                  wanted: true,
-                  nospam: address.nospam,
-                  message: message,
-                );
-                _logger.d('Added contact: ${address.publicKey}');
-              },
-              selfName: profile.settings.nickname,
+      floatingActionButton: !local
+          ? null
+          : FloatingActionButton(
+              key: const Key('addContactButton'),
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => AddContactPage(
+                    own: {profile.publicKey},
+                    onAddContact: (address, message) async {
+                      final db = await ref.read(databaseProvider.future);
+                      await db.addFriendChange(
+                        profile.id,
+                        address.publicKey,
+                        wanted: true,
+                        nospam: address.nospam,
+                        message: message,
+                      );
+                      _logger.d('Added contact: ${address.publicKey}');
+                    },
+                    selfName: profile.settings.nickname,
+                  ),
+                ),
+              ),
+              tooltip: AppLocalizations.of(context)!.addContact,
+              child: const Icon(Icons.add),
             ),
-          ),
-        ),
-        tooltip: AppLocalizations.of(context)!.addContact,
-        child: const Icon(Icons.add),
-      ),
     );
   }
 

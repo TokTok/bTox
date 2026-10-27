@@ -313,6 +313,10 @@
   "@declineFile": {
     "description": "The button to refuse an offered file"
   },
+  "downloadFile": "Download",
+  "@downloadFile": {
+    "description": "The button to fetch a file the account's home device holds"
+  },
   "fileCancelled": "Cancelled",
   "@fileCancelled": {
     "description": "A file transfer that was declined or stopped"
@@ -399,6 +403,39 @@
   "@attachLocation": {
     "description": "Button to send the current location"
   },
+  "linkAccount": "Link an account",
+  "@linkAccount": {
+    "description": "Action to use an account that runs on another device"
+  },
+  "pairingLink": "Pairing link",
+  "@pairingLink": {
+    "description": "Label of the field for another device's pairing link"
+  },
+  "pairingLinkHelp": "Paste the pairing link from the device that runs the account.",
+  "@pairingLinkHelp": {
+    "description": "Explains where the pairing link comes from"
+  },
+  "invalidPairingLink": "This isn't a pairing link",
+  "@invalidPairingLink": {
+    "description": "Error when the pasted text isn't a pairing link"
+  },
+  "link": "Link",
+  "@link": {
+    "description": "Button that links an account"
+  },
+  "linkedAccount": "Linked account",
+  "@linkedAccount": {
+    "description": "Name of a linked account until its name has synced"
+  },
+  "linkedAccountName": "{name} (linked)",
+  "@linkedAccountName": {
+    "description": "A linked account where accounts are listed to choose from",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "sendFailed": "Couldn't send the message",
   "@sendFailed": {
     "description": "Error when a message couldn't be saved for sending"
@@ -406,6 +443,10 @@
   "importFailed": "Couldn't import this file",
   "@importFailed": {
     "description": "Error when a profile or backup file couldn't be imported"
+  },
+  "linkFailed": "Couldn't link the account",
+  "@linkFailed": {
+    "description": "Error when a linked account couldn't be added"
   },
   "notImplemented": "Not available yet",
   "@notImplemented": {
@@ -644,6 +685,57 @@
   "friendRequest": "Friend request",
   "@friendRequest": {
     "description": "Title of the notification for a friend request"
+  },
+  "inviteNotification": "Invite to a chat",
+  "@inviteNotification": {
+    "description": "Title of the notification for an invite to a group or conference"
+  },
+  "groupInvite": "{friend} invited you to {chat}",
+  "@groupInvite": {
+    "description": "An invite to a group, above the chats and in its notification",
+    "placeholders": {
+      "friend": {"type": "String"},
+      "chat": {"type": "String"}
+    }
+  },
+  "conferenceInvite": "{friend} invited you to a conference",
+  "@conferenceInvite": {
+    "description": "An invite to a conference, whose invite has no name, above the chats and in its notification",
+    "placeholders": {
+      "friend": {"type": "String"}
+    }
+  },
+  "joinInvite": "Join",
+  "@joinInvite": {
+    "description": "The button that joins the chat of an invite"
+  },
+  "declineInvite": "Decline",
+  "@declineInvite": {
+    "description": "The button that declines an invite to a chat"
+  },
+  "joiningInvite": "Joining…",
+  "@joiningInvite": {
+    "description": "Under an invite answered to join, until the account's home device joined"
+  },
+  "inviteNeedsPassword": "Needs the group's password. Ask for a new invite.",
+  "@inviteNeedsPassword": {
+    "description": "Under an invite to a group that turned the account away for a missing or wrong password, which spent the invite"
+  },
+  "inviteSpent": "Couldn't join. Ask for a new invite.",
+  "@inviteSpent": {
+    "description": "Under an invite whose chat turned the account away for another reason, which spent the invite"
+  },
+  "inviteFailed": "Couldn't join",
+  "@inviteFailed": {
+    "description": "Under an invite whose chat the account's home device couldn't join, which can be tried again"
+  },
+  "groupPasswordHelper": "Leave empty if the group has none",
+  "@groupPasswordHelper": {
+    "description": "Under the password field when joining a group from an invite"
+  },
+  "retryInvite": "Try again",
+  "@retryInvite": {
+    "description": "The button that tries joining the chat of an invite again"
   },
   "chatInAccount": "{chat} · {account}",
   "@chatInAccount": {

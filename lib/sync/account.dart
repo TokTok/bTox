@@ -30,6 +30,24 @@ abstract class AccountChat with _$AccountChat {
   }) = _AccountChat;
 }
 
+/// Where an invite to a chat is, by its last answer and what the home did
+/// with it.
+enum InviteStatus { pending, joining, joined, failed, declined }
+
+@freezed
+abstract class AccountInvite with _$AccountInvite {
+  const factory AccountInvite({
+    required PublicKey from,
+    required ChatKind kind,
+    required String name,
+    @Default(InviteStatus.pending) InviteStatus status,
+    // The chat it joined, even where that later turned the account away.
+    ChatId? chat,
+    // Failed for a missing or wrong password.
+    @Default(false) bool needsPassword,
+  }) = _AccountInvite;
+}
+
 @freezed
 abstract class AccountState with _$AccountState {
   const factory AccountState({
@@ -41,6 +59,7 @@ abstract class AccountState with _$AccountState {
     @Default({}) Map<GraphId, (int, EventId)> read,
     // Per scope, its settings by kind.
     @Default({}) Map<Scope, Map<int, Kept<Setting>>> settings,
+    @Default({}) Map<EventId, AccountInvite> invites,
     // The kept facts, of which the fields above show some.
     required Facts facts,
   }) = _AccountState;
@@ -76,6 +95,7 @@ final class AccountFold {
   final _friends = <PublicKey, AccountFriend>{};
   final _settings = <Scope, Map<int, Kept<Setting>>>{};
   final _read = <GraphId, (int, EventId)>{};
+  final _invites = <EventId, AccountInvite>{};
   // The last event added, in rank order.
   (int, EventId)? _last;
   var _events = const <(EventId, SyncEvent)>[];
@@ -88,7 +108,7 @@ final class AccountFold {
         (_events.isEmpty || events[_events.length - 1].$1 == _events.last.$1);
     if (!grown || !_addAll(events.skip(_events.length))) {
       _facts = Facts();
-      for (final map in [_friends, _settings, _read]) {
+      for (final map in [_friends, _settings, _read, _invites]) {
         map.clear();
       }
       _last = null;
@@ -142,6 +162,22 @@ final class AccountFold {
         if (isAfter((rank, event), _read[graph])) {
           _read[graph] = (rank, event);
         }
+      case ChatInvite(:final from, :final kind, :final name):
+        _invites[id] = AccountInvite(from: from, kind: kind, name: name);
+      case AnswerInvite(:final invite, :final join):
+        if (_invites[invite] case final known?) {
+          _invites[invite] = known.copyWith(
+            status: join ? InviteStatus.joining : InviteStatus.declined,
+          );
+        }
+      case InviteJoined(:final invite, :final chat, :final needsPassword):
+        if (_invites[invite] case final known?) {
+          _invites[invite] = known.copyWith(
+            status: chat == null ? InviteStatus.failed : InviteStatus.joined,
+            chat: chat ?? known.chat,
+            needsPassword: needsPassword,
+          );
+        }
       default:
         break;
     }
@@ -185,6 +221,7 @@ final class AccountFold {
       settings: {
         for (final MapEntry(:key, :value) in _settings.entries) key: {...value},
       },
+      invites: {..._invites},
       facts: facts,
     );
   }

@@ -188,6 +188,24 @@ void main() {
     expect(await connection(), const FactValue.connection(Connection.none));
   });
 
+  test('says Hello to friends coming online', () async {
+    await want();
+    sync.start();
+    await _until(() => tox.friends.isNotEmpty);
+
+    setOnline(0, true);
+    // Toxcore says so again when the friend moves from UDP to TCP.
+    sync.handleEvent(
+      ToxEventFriendConnectionStatus(
+        friendNumber: 0,
+        connectionStatus: Tox_Connection.TOX_CONNECTION_TCP,
+      ),
+    );
+    final (friendNumber, packet) = tox.losslessPackets.single;
+    expect(friendNumber, 0);
+    expect(packet, [0xb0, 0x03, 0x92, 0x00, 0x92, 0x01, 0x00]);
+  });
+
   group('messages', () {
     setUp(() async {
       await want();

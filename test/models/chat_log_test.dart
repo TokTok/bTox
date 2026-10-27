@@ -6,6 +6,7 @@ import 'package:btox/messages/message_format.dart';
 import 'package:btox/models/chat_log.dart';
 import 'package:btox/models/content.dart';
 import 'package:btox/models/crypto.dart';
+import 'package:btox/models/persistence.dart' show FileState;
 import 'package:btox/sync/event.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -154,5 +155,33 @@ void main() {
     );
     expect(_texts(ChatLog(withFakeFormat), [ours]), ['mine#9']);
     expect(_texts(ChatLog(MessageFormats.none), events), raw);
+  });
+
+  test('shows how far files offered to the home device got', () {
+    FileState? stateOf(List<(EventId, SyncEvent)> events) =>
+        ChatLog(MessageFormats.none).update(events).single.file?.state;
+    final offer = _event(
+      0,
+      0,
+      const FileStarted(
+        sender: 'Bob',
+        name: 'cat.png',
+        size: 3,
+        incoming: true,
+      ),
+    );
+    (EventId, SyncEvent) answer(int rank, {required bool accepted}) => _event(
+      rank,
+      rank,
+      FileAnswered(file: offer.$1, accepted: accepted),
+      [offer.$1],
+    );
+    final done = _event(1, 1, FileEnded(file: offer.$1, ok: true), [offer.$1]);
+
+    expect(stateOf([offer]), FileState.offered);
+    expect(stateOf([offer, answer(1, accepted: true)]), FileState.active);
+    expect(stateOf([offer, answer(1, accepted: false)]), FileState.cancelled);
+    // An answer after it ended changes nothing.
+    expect(stateOf([offer, done, answer(2, accepted: false)]), FileState.done);
   });
 }

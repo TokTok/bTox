@@ -59,6 +59,8 @@ abstract class FileProgress with _$FileProgress {
     int? transferred,
     // Set where this device runs the transfer, so it can be accepted.
     Id<Transfers>? transfer,
+    // A linked account's file its home device holds, to fetch from there.
+    BlobId? blob,
   }) = _FileProgress;
 }
 

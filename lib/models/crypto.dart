@@ -151,6 +151,24 @@ final class GraphId extends CryptoBytes {
   int get length => _hashLength;
 }
 
+/// Equal on two devices exactly when they have the same heads.
+final class HeadsDigest extends CryptoBytes {
+  HeadsDigest(super.bytes);
+
+  factory HeadsDigest.of(Iterable<EventId> heads) {
+    final sorted = heads.map((head) => head.bytes).toList()
+      ..sort(_compareBytes);
+    return HeadsDigest(
+      Uint8List.fromList(
+        sha256.convert(sorted.expand((b) => b).toList()).bytes,
+      ),
+    );
+  }
+
+  @override
+  int get length => _hashLength;
+}
+
 int _compareBytes(Uint8List a, Uint8List b) {
   for (var i = 0; i < a.length && i < b.length; i++) {
     if (a[i] != b[i]) {

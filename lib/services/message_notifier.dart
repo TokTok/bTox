@@ -9,6 +9,7 @@ import 'package:btox/models/crypto.dart';
 import 'package:btox/models/id.dart';
 import 'package:btox/models/persistence.dart';
 import 'package:btox/platform/any_platform.dart';
+import 'package:btox/sync/account.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -24,6 +25,7 @@ const _settings = InitializationSettings(
 // Keeps them apart from the background service notification.
 const _tag = 'message';
 const _requestTag = 'request';
+const _inviteTag = 'invite';
 
 // Explicit groups, so Android doesn't bundle messages with the service
 // notification under a summary that only opens the app.
@@ -65,7 +67,31 @@ final class MessageNotifier {
   )?
   request;
 
-  MessageNotifier(this._show, this._cancel, {this.request});
+  final Future<void> Function(
+    Id<Profiles> profile,
+    EventId id,
+    AccountInvite invite,
+    String? from,
+    String? account,
+  )?
+  _invite;
+  final Future<void> Function(EventId id)? _uninvite;
+
+  MessageNotifier(
+    this._show,
+    this._cancel, {
+    this.request,
+    Future<void> Function(
+      Id<Profiles> profile,
+      EventId id,
+      AccountInvite invite,
+      String? from,
+      String? account,
+    )?
+    invite,
+    Future<void> Function(EventId id)? uninvite,
+  }) : _invite = invite,
+       _uninvite = uninvite;
 
   static Future<MessageNotifier> android() async {
     final plugin = FlutterLocalNotificationsPlugin();
@@ -141,6 +167,14 @@ final class MessageNotifier {
         notificationDetails: alert(_requestTag, account: account),
         payload: '${profile.value}',
       ),
+      invite: (profile, id, invite, from, account) => plugin.show(
+        id: _idOfKey(id),
+        title: l10n.inviteNotification,
+        body: inviteText(l10n, invite, from),
+        notificationDetails: alert(_inviteTag, account: account),
+        payload: '${profile.value}',
+      ),
+      uninvite: (id) => plugin.cancel(id: _idOfKey(id), tag: _inviteTag),
     );
   }
 
@@ -165,6 +199,25 @@ final class MessageNotifier {
     if (chat != _openChat) {
       final named = signedInAccounts > 1 ? account : null;
       _update(() => _show(chat, title, messages, named));
+    }
+  }
+
+  void invited(
+    Id<Profiles> profile,
+    EventId id,
+    AccountInvite invite,
+    String? from,
+    String? account,
+  ) {
+    if (_invite case final show?) {
+      final named = signedInAccounts > 1 ? account : null;
+      _update(() => show(profile, id, invite, from, named));
+    }
+  }
+
+  void uninvited(EventId id) {
+    if (_uninvite case final cancel?) {
+      _update(() => cancel(id));
     }
   }
 
@@ -200,7 +253,8 @@ Future<void> showServiceNotification(String summary, List<String> lines) =>
     );
 
 /// Calls [openChat] for tapped notifications, including one that started
-/// the app, and [openRequests] for a friend request to a profile.
+/// the app, and [openRequests] for a friend request or an invite to a
+/// profile.
 Future<void> handleNotificationTaps(
   void Function(ChatRef) openChat, {
   required void Function(Id<Profiles>) openRequests,

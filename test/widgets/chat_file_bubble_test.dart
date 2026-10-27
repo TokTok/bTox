@@ -9,6 +9,7 @@ import 'package:btox/models/crypto.dart';
 import 'package:btox/models/id.dart';
 import 'package:btox/models/persistence.dart';
 import 'package:btox/models/profile_settings.dart';
+import 'package:btox/providers/attachments.dart';
 import 'package:btox/providers/database.dart';
 import 'package:btox/widgets/chat_file_bubble.dart';
 import 'package:btox/widgets/chat_item.dart';
@@ -189,5 +190,114 @@ void main() {
 
     await show(FileState.done);
     expect(find.byIcon(Icons.done_all), findsOneWidget);
+  });
+
+  testWidgets('a file offered to the home device is answered for it', (
+    tester,
+  ) async {
+    final db = Database(NativeDatabase.memory());
+    final profile = (await tester.runAsync(
+      () => db.addProfile(
+        ProfilesCompanion.insert(
+          settings: ProfileSettings(nickname: 'Me', statusMessage: ''),
+          secretKey: SecretKey(Uint8List(32)),
+          publicKey: PublicKey(Uint8List(32)),
+          nospam: ToxAddressNospam(0),
+        ),
+      ),
+    ))!;
+    final chat = ChatRef(profile, _chat.graph);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [databaseProvider.overrideWith((ref) => db)],
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          home: Scaffold(
+            body: ChatFileBubble(
+              corners: bubbleCorners(mine: false),
+              chat: chat,
+              entry: ChatEntry(
+                event: _event,
+                mine: false,
+                content: const FileContent(name: 'cat.png', size: 5000000),
+                timestamp: DateTime(2026),
+                file: const FileProgress(state: FileState.offered),
+              ),
+              color: Colors.white,
+              textStyle: const TextStyle(),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Accept'));
+    await tester.runAsync(pumpEventQueue);
+    final answer = (await tester.runAsync(
+      () => db.watchFileAnswers(profile).first,
+    ))!.single;
+    expect(
+      (answer.graph, answer.file, answer.accepted),
+      (chat.graph, _event, true),
+    );
+
+    await tester.pumpWidget(const SizedBox());
+    await tester.runAsync(db.close);
+  });
+
+  testWidgets('a file at the home device is downloaded here', (tester) async {
+    final db = Database(NativeDatabase.memory());
+    final profile = (await tester.runAsync(
+      () => db.addProfile(
+        ProfilesCompanion.insert(
+          settings: ProfileSettings(nickname: 'Me', statusMessage: ''),
+          secretKey: SecretKey(Uint8List(32)),
+          publicKey: PublicKey(Uint8List(32)),
+          nospam: ToxAddressNospam(0),
+        ),
+      ),
+    ))!;
+    final chat = ChatRef(profile, _chat.graph);
+    final blob = BlobId(Uint8List(32)..[0] = 7);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          databaseProvider.overrideWith((ref) => db),
+          attachmentsDirectoryProvider.overrideWith((ref) => '/files'),
+        ],
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          home: Scaffold(
+            body: ChatFileBubble(
+              corners: bubbleCorners(mine: false),
+              chat: chat,
+              entry: ChatEntry(
+                event: _event,
+                mine: false,
+                content: const FileContent(name: 'cat.png', size: 5000000),
+                timestamp: DateTime(2026),
+                file: FileProgress(state: FileState.done, blob: blob),
+              ),
+              color: Colors.white,
+              textStyle: const TextStyle(),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Download'));
+    await tester.runAsync(pumpEventQueue);
+    final fetch = (await tester.runAsync(
+      () => db.watchTransfers(profile).first,
+    ))!.single;
+    expect(
+      (fetch.event, fetch.blobId, fetch.incoming, fetch.state),
+      (_event, blob, true, FileState.active),
+    );
+    expect(fetch.path, startsWith('/files/'));
+
+    await tester.pumpWidget(const SizedBox());
+    await tester.runAsync(db.close);
   });
 }

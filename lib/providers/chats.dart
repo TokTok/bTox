@@ -76,14 +76,14 @@ Stream<Map<EventId, Transfer>> _transfers(Ref ref, Id<Profiles> id) =>
       },
     );
 
-/// The account of a profile, which this device runs.
+/// The account of a profile: a linked one's, or the one this device runs.
 @riverpod
 AsyncValue<AccountState> account(Ref ref, Id<Profiles> id) {
   final key = ref.watch(
-    profilesProvider.select(
-      (profiles) =>
-          profiles.value?.where((p) => p.id == id).firstOrNull?.publicKey,
-    ),
+    profilesProvider.select((profiles) {
+      final profile = profiles.value?.where((p) => p.id == id).firstOrNull;
+      return profile == null ? null : _accountKey(profile);
+    }),
   );
   if (key == null) {
     return const AsyncLoading();
@@ -98,6 +98,45 @@ Stream<AccountState> _accountState(Ref ref, Id<Profiles> id, GraphId graph) {
   return watchDb(ref, (db) => db.watchSyncEvents(id, graph)).map(fold.update);
 }
 
+PublicKey _accountKey(Profile profile) =>
+    profile.home?.publicKey ?? profile.publicKey;
+
+/// A linked account's name as last synced, read once.
+Future<String?> linkedAccountName(Database db, Profile profile) async {
+  final home = profile.home;
+  if (home == null) {
+    return null;
+  }
+  final events = await db
+      .watchSyncEvents(profile.id, GraphId.account(home.publicKey))
+      .first;
+  return AccountState.of(events).name;
+}
+
+typedef ProfileIdentity = ({
+  String? name,
+  String statusMessage,
+  ToxAddress address,
+});
+
+/// A linked profile shows its account's identity, not this device's key.
+@riverpod
+ProfileIdentity profileIdentity(Ref ref, Profile profile) {
+  if (profile.home case final home?) {
+    final account = ref.watch(accountProvider(profile.id)).value;
+    return (
+      name: account?.name,
+      statusMessage: account?.statusMessage ?? '',
+      address: home,
+    );
+  }
+  return (
+    name: profile.settings.nickname,
+    statusMessage: profile.settings.statusMessage,
+    address: ToxAddress.of(profile.publicKey, profile.nospam),
+  );
+}
+
 @riverpod
 Map<PublicKey, String> friendRequests(Ref ref, Id<Profiles> id) => {
   for (final MapEntry(key: pk, value: friend)
@@ -105,6 +144,18 @@ Map<PublicKey, String> friendRequests(Ref ref, Id<Profiles> id) => {
           const <MapEntry<PublicKey, AccountFriend>>[])
     if (friend.request case final request? when !friend.wanted) pk: request,
 };
+
+@riverpod
+List<(EventId, AccountInvite)> chatInvites(Ref ref, Id<Profiles> id) => [
+  for (final MapEntry(key: event, value: invite)
+      in ref.watch(accountProvider(id)).value?.invites.entries ??
+          const <MapEntry<EventId, AccountInvite>>[])
+    if (invite.status
+        case InviteStatus.pending ||
+            InviteStatus.joining ||
+            InviteStatus.failed)
+      (event, invite),
+];
 
 @riverpod
 AsyncValue<List<ChatSummary>> chatsForProfile(Ref ref, Id<Profiles> id) {
@@ -121,6 +172,7 @@ AsyncValue<List<ChatSummary>> chatsForProfile(Ref ref, Id<Profiles> id) {
   return account.whenData(
     (account) => _chats(
       id,
+      _accountKey(profile),
       profile.publicKey,
       account,
       live,
@@ -179,8 +231,8 @@ AsyncValue<ChatDetails> chatDetails(Ref ref, ChatRef chat) {
     profilesProvider.select(
       (profiles) => profiles.value
           ?.where((p) => p.id == chat.profile)
-          .firstOrNull
-          ?.publicKey,
+          .map(_accountKey)
+          .firstOrNull,
     ),
   );
   if (self == null) {
@@ -201,6 +253,9 @@ AsyncValue<ChatDetails> chatDetails(Ref ref, ChatRef chat) {
 @riverpod
 AsyncValue<List<ChatEntry>> chatEntries(Ref ref, ChatRef chat) {
   final transfers = ref.watch(_transfersProvider(chat.profile)).value;
+  final linked = ref.watch(
+    profileProvider(chat.profile).select((p) => p.value?.home != null),
+  );
   return ref
       .watch(_eventEntriesProvider(chat))
       .whenData(
@@ -209,17 +264,43 @@ AsyncValue<List<ChatEntry>> chatEntries(Ref ref, ChatRef chat) {
             switch ((entry.content, transfers?[entry.event])) {
               (final FileContent content, final transfer?) => entry.copyWith(
                 content: content.copyWith(path: transfer.path),
-                file: FileProgress(
-                  state: transfer.state,
-                  transferred: transfer.transferred,
-                  transfer: transfer.id,
-                ),
+                file: linked
+                    ? _linkedProgress(entry.file, transfer)
+                    : FileProgress(
+                        state: transfer.state,
+                        transferred: transfer.transferred,
+                        transfer: transfer.id,
+                      ),
               ),
               _ => entry,
             },
         ],
       );
 }
+
+/// How far a linked account's file got: the home device's progress, with
+/// this device's transfer to or from the home on top.
+FileProgress _linkedProgress(FileProgress? home, Transfer here) => switch ((
+  home?.state,
+  here,
+)) {
+  (FileState.done || FileState.cancelled, Transfer(incoming: false)) => home!,
+  (_, Transfer(incoming: false, state: FileState.cancelled)) =>
+    const FileProgress(state: FileState.cancelled),
+  // Ours on its way to the home device, then the home's to send on,
+  // which it doesn't show.
+  (_, Transfer(incoming: false, :final state, :final transferred)) =>
+    FileProgress(
+      state: FileState.active,
+      transferred: state == FileState.active ? transferred : null,
+    ),
+  (
+    FileState.done,
+    Transfer(incoming: true, :final state, :final transferred),
+  ) =>
+    home!.copyWith(state: state, transferred: transferred),
+  _ => home ?? const FileProgress(),
+};
 
 // One per chat, so its entries are added to as its events come.
 @riverpod
@@ -237,6 +318,7 @@ AsyncValue<List<ChatEntry>> _eventEntries(Ref ref, ChatRef chat) {
 List<ChatSummary> _chats(
   Id<Profiles> profile,
   PublicKey home,
+  PublicKey device,
   AccountState account,
   Facts live,
   Map<GraphId, List<int>> received,
@@ -262,7 +344,8 @@ List<ChatSummary> _chats(
 
   final chats = [
     for (final MapEntry(key: pk, value: friend) in account.friends.entries)
-      if (friend.wanted)
+      // This device is one of the home device's friends.
+      if (friend.wanted && pk != device)
         ChatSummary(
           ref: ChatRef(profile, GraphId.friend(home, pk)),
           name: friend.name,

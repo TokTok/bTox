@@ -2,8 +2,8 @@ import 'dart:typed_data';
 
 import 'package:btox/packets/messagepack.dart';
 
-/// The most milliseconds from the epoch a time may be, either way, as Rust's
-/// `MAX_TIME`: as far as dates go.
+/// The most milliseconds from the epoch a time may be, either way: as far as
+/// dates go.
 const maxTime = 8640000000000000;
 
 /// [ms] as a time, which throws a [FormatException] where no date is.
@@ -32,7 +32,7 @@ final class ArrayWriter {
 
   ArrayWriter string(String value) => _add((p) => p.packString(value));
 
-  // tox-proto writes an absent value as [] and a present one as [value].
+  // An absent value is [] and a present one [value].
   ArrayWriter optBin(List<int>? value) =>
       array(value == null ? ArrayWriter() : ArrayWriter().bin(value));
 
@@ -200,7 +200,7 @@ final class Fields {
   }
 }
 
-/// A tox-proto enum value: a bare tag, or `[tag, payload]`. [known] reads a
+/// An enum value: a bare tag, or `[tag, payload]`. [known] reads a
 /// payload from the [Fields] it's given, or returns null for a tag it doesn't
 /// know, whose payload is then skipped for [unknown].
 T readVariant<T>(

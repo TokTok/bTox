@@ -14,8 +14,7 @@ typedef NewEvent = (EventId, SyncEvent, Uint8List);
 
 const eventVersion = 3;
 
-// Conversation kinds are numbered from 0 and account kinds from 64, as
-// account-sync.md says.
+// Conversation kinds are numbered from 0 and account kinds from 64.
 const _tagReceived = 0;
 const _tagSend = 1;
 const _tagSent = 2;
@@ -192,7 +191,7 @@ ChatId decodeChat(Fields f) => f.variant<ChatId>(
 );
 
 // Each content type is a variant: `[tag, [fields]]`, or `[tag, field]` for
-// one with a single field, as tox-proto writes them.
+// one with a single field.
 ArrayWriter _encodeContent(EventContent content) {
   ArrayWriter of(int tag, ArrayWriter fields) =>
       ArrayWriter().uint(tag).array(fields);
