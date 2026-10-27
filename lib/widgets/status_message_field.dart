@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:btox/api/toxcore/tox_constants.dart';
 import 'package:btox/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -27,7 +29,7 @@ final class StatusMessageField extends StatelessWidget {
             autovalidateMode: AutovalidateMode.onUserInteraction,
             validator: (value) {
               value ??= '';
-              if (value.length > toxMaxStatusMessageLength) {
+              if (utf8.encode(value).length > toxMaxStatusMessageLength) {
                 return AppLocalizations.of(context)!
                     .statusMessageLengthError(toxMaxStatusMessageLength);
               }

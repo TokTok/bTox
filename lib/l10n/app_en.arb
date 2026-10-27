@@ -388,5 +388,9 @@
   "attachLocation": "Location",
   "@attachLocation": {
     "description": "Button to send the current location"
+  },
+  "loadFailed": "Something went wrong",
+  "@loadFailed": {
+    "description": "Shown in place of a page that couldn't be loaded"
   }
 }

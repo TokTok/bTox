@@ -9,10 +9,10 @@ import 'package:btox/providers/bootstrap_nodes.dart';
 import 'package:btox/providers/database.dart';
 import 'package:btox/providers/proxy_client.dart';
 import 'package:drift/native.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:riverpod/riverpod.dart';
 
 const _nodesJson = '''
 {
@@ -65,7 +65,8 @@ Future<(int, Future<List<int>>)> _fakeProxy({required bool socks5}) async {
 }
 
 void main() {
-  test('bootstrapNodes starts from the cache and refreshes it', () async {
+  test('bootstrapNodes starts from the cache and refreshes it, never with '
+      'an empty list', () async {
     final db = Database(NativeDatabase.memory());
     addTearDown(db.close);
     const network = NetworkSettings();
@@ -100,6 +101,16 @@ void main() {
 
     final offline = await run(MockClient((_) async => throw 'offline'));
     expect(offline.single, first.last);
+
+    final empty = await run(
+      MockClient((_) async => http.Response('{"nodes": []}', 200)),
+    );
+    expect(empty.single, first.last);
+
+    // As older versions cached it.
+    await db.cacheBootstrapNodes(const BootstrapNodeList(nodes: []));
+    final emptyCache = await run(MockClient((_) async => throw 'offline'));
+    expect(emptyCache.single, fallbackBootstrapNodes);
   });
 
   test('a SOCKS5 proxy resolves the host name', () async {

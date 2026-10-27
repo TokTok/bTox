@@ -7,7 +7,7 @@ export 'package:wasm_ffi/ffi.dart';
 
 part 'tox_library.unsupported.g.dart';
 
-@riverpod
+@Riverpod(keepAlive: true)
 Future<ToxLibrary> toxFfi(Ref ref) async {
   throw UnimplementedError('Tox FFI is not implemented on this platform');
 }

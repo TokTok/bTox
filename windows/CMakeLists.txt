@@ -87,6 +87,14 @@ if(PLUGIN_BUNDLED_LIBRARIES)
     COMPONENT Runtime)
 endif()
 
+file(GLOB TOX_LIBS "${CMAKE_SOURCE_DIR}/vendored/libtoxcore.dll")
+if(NOT TOX_LIBS)
+  message(FATAL_ERROR "Tox library not found")
+endif()
+install(FILES ${TOX_LIBS}
+  DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
+  COMPONENT Runtime)
+
 # Copy the native assets provided by the build.dart from all packages.
 set(NATIVE_ASSETS_DIR "${PROJECT_BUILD_DIR}native_assets/windows/")
 install(DIRECTORY "${NATIVE_ASSETS_DIR}"

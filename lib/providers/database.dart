@@ -11,7 +11,7 @@ const _logger = Logger(['DatabaseProvider']);
 
 /// The app's database. On mobile, the background service owns it (see
 /// [hostedDatabase]) and the UI connects to it.
-@riverpod
+@Riverpod(keepAlive: true)
 Future<Database> database(Ref ref) async {
   if (AnyPlatform.instance.isMobile) {
     _logger.d('Connecting to background service database');

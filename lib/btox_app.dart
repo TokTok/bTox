@@ -4,6 +4,8 @@ import 'package:btox/pages/create_profile_page.dart';
 import 'package:btox/pages/select_profile_page.dart';
 import 'package:btox/providers/connection_status.dart';
 import 'package:btox/providers/profiles.dart';
+import 'package:btox/widgets/load_failed.dart';
+import 'package:btox/widgets/system_gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -25,6 +27,7 @@ final class BtoxApp extends ConsumerWidget {
           brightness: Brightness.dark,
         ),
       ),
+      builder: leaveSystemSwipes,
       home: _appContent(ref),
     );
   }
@@ -38,8 +41,7 @@ final class BtoxApp extends ConsumerWidget {
         .when(
           loading: () =>
               const Scaffold(body: Center(child: CircularProgressIndicator())),
-          error: (error, _) =>
-              Scaffold(body: Center(child: Text('Error: $error'))),
+          error: (_, _) => const Scaffold(body: LoadFailed()),
           data: (profiles) {
             final currentProfile = ref.watch(currentProfileProvider);
 

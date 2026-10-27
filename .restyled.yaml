@@ -12,3 +12,34 @@ exclude:
   - "windows/**/*.cc"
   - "windows/**/*.cpp"
   - "windows/**/*.h"
+
+restylers:
+  - astyle:
+      enabled: false
+  - clazy:
+      enabled: false
+  - autopep8:
+      image: ghcr.io/toktok/restyler-autopep8:v2.3.2
+  - black:
+      image: ghcr.io/toktok/restyler-black:v26.10.1
+  - clang-format:
+      image: ghcr.io/toktok/restyler-clang-format:v18.1.8
+  - dart-format:
+      image: ghcr.io/toktok/restyler-dart-format:v3.1.13
+  - prettier-json:
+      image: ghcr.io/toktok/restyler-prettier:v3.9.10-6
+  - prettier-markdown:
+      image: ghcr.io/toktok/restyler-prettier:v3.9.10-6
+  - prettier-yaml:
+      image: ghcr.io/toktok/restyler-prettier:v3.9.10-6
+  - reorder-python-imports:
+      image: ghcr.io/toktok/restyler-reorder-python-imports:v3.19.0
+  - shellcheck:
+      image: ghcr.io/toktok/restyler-shellcheck:v0.11.0
+  - shellharden:
+      image: ghcr.io/toktok/restyler-shellharden:v4.3.2
+  - shfmt:
+      image: ghcr.io/toktok/restyler-shfmt:v3.14.1
+  - yapf:
+      image: ghcr.io/toktok/restyler-yapf:v0.43.0-1
+  - "*"

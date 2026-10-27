@@ -21,7 +21,7 @@ const _storage = FlutterSecureStorage(
   mOptions: MacOsOptions(usesDataProtectionKeychain: false),
 );
 
-@riverpod
+@Riverpod(keepAlive: true)
 Future<String> databaseKey(Ref ref) async {
   // The web database isn't encrypted.
   if (AnyPlatform.instance.isWeb) {

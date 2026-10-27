@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:btox/api/toxcore/tox_constants.dart';
 import 'package:btox/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -23,11 +25,11 @@ final class FriendRequestMessageField extends StatelessWidget {
           if (value == null || value.isEmpty) {
             return AppLocalizations.of(context)!.messageEmptyError;
           }
-          if (value.length > toxMaxFriendRequestLength) {
-            return AppLocalizations.of(context)!.addContactMessageLengthError(
-              toxMaxFriendRequestLength,
-              value.length,
-            );
+          final length = utf8.encode(value).length;
+          if (length > toxMaxFriendRequestLength) {
+            return AppLocalizations.of(
+              context,
+            )!.addContactMessageLengthError(toxMaxFriendRequestLength, length);
           }
           return null;
         },

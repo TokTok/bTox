@@ -11,15 +11,19 @@ export 'package:btox/ffi/generated/toxcore.ffi.dart';
 
 part 'tox_library.ffi.g.dart';
 
-@riverpod
+@Riverpod(keepAlive: true)
 Future<ToxLibrary> toxFfi(Ref ref) async {
   return ToxLibrary(
     malloc,
-    ToxFfi(
-      AnyPlatform.instance.isAndroid
-          ? DynamicLibrary.open('libtoxcore.so')
-          : DynamicLibrary.process(),
-    ),
+    ToxFfi(switch (AnyPlatform.instance) {
+      final platform when platform.isAndroid => DynamicLibrary.open(
+        'libtoxcore.so',
+      ),
+      final platform when platform.isWindows => DynamicLibrary.open(
+        'libtoxcore.dll',
+      ),
+      _ => DynamicLibrary.process(),
+    }),
   );
 }
 

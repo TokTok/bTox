@@ -4,6 +4,7 @@ import 'package:btox/models/crypto.dart';
 import 'package:btox/models/profile_settings.dart';
 import 'package:btox/providers/bootstrap_nodes.dart';
 import 'package:btox/providers/database.dart';
+import 'package:btox/providers/profiles.dart';
 import 'package:btox/providers/tox.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -86,5 +87,19 @@ void main() {
     await tester.pump(const Duration(seconds: 1));
 
     await db.close();
+  });
+  testWidgets('says so when the accounts fail to load', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          profilesProvider.overrideWith(
+            (ref) => Stream.error(StateError('No database')),
+          ),
+        ],
+        child: const BtoxApp(),
+      ),
+    );
+    await tester.pump();
+    expect(find.text('Something went wrong'), findsOneWidget);
   });
 }

@@ -13,8 +13,8 @@ part 'bootstrap_nodes.g.dart';
 
 const _logger = Logger(['BootstrapNodes']);
 
-/// Nodes from nodes.tox.chat that accept TCP, for when bTox has never fetched
-/// the list.
+/// Nodes from nodes.tox.chat that accept TCP, for when bTox has no fetched
+/// list.
 final fallbackBootstrapNodes = BootstrapNodeList(
   nodes: [
     for (final (ip, port, key) in const [
@@ -120,14 +120,20 @@ http.Client httpClient(Ref ref, NetworkSettings network) {
   return client;
 }
 
-/// The cached (or built-in) nodes right away, then freshly fetched ones.
+/// The cached (or built-in) nodes right away, then freshly fetched ones. A
+/// list without nodes, as nodes.tox.chat serves when its scan finds none,
+/// never takes the place of one with nodes.
 @Riverpod(keepAlive: true)
 Stream<BootstrapNodeList> bootstrapNodes(
   Ref ref,
   NetworkSettings network,
 ) async* {
   final db = await ref.watch(databaseProvider.future);
-  yield await db.getCachedBootstrapNodes() ?? fallbackBootstrapNodes;
+  yield switch (await db.getCachedBootstrapNodes()) {
+    // Older versions cached one.
+    final cached? when cached.nodes.isNotEmpty => cached,
+    _ => fallbackBootstrapNodes,
+  };
 
   final client = ref.watch(httpClientProvider(network));
   try {
@@ -138,6 +144,9 @@ Stream<BootstrapNodeList> bootstrapNodes(
       throw http.ClientException('HTTP ${response.statusCode}');
     }
     final nodes = BootstrapNodeList.fromJson(jsonDecode(response.body));
+    if (nodes.nodes.isEmpty) {
+      throw const FormatException('The list has no nodes');
+    }
     await db.cacheBootstrapNodes(nodes);
     yield nodes;
   } catch (e) {

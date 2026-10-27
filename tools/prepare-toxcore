@@ -9,8 +9,14 @@ if [ ! -e tools/include/tox/tox.h ]; then
     toxcore-linux-x86_64/include/
 fi
 
-# We don't have Windows DLLs yet.
+# Windows
 if [ "${RUNNER_OS:-}" = "Windows" ]; then
+  if [ ! -e windows/vendored/libtoxcore.dll ]; then
+    mkdir -p windows/vendored
+    tar --strip-components=2 -C windows/vendored/ \
+      -zxf <(curl -L https://github.com/TokTok/c-toxcore/releases/download/nightly/toxcore-nightly-windows-x86_64.tar.gz) \
+      toxcore-windows-x86_64/bin/libtoxcore.dll
+  fi
   exit 0
 fi
 
@@ -27,7 +33,7 @@ if [ ! -d ios/Tox.xcframework ]; then
     -zxf <(curl -L https://github.com/TokTok/c-toxcore/releases/download/nightly/toxcore-nightly-xcframework.tar.gz)
 fi
 if [ ! -d macos/Tox.xcframework ]; then
-  cp -r ios/Tox.xcframework macos/
+  cp -R ios/Tox.xcframework macos/
 fi
 
 # Android
