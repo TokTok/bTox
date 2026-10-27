@@ -119,7 +119,7 @@ void main() {
     final fakeTileProvider = FakeTileProvider();
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [mapTileProvider.overrideWith((ref) => fakeTileProvider)],
+        overrides: [mapTileProvider.overrideWith((ref, _) => fakeTileProvider)],
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           home: ChatItem(
@@ -150,7 +150,9 @@ void main() {
   ) async {
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [mapTileProvider.overrideWith((ref) => FakeTileProvider())],
+        overrides: [
+          mapTileProvider.overrideWith((ref, _) => FakeTileProvider()),
+        ],
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           home: ChatItem(

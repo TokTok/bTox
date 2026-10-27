@@ -1,3 +1,5 @@
+import 'package:btox/models/id.dart';
+import 'package:btox/models/persistence.dart' show Profiles;
 import 'package:btox/providers/map_tile.dart';
 import 'package:btox/widgets/bubble_footer.dart';
 import 'package:btox/widgets/chat_text_bubble.dart';
@@ -10,6 +12,8 @@ import 'package:latlong2/latlong.dart';
 const _kMapHeight = 188.0;
 
 final class ChatLocationBubble extends StatelessWidget {
+  // Whose proxy fetches the map.
+  final Id<Profiles> profile;
   final BorderRadius corners;
   final Widget? header;
   final Color color;
@@ -20,6 +24,7 @@ final class ChatLocationBubble extends StatelessWidget {
 
   const ChatLocationBubble({
     super.key,
+    required this.profile,
     required this.corners,
     this.header,
     required this.color,
@@ -44,6 +49,7 @@ final class ChatLocationBubble extends StatelessWidget {
           child: Stack(
             children: [
               LocationMap(
+                profile: profile,
                 latitude: latitude,
                 longitude: longitude,
                 onTap: onTap,
@@ -59,12 +65,14 @@ final class ChatLocationBubble extends StatelessWidget {
 
 /// A still map with a pin on the location.
 final class LocationMap extends ConsumerWidget {
+  final Id<Profiles> profile;
   final double latitude;
   final double longitude;
   final TapCallback? onTap;
 
   const LocationMap({
     super.key,
+    required this.profile,
     required this.latitude,
     required this.longitude,
     this.onTap,
@@ -72,6 +80,7 @@ final class LocationMap extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final tiles = ref.watch(mapTileProvider(profile));
     return FlutterMap(
       options: MapOptions(
         initialCenter: LatLng(latitude, longitude),
@@ -80,11 +89,12 @@ final class LocationMap extends ConsumerWidget {
         onTap: onTap,
       ),
       children: [
-        TileLayer(
-          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-          userAgentPackageName: 'chat.tox.btox',
-          tileProvider: ref.watch(mapTileProvider),
-        ),
+        if (tiles != null)
+          TileLayer(
+            urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+            userAgentPackageName: 'chat.tox.btox',
+            tileProvider: tiles,
+          ),
         MarkerLayer(
           markers: [
             Marker(

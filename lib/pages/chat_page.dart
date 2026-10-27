@@ -339,6 +339,7 @@ final class _Input extends ConsumerWidget {
     // Taken now, as what's sent goes on when the chat closes meanwhile.
     final opened = ref.watch(databaseProvider.future);
     return MessageInput(
+      profile: chat.profile,
       hintText: AppLocalizations.of(context)!.messageInput,
       draft: draft,
       recentEmojis: recentEmojis,

@@ -805,6 +805,22 @@
   "@exportFailed": {
     "description": "Error when the backup couldn't be made or saved"
   },
+  "locationOff": "Turn on location to share where you are",
+  "@locationOff": {
+    "description": "Shown when sharing a location while location is off on the device"
+  },
+  "locationDenied": "bTox needs permission to use your location",
+  "@locationDenied": {
+    "description": "Shown when sharing a location without the permission"
+  },
+  "locationFailed": "Couldn't find where you are",
+  "@locationFailed": {
+    "description": "Error when the location couldn't be found"
+  },
+  "openSettings": "Settings",
+  "@openSettings": {
+    "description": "Button opening the device's settings to fix a problem"
+  },
   "ownToxIdError": "This is your own Tox ID",
   "@ownToxIdError": {
     "description": "Error when adding your own Tox ID as a contact"

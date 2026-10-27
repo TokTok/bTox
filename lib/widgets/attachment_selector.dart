@@ -8,12 +8,13 @@ import 'package:btox/providers/geolocation.dart';
 import 'package:btox/widgets/attachment_button.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
 const _logger = Logger(['AttachmentSelector']);
 
-final class AttachmentSelector extends ConsumerWidget {
+final class AttachmentSelector extends HookConsumerWidget {
   // Pictures and files too, besides a location.
   final bool files;
   // Camera and gallery pictures as QOI.
@@ -30,6 +31,52 @@ final class AttachmentSelector extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
+    final locating = useState(false);
+
+    Future<void> shareLocation() async {
+      final messenger = ScaffoldMessenger.of(context);
+      locating.value = true;
+      try {
+        final location = await geolocation();
+        onSelected([
+          LocationContent(
+            latitude: location.latitude,
+            longitude: location.longitude,
+          ),
+        ]);
+      } on Exception catch (e) {
+        _logger.e('Error adding location: $e');
+        final problem = switch (e) {
+          LocationUnavailable(:final problem) => problem,
+          _ => null,
+        };
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(switch (problem) {
+              LocationProblem.off => l10n.locationOff,
+              LocationProblem.denied ||
+              LocationProblem.refused => l10n.locationDenied,
+              null => l10n.locationFailed,
+            }),
+            action: switch (problem) {
+              final problem? when problem != LocationProblem.refused =>
+                SnackBarAction(
+                  label: l10n.openSettings,
+                  onPressed: () => _logger.unawaited(
+                    'open the location settings',
+                    fixLocation(problem),
+                  ),
+                ),
+              _ => null,
+            },
+          ),
+        );
+      } finally {
+        if (context.mounted) {
+          locating.value = false;
+        }
+      }
+    }
 
     // Picking or copying can fail, as with the camera refused or no room.
     Future<void> attach(
@@ -107,19 +154,7 @@ final class AttachmentSelector extends ConsumerWidget {
               AttachmentButton(
                 icon: Icons.location_on,
                 text: l10n.attachLocation,
-                onPressed: () async {
-                  try {
-                    final location = await geolocation();
-                    onSelected([
-                      LocationContent(
-                        latitude: location.latitude,
-                        longitude: location.longitude,
-                      ),
-                    ]);
-                  } catch (e) {
-                    _logger.e('Error adding location: $e');
-                  }
-                },
+                onPressed: locating.value ? null : shareLocation,
               ),
             ],
           ),

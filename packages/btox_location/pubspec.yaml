@@ -1,0 +1,25 @@
+name: btox_location
+description: Where the device is on Android, from its own location services.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ">=3.10.0 <4.0.0"
+  flutter: ">=3.35.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  geolocator_platform_interface: ^4.2.6
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: chat.tox.btox.location
+        pluginClass: LocationPlugin
+        dartPluginClass: BtoxLocationAndroid

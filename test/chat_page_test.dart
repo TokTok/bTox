@@ -705,7 +705,7 @@ void main() {
         overrides: [
           ...overrides([]),
           databaseProvider.overrideWith((ref) => opened.future),
-          mapTileProvider.overrideWith((ref) => FakeTileProvider()),
+          mapTileProvider.overrideWith((ref, _) => FakeTileProvider()),
         ],
         child: MaterialApp(
           navigatorKey: navigator,

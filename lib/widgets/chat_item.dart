@@ -134,6 +134,7 @@ final class ChatItem extends HookWidget {
         footer: footer,
       ),
       LocationContent(:final latitude, :final longitude) => ChatLocationBubble(
+        profile: chat.profile,
         latitude: latitude,
         longitude: longitude,
         color: color,

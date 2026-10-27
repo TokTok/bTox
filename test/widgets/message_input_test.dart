@@ -1,5 +1,6 @@
 import 'package:btox/l10n/generated/app_localizations.dart';
 import 'package:btox/models/content.dart';
+import 'package:btox/models/id.dart';
 import 'package:btox/providers/drafts.dart';
 import 'package:btox/providers/map_tile.dart';
 import 'package:btox/widgets/attachment_selector.dart';
@@ -23,7 +24,9 @@ void main() {
     draft.replyingTo.value = replyingTo;
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [mapTileProvider.overrideWith((ref) => FakeTileProvider())],
+        overrides: [
+          mapTileProvider.overrideWith((ref, _) => FakeTileProvider()),
+        ],
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           home: Scaffold(
@@ -31,6 +34,7 @@ void main() {
             body: Align(
               alignment: Alignment.bottomCenter,
               child: MessageInput(
+                profile: const Id(1),
                 hintText: '',
                 draft: draft,
                 recentEmojis: false,
