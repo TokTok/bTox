@@ -16,6 +16,9 @@ import 'package:btox/services/isolate_channel.dart';
 const _logger = Logger(['CallChannel']);
 
 const _portName = 'btox-calls';
+const _callsTopic = 'calls';
+
+String _videoTopic(VideoView view) => 'video-${view.name}';
 
 /// This isolate's calls, for the UI, which may run in another isolate.
 final class CallHost {
@@ -23,12 +26,7 @@ final class CallHost {
 
   final _calls = <Id<Profiles>, Calls>{};
   final _current = <Id<Profiles>, CallInfo>{};
-  final _subscribers = <SendPort>{};
-  final _videoWatchers = <SendPort, VideoView>{};
-  // The ports of each isolate showing the UI, by its control port: an
-  // isolate's exit is told once, so all of them go then.
-  final _isolates = <SendPort, Set<SendPort>>{};
-  ReceivePort? _port;
+  Publisher? _publisher;
 
   void Function(bool busy)? onBusy;
 
@@ -40,7 +38,19 @@ final class CallHost {
 
   void add(Id<Profiles> profile, Calls calls) {
     _calls[profile] = calls;
-    _open();
+    _publisher ??= Publisher(
+      _portName,
+      current: (topic) => topic == _callsTopic ? _state() : null,
+      subscribersChanged: (topic, count) {
+        // With no UI left, calls ring on their own.
+        if (topic == _callsTopic && count == 0) {
+          for (final calls in _calls.values) {
+            calls.setShown(shown: false);
+          }
+        }
+      },
+      onMessage: _receive,
+    );
   }
 
   void remove(Id<Profiles> profile) {
@@ -55,81 +65,25 @@ final class CallHost {
       _current[profile] = call;
     }
     onBusy?.call(_current.isNotEmpty);
-    for (final subscriber in _subscribers) {
-      subscriber.send(['calls', _state()]);
-    }
+    _publisher?.publish(_callsTopic, _state);
   }
 
-  void showVideo(VideoView view, I420Frame frame) {
-    for (final MapEntry(key: watcher, value: watched)
-        in _videoWatchers.entries) {
-      if (watched == view) {
-        watcher.send([
-          'frame',
-          [
-            frame.width,
-            frame.height,
-            TransferableTypedData.fromList([frame.data]),
-          ],
-        ]);
-      }
-    }
-  }
+  void showVideo(VideoView view, I420Frame frame) => _publisher?.publish(
+    _videoTopic(view),
+    () => [
+      frame.width,
+      frame.height,
+      TransferableTypedData.fromList([frame.data]),
+    ],
+  );
 
   List<Object?> _state() => [
     for (final call in _current.values) call.toMessage(),
   ];
 
-  void _open() {
-    if (_port != null) {
-      return;
-    }
-    final port = _port = ReceivePort('calls');
-    port.listen((message) {
-      try {
-        _receive(message);
-      } on Exception catch (e) {
-        _logger.w('Failed to do $message: $e');
-      }
-    });
-    IsolateNameServer.removePortNameMapping(_portName);
-    IsolateNameServer.registerPortWithName(port.sendPort, _portName);
-  }
-
-  void _watchExit(SendPort control, SendPort port) {
-    if (_isolates[control] case final ports?) {
-      ports.add(port);
-    } else {
-      _isolates[control] = {port};
-      Isolate(control)
-          .addOnExitListener(_port!.sendPort, response: ['exited', control]);
-    }
-  }
-
   void _receive(Object? message) {
     Calls? of(int profile) => _calls[Id<Profiles>(profile)];
     switch (message) {
-      case [SendPort subscriber, SendPort control]:
-        _subscribers.add(subscriber);
-        _watchExit(control, subscriber);
-        subscriber.send(['hello', Isolate.current.controlPort, _state()]);
-      case ['watchVideo', int view, SendPort watcher, SendPort control]:
-        _videoWatchers[watcher] = VideoView.values[view];
-        _watchExit(control, watcher);
-        watcher.send(['hello', Isolate.current.controlPort, null]);
-      case ['unwatchVideo', SendPort watcher]:
-        _videoWatchers.remove(watcher);
-      case ['exited', SendPort control]:
-        var subscribed = false;
-        for (final port in _isolates.remove(control) ?? const <SendPort>{}) {
-          subscribed |= _subscribers.remove(port);
-          _videoWatchers.remove(port);
-        }
-        if (subscribed) {
-          for (final calls in _calls.values) {
-            calls.setShown(shown: false);
-          }
-        }
       case ['call', int profile, String friend, bool video]:
         of(profile)?.call(PublicKey.fromJson(friend), video: video);
       case ['answer', int profile]:
@@ -148,15 +102,16 @@ final class CallHost {
         for (final calls in _calls.values) {
           calls.setShown(shown: shown);
         }
+      default:
+        _logger.w('Unknown call command: $message');
     }
   }
 }
 
 Stream<List<CallInfo>> watchCalls() => watchPublisher(
   _portName,
-  request: (port) => [port, Isolate.current.controlPort],
-  update: 'calls',
-  parse: (message) => [
+  _callsTopic,
+  (message) => [
     for (final call in message! as List<Object?>)
       CallInfo.fromMessage(call! as List<Object?>),
   ],
@@ -164,14 +119,8 @@ Stream<List<CallInfo>> watchCalls() => watchPublisher(
 
 Stream<I420Frame> watchVideo(VideoView view) => watchPublisher(
   _portName,
-  request: (port) => [
-    'watchVideo',
-    view.index,
-    port,
-    Isolate.current.controlPort,
-  ],
-  update: 'frame',
-  parse: (message) => switch (message) {
+  _videoTopic(view),
+  (message) => switch (message) {
     [int width, int height, TransferableTypedData data] => I420Frame(
       width,
       height,
@@ -179,7 +128,7 @@ Stream<I420Frame> watchVideo(VideoView view) => watchPublisher(
     ),
     _ => null,
   },
-  cancel: (port) => ['unwatchVideo', port],
+  leave: true,
 ).where((frame) => frame != null).cast<I420Frame>();
 
 abstract final class CallCommands {

@@ -1,9 +1,6 @@
-import 'dart:typed_data';
-
 import 'package:btox/models/crypto.dart';
 import 'package:btox/packets/messagepack.dart';
 import 'package:btox/sync/codec.dart';
-import 'package:drift/drift.dart' show TypeConverter;
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 export 'package:btox/sync/codec.dart' show Kept;
@@ -140,36 +137,4 @@ extension KeptSetting on Kept<Setting> {
           .takeBytes(),
     );
   }
-}
-
-// What a converter below wrote: an array of the one value.
-T _decode<T>(Uint8List bytes, T Function(Fields) read) =>
-    decodeExact(bytes, (unpacker) {
-      final fields = Fields(unpacker);
-      final value = read(fields);
-      fields.exact();
-      return value;
-    });
-
-/// A scope as the sync protocol writes it, as kept in the database.
-final class ScopeConverter extends TypeConverter<Scope, Uint8List> {
-  const ScopeConverter();
-
-  @override
-  Scope fromSql(Uint8List fromDb) => _decode(fromDb, readScope);
-
-  @override
-  Uint8List toSql(Scope value) => addScope(ArrayWriter(), value).encode();
-}
-
-/// A setting as the sync protocol writes it, as kept in the database.
-final class SettingConverter extends TypeConverter<Kept<Setting>, Uint8List> {
-  const SettingConverter();
-
-  @override
-  Kept<Setting> fromSql(Uint8List fromDb) => _decode(fromDb, readSetting);
-
-  @override
-  Uint8List toSql(Kept<Setting> value) =>
-      addSetting(ArrayWriter(), value).encode();
 }

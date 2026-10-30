@@ -26,6 +26,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import 'mocks/fake_call_media.dart';
 import 'mocks/settle.dart';
+import 'mocks/test_app.dart';
 
 Finder _chatWith(PublicKey pk) =>
     find.byWidgetPredicate((w) => w is ChatListItem && w.chat.key == pk);
@@ -58,22 +59,21 @@ void main() {
       return home;
     }))!;
     Future<List<(PublicKey, bool, bool)>> changes() async => [
-      for (final change in (await tester.runAsync(
-        () => db.select(db.friendChanges).get(),
+      for (final intent in (await tester.runAsync(
+        () => db.select(db.intents).get(),
       ))!)
-        (change.publicKey, change.wanted, change.deleteChat),
+        if (intent.content
+            case WantFriend(:final pk) || UnwantFriend(:final pk))
+          (pk, intent.content is WantFriend, intent.deleteChat),
     ];
 
     await tester.pumpWidget(
-      ProviderScope(
+      testApp(
+        const ContactListPage(),
         overrides: [
           databaseProvider.overrideWith((ref) => db),
           connectionStatusProvider.overrideWithValue(null),
         ],
-        child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          home: const ContactListPage(),
-        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -100,15 +100,22 @@ void main() {
     await tester.tap(find.text('Mute notifications'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('For 1 hour'));
-    Future<List<SettingChange>> mutes() => db.select(db.settingChanges).get();
+    Future<List<StoredIntent>> mutes() async => [
+      for (final intent in await db.select(db.intents).get())
+        if (intent.content is SettingContent) intent,
+    ];
     await settle(tester, until: () async => (await mutes()).isNotEmpty);
     final muted = (await tester.runAsync(mutes))!;
     expect(
-      [for (final c in muted) (c.scope, (c.setting!.value as Mute).mentions)],
+      [
+        for (final intent in muted)
+          if (intent.content case SettingContent(:final scope, :final setting))
+            (scope, (setting.value as Mute).mentions),
+      ],
       [(Scope.conversation(home.chatWith(alice)), false)],
     );
     // As the background service records it.
-    home.settings(muted);
+    home.intents(muted, 'Me');
     await settle(
       tester,
       until: () =>
@@ -117,7 +124,30 @@ void main() {
 
     await tester.longPress(_chatWith(alice));
     await tester.pumpAndSettle();
-    expect(find.text('Unmute notifications'), findsOneWidget);
+    await tester.tap(find.text('Unmute notifications'));
+    Future<List<StoredIntent>> unmutes() async => [
+      for (final intent in await db.select(db.intents).get())
+        if (intent.content is ClearSetting) intent,
+    ];
+    await settle(tester, until: () async => (await unmutes()).isNotEmpty);
+    final unmuted = (await tester.runAsync(unmutes))!;
+    expect(
+      [
+        for (final intent in unmuted)
+          if (intent.content case ClearSetting(:final scope, :final kind))
+            (scope, kind),
+      ],
+      [(Scope.conversation(home.chatWith(alice)), Setting.muteKind)],
+    );
+    home.intents(unmuted, 'Me');
+    await settle(
+      tester,
+      until: () =>
+          find.byIcon(Icons.notifications_off_outlined).evaluate().isEmpty,
+    );
+
+    await tester.longPress(_chatWith(alice));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Delete contact'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Delete'));
@@ -198,15 +228,12 @@ void main() {
         RelayBot(chat: conference, bot: conferenceBot, relays: relays);
 
     await tester.pumpWidget(
-      ProviderScope(
+      testApp(
+        const ContactListPage(),
         overrides: [
           databaseProvider.overrideWith((ref) => db),
           connectionStatusProvider.overrideWithValue(null),
         ],
-        child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          home: const ContactListPage(),
-        ),
       ),
     );
     await settle(tester, until: () => chat('Conference').evaluate().isNotEmpty);
@@ -220,12 +247,11 @@ void main() {
     await settle(tester, until: () => chat('Conference').evaluate().isEmpty);
 
     await pick('Group', 'Show the chats apart');
-    Future<List<MergeChange>> merges() => db.select(db.chatMerges).get();
-    await settle(tester, until: () async => (await merges()).isNotEmpty);
-    expect(
-      [for (final m in (await tester.runAsync(merges))!) (m.chat, m.merged)],
-      [(conference.graph, false)],
-    );
+    Future<List<EventContent>> intents() async => [
+      for (final intent in await db.select(db.intents).get()) intent.content,
+    ];
+    await settle(tester, until: () async => (await intents()).isNotEmpty);
+    expect(await tester.runAsync(intents), [merge(merged: false)]);
     home.record(home.account, merge(merged: false));
     await settle(tester, until: () => chat('Conference').evaluate().isNotEmpty);
 
@@ -238,12 +264,11 @@ void main() {
     await settle(tester, until: () => relayed.evaluate().isNotEmpty);
 
     await pick('Conference', 'Stop showing names from the relay bot');
-    Future<List<RelayBotChange>> bots() => db.select(db.relayBots).get();
-    await settle(tester, until: () async => (await bots()).isNotEmpty);
-    expect(
-      [for (final b in (await tester.runAsync(bots))!) (b.chat, b.relays)],
-      [(conference.graph, false)],
-    );
+    await settle(tester, until: () async => (await intents()).length > 1);
+    expect(await tester.runAsync(intents), [
+      merge(merged: false),
+      relayBot(relays: false),
+    ]);
     home.record(home.account, relayBot(relays: false));
     await settle(tester, until: () => relayed.evaluate().isEmpty);
 
@@ -270,15 +295,12 @@ void main() {
     });
 
     await tester.pumpWidget(
-      ProviderScope(
+      testApp(
+        const ContactListPage(),
         overrides: [
           databaseProvider.overrideWith((ref) => db),
           connectionStatusesProvider.overrideWithValue(null),
         ],
-        child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          home: const ContactListPage(),
-        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -398,7 +420,8 @@ void main() {
     );
 
     await tester.pumpWidget(
-      ProviderScope(
+      testApp(
+        const ContactListPage(),
         overrides: [
           databaseProvider.overrideWith((ref) => db),
           connectionStatusProvider.overrideWithValue(null),
@@ -416,10 +439,6 @@ void main() {
           ]),
           canCallProvider(profileId).overrideWithValue(true),
         ],
-        child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          home: const ContactListPage(),
-        ),
       ),
     );
     await tester.pumpAndSettle();

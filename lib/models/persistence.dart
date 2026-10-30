@@ -7,7 +7,7 @@ import 'package:btox/models/content.dart';
 import 'package:btox/models/crypto.dart';
 import 'package:btox/models/id.dart';
 import 'package:btox/models/profile_settings.dart';
-import 'package:btox/sync/setting.dart';
+import 'package:btox/sync/event.dart';
 import 'package:drift/drift.dart';
 
 /// A file transfer's progress. Incoming files start as offered until accepted,
@@ -36,18 +36,17 @@ abstract class CachedBootstrapNodes extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-/// Friends to add or remove, until the account has the change.
-abstract class FriendChanges extends Table {
+/// What the pages want written as events, until the background service
+/// writes them: in [graph], or in the account where it's null.
+@DataClassName('StoredIntent')
+abstract class Intents extends Table {
   IntColumn get id =>
-      integer().autoIncrement().map(const IdConverter<FriendChanges>())();
+      integer().autoIncrement().map(const IdConverter<Intents>())();
   IntColumn get profileId =>
       integer().references(Profiles, #id).map(const IdConverter<Profiles>())();
-  TextColumn get publicKey =>
-      text().map(const HexConverter(PublicKey.fromJson))();
-  BoolColumn get wanted => boolean()();
-  // With these, a friend request to send.
-  IntColumn get nospam => integer().map(const NospamConverter()).nullable()();
-  TextColumn get message => text().nullable()();
+  TextColumn get graph =>
+      text().map(const HexConverter(GraphId.fromJson)).nullable()();
+  BlobColumn get content => blob().map(const EventContentConverter())();
   // With a friend no longer wanted: their chat goes too.
   BoolColumn get deleteChat => boolean().withDefault(const Constant(false))();
 }
@@ -89,76 +88,6 @@ abstract class Transfers extends Table {
       text().map(const HexConverter(FileId.fromJson)).nullable()();
 }
 
-/// Answers to files offered to a linked account's home device, until the
-/// background service writes them as events.
-abstract class FileAnswers extends Table {
-  IntColumn get id =>
-      integer().autoIncrement().map(const IdConverter<FileAnswers>())();
-  IntColumn get profileId =>
-      integer().references(Profiles, #id).map(const IdConverter<Profiles>())();
-  TextColumn get graph => text().map(const HexConverter(GraphId.fromJson))();
-  // The event that started the file.
-  TextColumn get file => text().map(const HexConverter(EventId.fromJson))();
-  BoolColumn get accepted => boolean()();
-}
-
-/// Answers to a linked account's invites to chats, until the background
-/// service writes them as events.
-abstract class InviteAnswers extends Table {
-  IntColumn get id =>
-      integer().autoIncrement().map(const IdConverter<InviteAnswers>())();
-  IntColumn get profileId =>
-      integer().references(Profiles, #id).map(const IdConverter<Profiles>())();
-  // The invite's event.
-  TextColumn get invite => text().map(const HexConverter(EventId.fromJson))();
-  BoolColumn get accepted => boolean()();
-  // To join a group that has one.
-  TextColumn get password => text().nullable()();
-}
-
-/// Chats of a linked account to merge or show apart, until the background
-/// service writes the change as an event.
-@DataClassName('MergeChange')
-abstract class ChatMerges extends Table {
-  IntColumn get id =>
-      integer().autoIncrement().map(const IdConverter<ChatMerges>())();
-  IntColumn get profileId =>
-      integer().references(Profiles, #id).map(const IdConverter<Profiles>())();
-  TextColumn get chat => text().map(const HexConverter(GraphId.fromJson))();
-  TextColumn get bot => text().map(const HexConverter(PublicKey.fromJson))();
-  TextColumn get into => text().map(const HexConverter(GraphId.fromJson))();
-  TextColumn get intoBot =>
-      text().map(const HexConverter(PublicKey.fromJson))();
-  BoolColumn get merged => boolean()();
-}
-
-/// Chats of an account in which to show a relay bot's names, or no more,
-/// until the background service writes the change as an event.
-@DataClassName('RelayBotChange')
-abstract class RelayBots extends Table {
-  IntColumn get id =>
-      integer().autoIncrement().map(const IdConverter<RelayBots>())();
-  IntColumn get profileId =>
-      integer().references(Profiles, #id).map(const IdConverter<Profiles>())();
-  TextColumn get chat => text().map(const HexConverter(GraphId.fromJson))();
-  TextColumn get bot => text().map(const HexConverter(PublicKey.fromJson))();
-  BoolColumn get relays => boolean()();
-}
-
-/// Settings of an account to set or clear, until the background service
-/// writes the change as an event.
-@DataClassName('SettingChange')
-abstract class SettingChanges extends Table {
-  IntColumn get id =>
-      integer().autoIncrement().map(const IdConverter<SettingChanges>())();
-  IntColumn get profileId =>
-      integer().references(Profiles, #id).map(const IdConverter<Profiles>())();
-  BlobColumn get scope => blob().map(const ScopeConverter())();
-  IntColumn get kind => integer()();
-  // Null to clear it.
-  BlobColumn get setting => blob().map(const SettingConverter()).nullable()();
-}
-
 /// What Tox says now, only true while it runs: who is online, who is in a
 /// chat. One row per subject and kind of value.
 abstract class LiveFacts extends Table {
@@ -195,17 +124,6 @@ abstract class Profiles extends Table {
       text().map(const HexConverter(ToxAddress.fromString)).nullable()();
   // Sent to that device with a friend request, until it first comes online.
   TextColumn get pairingMessage => text().nullable()();
-}
-
-/// What a chat's page sends, until the background service writes it as an
-/// event.
-abstract class ChatSends extends Table {
-  IntColumn get id =>
-      integer().autoIncrement().map(const IdConverter<ChatSends>())();
-  IntColumn get profileId =>
-      integer().references(Profiles, #id).map(const IdConverter<Profiles>())();
-  TextColumn get graph => text().map(const HexConverter(GraphId.fromJson))();
-  TextColumn get message => text()();
 }
 
 @DataClassName('StoredEvent')

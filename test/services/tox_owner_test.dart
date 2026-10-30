@@ -62,11 +62,7 @@ void main() {
         nospam: ToxAddressNospam(0),
       ),
     );
-    await db.addFriendChange(
-      profileId,
-      tox.friendGetPublicKey(0),
-      wanted: true,
-    );
+    await db.addIntent(profileId, WantFriend(pk: tox.friendGetPublicKey(0)));
 
     container.listen(
       toxSessionsProvider,

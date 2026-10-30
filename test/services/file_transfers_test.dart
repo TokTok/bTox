@@ -70,7 +70,7 @@ void main() {
   test('a file sent again after it stopped goes on where it stopped', () async {
     tox.fileIds[(0, 0)] = tox.fileIds[(0, 1)] = Uint8List(32)..[0] = 7;
     await files.offered(_chat, 'Bob', 0, 0, _data.value, 6, 'a.txt');
-    files.received(0, 0, 0, utf8.encode('abc'));
+    files.chunk(0, 0, 0, utf8.encode('abc'));
     files.friendOffline(0);
     await _settle();
     expect((await transfer()).state, FileState.paused);
@@ -78,8 +78,8 @@ void main() {
     await files.offered(_chat, 'Bob', 0, 1, _data.value, 6, 'a.txt');
     expect(tox.fileSeeks, [(0, 1, 3)]);
     expect(tox.fileControls, [(0, 0, _resume), (0, 1, _resume)]);
-    files.received(0, 1, 3, utf8.encode('def'));
-    files.received(0, 1, 6, Uint8List(0));
+    files.chunk(0, 1, 3, utf8.encode('def'));
+    files.chunk(0, 1, 6, Uint8List(0));
     await _settle();
 
     final done = await transfer();
@@ -94,10 +94,10 @@ void main() {
     tox.fileIds[(0, 0)] = tox.fileIds[(0, 1)] = Uint8List(32)..[0] = 7;
     tox.fileIds[(0, 2)] = tox.fileIds[(0, 3)] = Uint8List(32)..[0] = 8;
     await files.offered(_chat, 'Bob', 0, 0, _data.value, 6, 'a.txt');
-    files.received(0, 0, 0, utf8.encode('abc'));
+    files.chunk(0, 0, 0, utf8.encode('abc'));
     files.controlled(0, 0, _cancel);
     await files.offered(_chat, 'Bob', 0, 2, _data.value, 6, 'b.txt');
-    files.received(0, 2, 0, utf8.encode('abc'));
+    files.chunk(0, 2, 0, utf8.encode('abc'));
     files.friendOffline(0);
     await _settle();
 
@@ -143,7 +143,7 @@ void main() {
 
   test('a file declined while it comes keeps how much came', () async {
     await files.offered(_chat, 'Bob', 0, 0, _data.value, 6, 'a.txt');
-    files.received(0, 0, 0, utf8.encode('abc'));
+    files.chunk(0, 0, 0, utf8.encode('abc'));
     files.incomingChanged([
       (await transfer()).copyWith(state: FileState.cancelled),
     ]);

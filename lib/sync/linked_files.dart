@@ -30,7 +30,7 @@ final class _Moving {
 
 /// Moves a linked account's files between this device and its home device:
 /// the blobs of the files its chats send, and of those they show.
-final class LinkedFiles {
+final class LinkedFiles implements ToxFiles {
   final Database _db;
   final Tox _tox;
   final Id<Profiles> _profileId;
@@ -268,6 +268,7 @@ final class LinkedFiles {
             .firstOrNull
       : null;
 
+  @override
   void chunk(int friendNumber, int fileNumber, int position, Uint8List data) {
     final key = (friendNumber, fileNumber);
     final moving = _incoming[key];
@@ -298,6 +299,7 @@ final class LinkedFiles {
     );
   }
 
+  @override
   void requested(int friendNumber, int fileNumber, int position, int length) {
     final key = (friendNumber, fileNumber);
     final moving = _outgoing[key];
@@ -335,6 +337,7 @@ final class LinkedFiles {
 
   /// A blob the home device cancelled is asked for again in the next
   /// session.
+  @override
   void controlled(int friendNumber, int fileNumber, Tox_File_Control control) {
     if (control != Tox_File_Control.TOX_FILE_CONTROL_CANCEL) {
       return;

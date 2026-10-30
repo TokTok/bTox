@@ -77,9 +77,6 @@ void main() {
       ),
     );
     Future<void> share() async {
-      tester
-          .state<ScaffoldMessengerState>(find.byType(ScaffoldMessenger))
-          .clearSnackBars();
       await tester.tap(find.byIcon(Icons.location_on));
       await tester.pumpAndSettle();
     }
@@ -113,5 +110,14 @@ void main() {
     expect(selected, [
       [const LocationContent(latitude: 52.37, longitude: 4.89)],
     ]);
+
+    location.enabled = false;
+    await share();
+    expect(find.text('Turn on location to share where you are'), findsOne);
+    // Turned on elsewhere, as from the quick settings.
+    location.enabled = true;
+    await share();
+    expect(selected, hasLength(2));
+    expect(find.byType(SnackBar), findsNothing);
   });
 }

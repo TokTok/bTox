@@ -86,6 +86,10 @@ const _vectorFact =
     '9246929203929200c4200303030303030303030303030303030303030303030303030303'
     '030303030303c42002020202020202020202020202020202020202020202020202020202'
     '02020202920601';
+const _vectorSelfKey =
+    '92469292029200c420030303030303030303030303030303030303030303030303030303'
+    '03030303039212c420020202020202020202020202020202020202020202020202020202'
+    '0202020202';
 const _vectorWant = '924792009200a469706879';
 const _vectorChatInvite =
     '924894c42002020202020202020202020202020202020202020202020202020202020202'
@@ -280,6 +284,14 @@ void main() {
     );
     expect(hex.encode(fact.encode()), endsWith(_vectorFact));
     expect(SyncEvent.decode(fact.encode()), fact);
+    final selfKey = event.copyWith(
+      content: FactContent(
+        subject: Subject.chat(group),
+        value: FactValue.selfKey(_bob),
+      ),
+    );
+    expect(hex.encode(selfKey.encode()), endsWith(_vectorSelfKey));
+    expect(SyncEvent.decode(selfKey.encode()), selfKey);
     final wish = event.copyWith(
       content: const Wish(
         subject: Subject.account(),

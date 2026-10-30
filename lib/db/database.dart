@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:btox/ffi/toxcore.dart' show Tox_Message_Type;
 import 'package:btox/messages/message_format.dart';
 import 'package:btox/messages/split_message.dart';
 import 'package:btox/models/app_defaults.dart';
@@ -15,7 +16,6 @@ import 'package:btox/models/profile_settings.dart';
 import 'package:btox/sync/account.dart';
 import 'package:btox/sync/event.dart';
 import 'package:btox/sync/fact.dart';
-import 'package:btox/sync/setting.dart';
 import 'package:btox/sync/store.dart';
 import 'package:drift/drift.dart';
 
@@ -31,18 +31,12 @@ const _idsPerStatement = 500;
     AppSettings,
     CachedBootstrapNodes,
     ChatDrafts,
-    ChatMerges,
     DeletedChats,
-    FileAnswers,
-    InviteAnswers,
-    FriendChanges,
+    Intents,
     LinkedNotified,
     LiveFacts,
     ChatReads,
-    ChatSends,
     Profiles,
-    RelayBots,
-    SettingChanges,
     SyncEvents,
     Transfers,
   ],
@@ -300,12 +294,17 @@ final class Database extends _$Database {
   /// Sends [message], as several where it's longer than an event takes.
   Future<void> addSend(Id<Profiles> profileId, GraphId graph, String message) =>
       batch(
-        (batch) => batch.insertAll(chatSends, [
+        (batch) => batch.insertAll(intents, [
           for (final part in splitMessage(utf8.encode(message), maxSendBytes))
-            ChatSendsCompanion.insert(
+            IntentsCompanion.insert(
               profileId: profileId,
-              graph: graph,
-              message: utf8.decode(part),
+              graph: Value(graph),
+              // The background service knows our name in the chat.
+              content: Send(
+                sender: '',
+                message: part,
+                kind: Tox_Message_Type.TOX_MESSAGE_TYPE_NORMAL,
+              ),
             ),
         ]),
       );
@@ -409,63 +408,58 @@ final class Database extends _$Database {
     });
   }
 
-  Stream<List<ChatSend>> watchSends(Id<Profiles> profileId) =>
-      (select(chatSends)
-            ..where((s) => s.profileId.equals(profileId.value))
-            ..orderBy([(s) => OrderingTerm(expression: s.id)]))
-          .watch();
-
-  /// Stores [event] in place of the [send] it was written for, so a send is
-  /// written exactly once.
-  Future<void> writeSend(ChatSend send, NewEvent event) =>
-      _replace(chatSends, send, send.profileId, event);
-
-  /// Stores [event] in place of the [row] of [table] it was written for.
-  Future<void> _replace<T extends Table, D extends Insertable<D>>(
-    TableInfo<T, D> table,
-    D row,
+  Future<void> addIntent(
     Id<Profiles> profileId,
-    NewEvent event,
-  ) => transaction(() async {
-    await addSyncEvents(profileId, [event]);
-    await delete(table).delete(row);
-  });
-
-  Future<void> addFriendChange(
-    Id<Profiles> profileId,
-    PublicKey publicKey, {
-    required bool wanted,
-    ToxAddressNospam? nospam,
-    String? message,
+    EventContent content, {
+    GraphId? graph,
     bool deleteChat = false,
   }) async {
-    await into(friendChanges).insert(
-      FriendChangesCompanion.insert(
+    await intents.insertOne(
+      IntentsCompanion.insert(
         profileId: profileId,
-        publicKey: publicKey,
-        wanted: wanted,
-        nospam: Value(nospam),
-        message: Value(message),
+        graph: Value(graph),
+        content: content,
         deleteChat: Value(deleteChat),
       ),
     );
   }
 
-  Stream<List<FriendChange>> watchFriendChanges(Id<Profiles> profileId) =>
-      (select(friendChanges)
-            ..where((c) => c.profileId.equals(profileId.value))
-            ..orderBy([(c) => OrderingTerm(expression: c.id)]))
+  Future<void> showApart(
+    Id<Profiles> profileId,
+    GraphId chat,
+    Map<ChatId, AccountMerge> merges,
+  ) async {
+    for (final MapEntry(key: other, value: merge) in merges.entries) {
+      if (merge.into.graph == chat) {
+        await addIntent(
+          profileId,
+          MergeChat(
+            chat: other,
+            bot: merge.bot,
+            into: merge.into,
+            intoBot: merge.intoBot,
+            merged: false,
+          ),
+        );
+      }
+    }
+  }
+
+  Stream<List<StoredIntent>> watchIntents(Id<Profiles> profileId) =>
+      (select(intents)
+            ..where((i) => i.profileId.equals(profileId.value))
+            ..orderBy([(i) => OrderingTerm(expression: i.id)]))
           .watch();
 
-  /// Stores [event] in place of the [change] it was written for, deletes the
-  /// chat it [deleted], and returns that chat's files.
-  Future<List<String>> writeFriendChange(
-    FriendChange change,
+  /// Returns the [deleted] chat's files.
+  Future<List<String>> writeIntent(
+    StoredIntent intent,
     NewEvent event, {
     (GraphId, int)? deleted,
   }) => transaction(() async {
-    await _replace(friendChanges, change, change.profileId, event);
-    return deleted == null ? const [] : _deleteChat(change.profileId, deleted);
+    await addSyncEvents(intent.profileId, [event]);
+    await intents.deleteOne(intent);
+    return deleted == null ? const [] : _deleteChat(intent.profileId, deleted);
   });
 
   /// Deletes a [chat]'s rows, remembering the rank its next event takes, and
@@ -499,167 +493,6 @@ final class Database extends _$Database {
     )..where((c) => c.profileId.equals(profileId.value))).get())
       row.graph: row.rank,
   };
-
-  Future<void> addFileAnswer(
-    Id<Profiles> profileId,
-    GraphId graph,
-    EventId file, {
-    required bool accepted,
-  }) async {
-    await into(fileAnswers).insert(
-      FileAnswersCompanion.insert(
-        profileId: profileId,
-        graph: graph,
-        file: file,
-        accepted: accepted,
-      ),
-    );
-  }
-
-  Stream<List<FileAnswer>> watchFileAnswers(Id<Profiles> profileId) =>
-      (select(fileAnswers)
-            ..where((a) => a.profileId.equals(profileId.value))
-            ..orderBy([(a) => OrderingTerm(expression: a.id)]))
-          .watch();
-
-  /// Stores [event] in place of the [answer] it was written for.
-  Future<void> writeFileAnswer(FileAnswer answer, NewEvent event) =>
-      _replace(fileAnswers, answer, answer.profileId, event);
-
-  Future<void> addInviteAnswer(
-    Id<Profiles> profileId,
-    EventId invite, {
-    required bool accepted,
-    String? password,
-  }) async {
-    await into(inviteAnswers).insert(
-      InviteAnswersCompanion.insert(
-        profileId: profileId,
-        invite: invite,
-        accepted: accepted,
-        password: Value(password),
-      ),
-    );
-  }
-
-  Stream<List<InviteAnswer>> watchInviteAnswers(Id<Profiles> profileId) =>
-      (select(inviteAnswers)
-            ..where((a) => a.profileId.equals(profileId.value))
-            ..orderBy([(a) => OrderingTerm(expression: a.id)]))
-          .watch();
-
-  /// Stores [event] in place of the [answer] it was written for.
-  Future<void> writeInviteAnswer(InviteAnswer answer, NewEvent event) =>
-      _replace(inviteAnswers, answer, answer.profileId, event);
-
-  Future<void> addChatMerge(
-    Id<Profiles> profileId, {
-    required GraphId chat,
-    required PublicKey bot,
-    required GraphId into,
-    required PublicKey intoBot,
-    required bool merged,
-  }) async {
-    await chatMerges.insertOne(
-      ChatMergesCompanion.insert(
-        profileId: profileId,
-        chat: chat,
-        bot: bot,
-        into: into,
-        intoBot: intoBot,
-        merged: merged,
-      ),
-    );
-  }
-
-  Future<void> showApart(
-    Id<Profiles> profileId,
-    GraphId chat,
-    Map<ChatId, AccountMerge> merges,
-  ) async {
-    for (final MapEntry(key: other, value: merge) in merges.entries) {
-      if (merge.into.graph == chat) {
-        await addChatMerge(
-          profileId,
-          chat: other.graph,
-          bot: merge.bot,
-          into: merge.into.graph,
-          intoBot: merge.intoBot,
-          merged: false,
-        );
-      }
-    }
-  }
-
-  Future<void> addRelayBot(
-    Id<Profiles> profileId, {
-    required GraphId chat,
-    required PublicKey bot,
-    required bool relays,
-  }) async {
-    await relayBots.insertOne(
-      RelayBotsCompanion.insert(
-        profileId: profileId,
-        chat: chat,
-        bot: bot,
-        relays: relays,
-      ),
-    );
-  }
-
-  Stream<List<RelayBotChange>> watchRelayBots(Id<Profiles> profileId) =>
-      (select(relayBots)
-            ..where((r) => r.profileId.equals(profileId.value))
-            ..orderBy([(r) => OrderingTerm(expression: r.id)]))
-          .watch();
-
-  /// Stores [event] in place of the [change] for which it was written.
-  Future<void> writeRelayBot(RelayBotChange change, NewEvent event) =>
-      _replace(relayBots, change, change.profileId, event);
-
-  Future<void> setSetting(
-    Id<Profiles> profileId,
-    Scope scope,
-    Kept<Setting> setting,
-  ) async {
-    await settingChanges.insertOne(
-      SettingChangesCompanion.insert(
-        profileId: profileId,
-        scope: scope,
-        kind: setting.value.kind,
-        setting: Value(setting),
-      ),
-    );
-  }
-
-  Future<void> clearSetting(Id<Profiles> profileId, Scope scope, int kind) =>
-      settingChanges.insertOne(
-        SettingChangesCompanion.insert(
-          profileId: profileId,
-          scope: scope,
-          kind: kind,
-        ),
-      );
-
-  Stream<List<SettingChange>> watchSettingChanges(Id<Profiles> profileId) =>
-      (select(settingChanges)
-            ..where((s) => s.profileId.equals(profileId.value))
-            ..orderBy([(s) => OrderingTerm(expression: s.id)]))
-          .watch();
-
-  /// Stores [event] in place of the [change] it was written for.
-  Future<void> writeSetting(SettingChange change, NewEvent event) =>
-      _replace(settingChanges, change, change.profileId, event);
-
-  Stream<List<MergeChange>> watchChatMerges(Id<Profiles> profileId) =>
-      (select(chatMerges)
-            ..where((m) => m.profileId.equals(profileId.value))
-            ..orderBy([(m) => OrderingTerm(expression: m.id)]))
-          .watch();
-
-  /// Stores [event] in place of the [change] for which it was written.
-  Future<void> writeChatMerge(MergeChange change, NewEvent event) =>
-      _replace(chatMerges, change, change.profileId, event);
 
   Future<Id<Transfers>> addTransfer(TransfersCompanion entry) async =>
       Id(await into(transfers).insert(entry));

@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:btox/db/database.dart';
 import 'package:btox/ffi/toxcore.dart' show Tox_Message_Type;
-import 'package:btox/l10n/generated/app_localizations.dart';
 import 'package:btox/models/chat_view.dart';
 import 'package:btox/models/crypto.dart';
 import 'package:btox/models/id.dart';
@@ -12,17 +11,19 @@ import 'package:btox/pages/chat_details_page.dart';
 import 'package:btox/providers/database.dart';
 import 'package:btox/sync/event.dart';
 import 'package:btox/sync/fact.dart';
+import 'package:btox/widgets/circle_identicon.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import 'mocks/settle.dart';
+import 'mocks/test_app.dart';
 
 final _self = PublicKey(Uint8List(32)..fillRange(0, 32, 1));
 final _bob = PublicKey(Uint8List(32)..fillRange(0, 32, 2));
 final _carol = PublicKey(Uint8List(32)..fillRange(0, 32, 3));
+final _selfInGroup = PublicKey(Uint8List(32)..fillRange(0, 32, 5));
 final _group = GroupChat(GroupChatId(Uint8List(32)..fillRange(0, 32, 4)));
 
 /// [contents] in [graph], each after the one before, at its time.
@@ -68,12 +69,9 @@ Future<Id<Profiles>> _account(Database db, List<EventContent> contents) async {
 
 Future<void> _show(WidgetTester tester, Database db, ChatRef chat) =>
     tester.pumpWidget(
-      ProviderScope(
+      testApp(
+        ChatDetailsPage(chat: chat),
         overrides: [databaseProvider.overrideWith((ref) => db)],
-        child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          home: ChatDetailsPage(chat: chat),
-        ),
       ),
     );
 
@@ -90,12 +88,13 @@ void main() {
         (Subject.peer(_group, pk), value);
     final profile = (await tester.runAsync(() async {
       final id = await _account(db, [
-        for (final value in const [
-          FactValue.name('Tox'),
-          FactValue.joined(true),
-          FactValue.topic('Talk about Tox'),
-          FactValue.role(Role.moderator),
-          FactValue.selfName('iphy'),
+        for (final value in [
+          const FactValue.name('Tox'),
+          const FactValue.joined(true),
+          const FactValue.topic('Talk about Tox'),
+          const FactValue.role(Role.moderator),
+          const FactValue.selfName('iphy'),
+          FactValue.selfKey(_selfInGroup),
         ])
           FactContent(subject: Subject.chat(_group), value: value),
       ]);
@@ -118,6 +117,12 @@ void main() {
     expect(find.text('Tox'), findsOneWidget);
     expect(find.text('Talk about Tox'), findsOneWidget);
     expect(find.text('You · Moderator'), findsOneWidget);
+    expect(
+      find.byWidgetPredicate(
+        (w) => w is CircleIdenticon && w.bytes == _selfInGroup,
+      ),
+      findsOneWidget,
+    );
     // The founder first.
     expect(
       tester.getTopLeft(find.text('Carol')).dy,

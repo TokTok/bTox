@@ -7,8 +7,10 @@ import 'package:btox/models/crypto.dart';
 import 'package:btox/models/persistence.dart';
 import 'package:btox/providers/attachments.dart';
 import 'package:btox/providers/database.dart';
+import 'package:btox/sync/event.dart';
 import 'package:btox/widgets/bubble_footer.dart';
 import 'package:btox/widgets/chat_text_bubble.dart';
+import 'package:btox/widgets/database_write.dart';
 import 'package:btox/widgets/picture_view.dart';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -63,23 +65,16 @@ final class ChatFileBubble extends ConsumerWidget {
 
     // Where this device runs the transfer, it starts or stops it. Elsewhere
     // the home device does, once it has the answer.
-    void answer({required bool accept}) {
-      _logger.unawaited(
-        'answer the file',
-        ref
-            .read(databaseProvider.future)
-            .then(
-              (db) => transfer != null
-                  ? db.answerTransfer(transfer, accept: accept)
-                  : db.addFileAnswer(
-                      chat.profile,
-                      chat.graph,
-                      entry.event,
-                      accepted: accept,
-                    ),
+    void answer({required bool accept}) => ref.write(
+      context,
+      (db) => transfer != null
+          ? db.answerTransfer(transfer, accept: accept)
+          : db.addIntent(
+              chat.profile,
+              FileAnswered(file: entry.event, accepted: accept),
+              graph: chat.graph,
             ),
-      );
-    }
+    );
 
     // A linked account's file, from its home device to here.
     Future<void> download(BlobId blob) async {

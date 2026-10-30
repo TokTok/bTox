@@ -2,12 +2,10 @@ import 'package:btox/db/database.dart';
 import 'package:btox/l10n/generated/app_localizations.dart';
 import 'package:btox/logger.dart';
 import 'package:btox/models/crypto.dart';
-import 'package:btox/models/id.dart';
-import 'package:btox/models/persistence.dart';
 import 'package:btox/models/profile_settings.dart';
 import 'package:btox/pages/link_account_page.dart';
-import 'package:btox/providers/database.dart';
 import 'package:btox/providers/tox.dart';
+import 'package:btox/widgets/database_write.dart';
 import 'package:btox/widgets/import_profile.dart';
 import 'package:btox/widgets/nickname_field.dart';
 import 'package:btox/widgets/status_message_field.dart';
@@ -74,13 +72,11 @@ final class CreateProfilePage extends HookConsumerWidget {
                       }
                       creating.value = true;
                       _logger.d('Creating new profile');
-                      final Id<Profiles> id;
-                      try {
+                      final created = await ref.write(context, (db) async {
                         final (secretKey, publicKey) = await ref.read(
                           newKeyPairProvider.future,
                         );
-                        final db = await ref.read(databaseProvider.future);
-                        id = await db.transaction(() async {
+                        await db.transaction(() async {
                           final id = await db.addProfile(
                             ProfilesCompanion.insert(
                               settings: ProfileSettings(
@@ -93,14 +89,13 @@ final class CreateProfilePage extends HookConsumerWidget {
                             ),
                           );
                           await db.signIn(id);
-                          return id;
+                          _logger.d('Created new profile with ID $id');
                         });
-                      } catch (e) {
-                        _logger.e('Failed to create profile: $e');
+                      });
+                      if (!created) {
                         creating.value = false;
                         return;
                       }
-                      _logger.d('Created new profile with ID $id');
                       // On first start, this page is the home page instead.
                       if (context.mounted) {
                         Navigator.popUntil(context, (route) => route.isFirst);

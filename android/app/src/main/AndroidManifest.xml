@@ -31,6 +31,11 @@
             android:name="id.flutter.flutter_background_service.BackgroundService"
             android:foregroundServiceType="remoteMessaging"
         />
+        <!-- Takes notification actions that don't open the app, as Decline. -->
+        <receiver
+            android:name="com.dexterous.flutterlocalnotifications.ActionBroadcastReceiver"
+            android:exported="false"
+        />
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

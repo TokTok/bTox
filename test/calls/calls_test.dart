@@ -199,6 +199,22 @@ void main() {
     expect(audio.onFrame, isNull);
   });
 
+  test('a call that rings elsewhere too shows as connected once the protocol '
+      'says it is', () async {
+    protocol.ringsElsewhere = true;
+    protocol.signals.add(CallSignal.ringing(_bob, video: false));
+    await _settle();
+    calls.answer();
+    await _settle();
+    expect(calls.current?.connectedAt, isNull);
+    audio.onFrame!(Int16List(callFrameSamples));
+    expect(protocol.sent, isEmpty);
+    protocol.signals.add(CallSignal.answered(_bob));
+    await _settle();
+    expect(calls.current?.phase, CallPhase.active);
+    expect(calls.current?.connectedAt, isNotNull);
+  });
+
   test('with nothing else to tell of a call, it rings while bTox is not in '
       'front', () async {
     calls.dispose();

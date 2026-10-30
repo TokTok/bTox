@@ -75,6 +75,7 @@ String callStatus(AppLocalizations l10n, CallInfo call, DateTime now) =>
       CallInfo(connectedAt: final at?) => durationText(now.difference(at)),
       CallInfo(phase: CallPhase.ringing, video: false) => l10n.incomingCall,
       CallInfo(phase: CallPhase.ringing) => l10n.incomingVideoCall,
+      CallInfo(phase: CallPhase.connecting) => l10n.connecting,
       _ => l10n.calling,
     };
 

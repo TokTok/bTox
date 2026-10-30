@@ -39,6 +39,10 @@ struct Camera {
   std::atomic<bool> stopping{false};
   btox_video_frame_cb *on_frame;
   btox_camera_stopped_cb *on_stopped;
+  // Shut down to stop a ReadSample waiting for a frame that may never come.
+  // Its own reference, so it outlives the thread's. Set before the thread
+  // tells whether it started.
+  IMFMediaSource *source = nullptr;
 };
 
 Camera *camera;
@@ -107,17 +111,23 @@ void deliver(IMFSample *sample, UINT32 width, UINT32 height) {
   Ref<IMF2DBuffer> picture;
   BYTE *data = nullptr;
   LONG pitch = static_cast<LONG>(width);
+  DWORD length = 0;
   uint8_t *frame = nullptr;
   // NV12, its chroma after its luma, rows [pitch] apart.
-  const auto i420 = [&] {
+  const auto i420 = [&]() -> uint8_t * {
+    if (pitch < static_cast<LONG>(width) ||
+        static_cast<UINT64>(pitch) * height * 3 / 2 > length) {
+      return nullptr;
+    }
     return btox_nv12_to_i420(data, pitch, data + height * pitch, pitch, width,
                              height);
   };
   if (SUCCEEDED(buffer->QueryInterface(IID_PPV_ARGS(picture.put()))) &&
+      SUCCEEDED(buffer->GetCurrentLength(&length)) &&
       SUCCEEDED(picture->Lock2D(&data, &pitch))) {
     frame = i420();
     picture->Unlock2D();
-  } else if (SUCCEEDED(buffer->Lock(&data, nullptr, nullptr))) {
+  } else if (SUCCEEDED(buffer->Lock(&data, nullptr, &length))) {
     frame = i420();
     buffer->Unlock();
   }
@@ -145,6 +155,10 @@ void capture(UINT32 index, std::promise<bool> started) {
         SUCCEEDED(MFCreateSourceReaderFromMediaSource(source.p, attributes.p,
                                                       reader.put())) &&
         choose_format(reader.p, width, height);
+    if (source.p != nullptr) {
+      source->AddRef();
+      camera->source = source.p;
+    }
     started.set_value(opened);
     LONGLONG last = -kSecond;
     while (opened && !camera->stopping) {
@@ -155,9 +169,21 @@ void capture(UINT32 index, std::promise<bool> started) {
                                     nullptr, &flags, &time, sample.put())) ||
           (flags & (MF_SOURCE_READERF_ERROR | MF_SOURCE_READERF_ENDOFSTREAM)) !=
               0) {
-        // Unplugged, or taken.
-        camera->on_stopped();
+        // Unplugged, or taken, unless stopped here.
+        if (!camera->stopping) {
+          camera->on_stopped();
+        }
         break;
+      }
+      if ((flags & MF_SOURCE_READERF_CURRENTMEDIATYPECHANGED) != 0) {
+        Ref<IMFMediaType> type;
+        if (FAILED(reader->GetCurrentMediaType(
+                MF_SOURCE_READER_FIRST_VIDEO_STREAM, type.put())) ||
+            FAILED(MFGetAttributeSize(type.p, MF_MT_FRAME_SIZE, &width,
+                                      &height))) {
+          camera->on_stopped();
+          break;
+        }
       }
       if (sample.p != nullptr && time - last >= kSecond / kMaxFps) {
         last = time;
@@ -195,7 +221,13 @@ void btox_camera_stop(void) {
     return;
   }
   camera->stopping = true;
+  if (camera->source != nullptr) {
+    camera->source->Shutdown();
+  }
   camera->thread.join();
+  if (camera->source != nullptr) {
+    camera->source->Release();
+  }
   delete camera;
   camera = nullptr;
 }

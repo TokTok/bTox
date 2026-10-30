@@ -2,6 +2,7 @@ import 'package:btox/models/content.dart';
 import 'package:btox/models/crypto.dart';
 import 'package:btox/models/id.dart';
 import 'package:btox/models/persistence.dart';
+import 'package:btox/sync/event.dart';
 import 'package:btox/sync/setting.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
@@ -50,6 +51,14 @@ abstract class ChatSummary with _$ChatSummary {
     // No longer a friend's or a joined chat's: what was said still shows.
     @Default(false) bool closed,
   }) = _ChatSummary;
+
+  const ChatSummary._();
+
+  ChatId? get chatId => switch (key) {
+    final GroupChatId id => GroupChat(id),
+    final ConferenceId id => ConferenceChat(id),
+    _ => null,
+  };
 }
 
 @freezed

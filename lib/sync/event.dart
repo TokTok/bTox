@@ -5,6 +5,7 @@ import 'package:btox/models/crypto.dart';
 import 'package:btox/sync/codec.dart';
 import 'package:btox/sync/fact.dart';
 import 'package:btox/sync/setting.dart';
+import 'package:drift/drift.dart' show TypeConverter;
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'event.freezed.dart';
@@ -537,4 +538,22 @@ abstract class SyncEvent with _$SyncEvent {
           ))
         .encode();
   }
+}
+
+/// Content as the sync protocol writes it, as kept in the database.
+final class EventContentConverter
+    extends TypeConverter<EventContent, Uint8List> {
+  const EventContentConverter();
+
+  @override
+  EventContent fromSql(Uint8List fromDb) => decodeExact(fromDb, (unpacker) {
+    final fields = Fields(unpacker);
+    final content = _decodeContent(fields);
+    fields.exact();
+    return content;
+  });
+
+  @override
+  Uint8List toSql(EventContent value) =>
+      (ArrayWriter()..array(_encodeContent(value))).encode();
 }

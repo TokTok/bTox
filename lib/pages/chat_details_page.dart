@@ -4,12 +4,13 @@ import 'package:btox/models/chat_merge.dart';
 import 'package:btox/models/chat_view.dart';
 import 'package:btox/models/crypto.dart';
 import 'package:btox/providers/chats.dart';
-import 'package:btox/providers/database.dart';
+import 'package:btox/sync/event.dart';
 import 'package:btox/sync/setting.dart';
 import 'package:btox/sync/fact.dart';
 import 'package:btox/widgets/chat_avatar.dart';
 import 'package:btox/widgets/circle_identicon.dart';
 import 'package:btox/widgets/copy_text.dart';
+import 'package:btox/widgets/database_write.dart';
 import 'package:btox/widgets/dates.dart';
 import 'package:btox/widgets/load_failed.dart';
 import 'package:btox/widgets/mute_chat.dart';
@@ -228,7 +229,7 @@ final class _Mute extends ConsumerWidget {
         leading: const Icon(Icons.notifications_outlined),
         title: Text(l10n.unmuteChat),
         subtitle: Text(mutedText(context, mute)),
-        onTap: () => unmuteChat(ref, chat.ref),
+        onTap: () => unmuteChat(context, ref, chat.ref),
       ),
     };
   }
@@ -248,15 +249,21 @@ final class _PicturesAsQoi extends ConsumerWidget {
       subtitle: Text(l10n.sendPicturesAsQoiHint),
       value: ref.watch(pictureFormatProvider(chat)) == PictureEncoding.qoi,
       onChanged: (qoi) async {
-        final db = await ref.read(databaseProvider.future);
         final scope = Scope.conversation(chat.graph);
-        await (qoi
-            ? db.setSetting(
-                chat.profile,
-                scope,
-                const Kept(Setting.pictureFormat(PictureEncoding.qoi)),
-              )
-            : db.clearSetting(chat.profile, scope, Setting.pictureFormatKind));
+        await ref.write(
+          context,
+          (db) => db.addIntent(
+            chat.profile,
+            qoi
+                ? SettingContent(
+                    scope: scope,
+                    setting: const Kept(
+                      Setting.pictureFormat(PictureEncoding.qoi),
+                    ),
+                  )
+                : ClearSetting(scope: scope, kind: Setting.pictureFormatKind),
+          ),
+        );
       },
     );
   }
