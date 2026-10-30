@@ -440,6 +440,10 @@
   "@sendFailed": {
     "description": "Error when a message couldn't be saved for sending"
   },
+  "saveFailed": "Couldn't save that",
+  "@saveFailed": {
+    "description": "Error when something the user did couldn't be saved"
+  },
   "importFailed": "Couldn't import this file",
   "@importFailed": {
     "description": "Error when a profile or backup file couldn't be imported"
@@ -523,6 +527,10 @@
   "calling": "Calling…",
   "@calling": {
     "description": "Our call, while it rings at the friend's"
+  },
+  "connecting": "Connecting…",
+  "@connecting": {
+    "description": "A call answered here, until it's connected"
   },
   "answerCall": "Answer",
   "@answerCall": {

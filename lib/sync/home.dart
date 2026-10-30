@@ -83,6 +83,39 @@ final class Home {
     save: save,
   );
 
+  /// Ends what stopped with Tox, until [stopped]: friends' unfinished
+  /// files, which it forgets, and calls, which ended unrecorded.
+  Future<void> endInterrupted({required bool Function() stopped}) async {
+    for (final transfer in await _db.watchTransfers(_profileId).first) {
+      if (stopped()) {
+        return;
+      }
+      if (transfer case Transfer(
+        incoming: true,
+        :final event?,
+        state: FileState.offered || FileState.active,
+      )) {
+        await _db.setTransferState(transfer.id, FileState.paused);
+        await record(transfer.graph, FileEnded(file: event, ok: false));
+      }
+    }
+    for (final graph in store.graphs) {
+      final events = store.eventsIn(graph);
+      final ended = {
+        for (final (_, event) in events)
+          if (event.content case CallEnded(:final call)) call,
+      };
+      for (final (id, event) in events) {
+        if (stopped()) {
+          return;
+        }
+        if (event.content is Call && !ended.contains(id)) {
+          await record(graph, CallEnded(call: id));
+        }
+      }
+    }
+  }
+
   void _saved(NewEvent event) {
     final (id, saved, bytes) = event;
     store.insert(bytes);
@@ -108,43 +141,35 @@ final class Home {
         : FactContent(subject: subject, value: value),
   );
 
-  /// Writes the friends the pages add and remove, and returns the files of
-  /// the chats deleted with them.
-  Future<List<String>> friendChanges(List<FriendChange> changes) async {
+  /// Returns the files of the chats deleted with friends.
+  Future<List<String>> intents(
+    List<StoredIntent> intents,
+    String sender,
+  ) async {
     final files = <String>[];
-    for (final change in changes) {
-      await _writer.once(
-        change.id,
-        () => record(
-          account,
-          change.wanted
-              ? WantFriend(
-                  pk: change.publicKey,
-                  requestMessage: change.message,
-                  nospam: change.nospam,
-                )
-              : UnwantFriend(pk: change.publicKey),
-          save: (event) async => files.addAll(
-            change.deleteChat && !change.wanted
-                ? await _deleteChat(change, event)
-                : await _db.writeFriendChange(change, event),
-          ),
-        ),
-      );
-    }
+    await _writer.intents(
+      intents,
+      account,
+      (_) => sender,
+      save: (intent, event) async => files.addAll(switch (intent) {
+        StoredIntent(deleteChat: true, content: UnwantFriend(:final pk)) =>
+          await _deleteChat(intent, pk, event),
+        _ => await _db.writeIntent(intent, event),
+      }),
+    );
     return files;
   }
 
-  /// Saves [event] for [change] with its chat deleted, whose next event then
-  /// ranks after everything that was in it, and returns the chat's files.
-  Future<List<String>> _deleteChat(FriendChange change, NewEvent event) async {
-    final chat = chatWith(change.publicKey);
+  /// The chat's next event ranks after everything deleted from it. Returns
+  /// its files.
+  Future<List<String>> _deleteChat(
+    StoredIntent intent,
+    PublicKey friend,
+    NewEvent event,
+  ) async {
+    final chat = chatWith(friend);
     final next = store.nextRank(chat, minRank: _deleted[chat] ?? 0);
-    final files = await _db.writeFriendChange(
-      change,
-      event,
-      deleted: (chat, next),
-    );
+    final files = await _db.writeIntent(intent, event, deleted: (chat, next));
     store.forget(chat);
     earlier.forget(chat);
     undelivered.removeWhere((id, _) => !store.contains(id));
@@ -152,14 +177,8 @@ final class Home {
     return files;
   }
 
-  Future<void> sends(List<ChatSend> sends, String sender) =>
-      _writer.sends(sends, (_) => sender);
-
   Future<void> reads(List<ChatRead> reads) =>
       _writer.reads(account, reads, () => state);
-
-  Future<void> settings(List<SettingChange> changes) =>
-      _writer.settings(account, changes);
 
   Future<void> startFiles(List<Transfer> transfers, String sender) async {
     for (final transfer in transfers) {

@@ -69,13 +69,8 @@ final class SyncSessions {
   int? _homeFriend;
 
   EventWriter? _writer;
-  var _sends = const <ChatSend>[];
+  var _intents = const <StoredIntent>[];
   var _reads = const <ChatRead>[];
-  var _answers = const <FileAnswer>[];
-  var _inviteAnswers = const <InviteAnswer>[];
-  var _merges = const <MergeChange>[];
-  var _relayBots = const <RelayBotChange>[];
-  var _settings = const <SettingChange>[];
   var _transfers = const <Transfer>[];
 
   // Shows a linked chat's new unread messages.
@@ -214,39 +209,14 @@ final class SyncSessions {
     }
   }
 
-  void sendsChanged(List<ChatSend> sends) {
-    _sends = sends;
+  void intentsChanged(List<StoredIntent> intents) {
+    _intents = intents;
     _logger.unawaited('write events', _writeEvents());
   }
 
   void transfersChanged(List<Transfer> transfers) {
     _transfers = transfers;
     _files?.transfersChanged(transfers);
-    _logger.unawaited('write events', _writeEvents());
-  }
-
-  void answersChanged(List<FileAnswer> answers) {
-    _answers = answers;
-    _logger.unawaited('write events', _writeEvents());
-  }
-
-  void inviteAnswersChanged(List<InviteAnswer> answers) {
-    _inviteAnswers = answers;
-    _logger.unawaited('write events', _writeEvents());
-  }
-
-  void mergesChanged(List<MergeChange> merges) {
-    _merges = merges;
-    _logger.unawaited('write events', _writeEvents());
-  }
-
-  void relayBotsChanged(List<RelayBotChange> changes) {
-    _relayBots = changes;
-    _logger.unawaited('write events', _writeEvents());
-  }
-
-  void settingsChanged(List<SettingChange> changes) {
-    _settings = changes;
     _logger.unawaited('write events', _writeEvents());
   }
 
@@ -262,10 +232,12 @@ final class SyncSessions {
     }
     String senderIn(GraphId chat) => replica.selfNameIn(chat) ?? '';
     // What the home device wouldn't take waits for the chat to come back.
-    await writer.sends([
-      for (final send in _sends)
-        if (replica.canWrite(send.graph)) send,
-    ], senderIn);
+    await writer.intents(
+      _intents,
+      replica.account,
+      senderIn,
+      canWrite: replica.canWrite,
+    );
     await writer.files(
       [
         for (final transfer in _transfers)
@@ -274,28 +246,6 @@ final class SyncSessions {
       senderIn,
       blobOf,
     );
-    await writer.answers([
-      for (final answer in _answers)
-        if (replica.canWrite(answer.graph)) answer,
-    ]);
-    await writer.inviteAnswers(replica.account, _inviteAnswers);
-    await writer.merges(replica.account, [
-      for (final merge in _merges)
-        if (replica.canWrite(merge.chat) && replica.canWrite(merge.into)) merge,
-    ], replica.chatIn);
-    await writer.relayBots(replica.account, [
-      for (final change in _relayBots)
-        if (replica.canWrite(change.chat)) change,
-    ], replica.chatIn);
-    await writer.settings(replica.account, [
-      for (final change in _settings)
-        if (switch (change.scope) {
-          AccountScope() => true,
-          ConversationScope(:final graph) => replica.canWrite(graph),
-          UnknownScope() => false,
-        })
-          change,
-    ]);
     await writer.reads(replica.account, [
       for (final read in _reads)
         if (replica.canWrite(read.graph)) read,

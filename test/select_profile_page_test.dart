@@ -1,7 +1,6 @@
 import 'dart:typed_data';
 
 import 'package:btox/db/database.dart';
-import 'package:btox/l10n/generated/app_localizations.dart';
 import 'package:btox/models/crypto.dart';
 import 'package:btox/models/profile_settings.dart';
 import 'package:btox/pages/select_profile_page.dart';
@@ -9,7 +8,8 @@ import 'package:btox/providers/database.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hooks_riverpod/hooks_riverpod.dart';
+
+import 'mocks/test_app.dart';
 
 void main() {
   testWidgets('long-pressing a profile deletes it', (tester) async {
@@ -29,12 +29,9 @@ void main() {
     });
 
     await tester.pumpWidget(
-      ProviderScope(
+      testApp(
+        const SelectProfilePage(),
         overrides: [databaseProvider.overrideWith((ref) => db)],
-        child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          home: const SelectProfilePage(),
-        ),
       ),
     );
     await tester.pumpAndSettle();

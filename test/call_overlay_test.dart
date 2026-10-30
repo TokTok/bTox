@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:btox/calls/call_channel.dart';
+import 'package:btox/calls/call_info.dart';
 import 'package:btox/calls/call_protocol.dart';
 import 'package:btox/calls/calls.dart';
 import 'package:btox/l10n/generated/app_localizations.dart';
@@ -28,8 +29,12 @@ void main() {
   late FakeCallAudio audio;
   late FakeCallVideo video;
   late Calls calls;
+  final navigator = GlobalKey<NavigatorState>();
 
-  Future<void> show(WidgetTester tester) async {
+  Future<void> show(
+    WidgetTester tester, {
+    NotificationListenerCallback<NavigationNotification>? onNavigation,
+  }) async {
     protocol = FakeCallProtocol();
     audio = FakeCallAudio();
     video = FakeCallVideo();
@@ -57,7 +62,10 @@ void main() {
       ProviderScope(
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
-          builder: (context, child) => CallOverlay(child: child!),
+          navigatorKey: navigator,
+          onNavigationNotification: onNavigation,
+          builder: (context, child) =>
+              CallOverlay(navigator: navigator, child: child!),
           home: const Scaffold(body: Text('Chats')),
         ),
       ),
@@ -74,7 +82,41 @@ void main() {
       tester,
       until: () => find.byTooltip('Hang up').evaluate().isNotEmpty,
     );
+    await tester.pumpAndSettle();
   }
+
+  testWidgets('back hides a call over a chat, and after it still goes back '
+      'from the chat', (tester) async {
+    bool? handlesBack;
+    await show(
+      tester,
+      onNavigation: (notification) {
+        handlesBack = notification.canHandlePop;
+        return true;
+      },
+    );
+    navigator.currentState!.push(
+      MaterialPageRoute<void>(
+        builder: (_) => const Scaffold(body: Text('Chat')),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(handlesBack, isTrue);
+
+    await answered(tester);
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.byType(CallScreen), findsNothing);
+    expect(find.text('Return to the call'), findsOneWidget);
+    expect(find.text('Chat'), findsOneWidget);
+
+    calls.hangUp();
+    await settle(
+      tester,
+      until: () => find.text('Return to the call').evaluate().isEmpty,
+    );
+    expect(handlesBack, isTrue);
+  });
 
   testWidgets('a call ringing here shows over the chats, and declining ends '
       'it', (tester) async {
@@ -95,6 +137,29 @@ void main() {
     expect(find.text('Chats'), findsOneWidget);
   });
 
+  testWidgets('a call answered here that rings elsewhere too shows as '
+      'connecting until it is', (tester) async {
+    await show(tester);
+    protocol.ringsElsewhere = true;
+    protocol.signals.add(CallSignal.ringing(_bob, video: false));
+    await settle(
+      tester,
+      until: () => find.text('Incoming voice call').evaluate().isNotEmpty,
+    );
+
+    calls.answer();
+    await settle(
+      tester,
+      until: () => find.text('Connecting…').evaluate().isNotEmpty,
+    );
+    protocol.signals.add(CallSignal.answered(_bob));
+    await settle(
+      tester,
+      until: () => find.text('Connecting…').evaluate().isEmpty,
+    );
+    expect(calls.current?.phase, CallPhase.active);
+  });
+
   testWidgets('a call going on can be muted, put on the speaker, hidden, and '
       'hung up', (tester) async {
     await show(tester);
@@ -109,10 +174,10 @@ void main() {
     );
 
     await tester.tap(find.byTooltip('Hide the call'));
-    await tester.pump();
+    await tester.pumpAndSettle();
     expect(find.byType(CallScreen), findsNothing);
     await tester.tap(find.text('Return to the call'));
-    await tester.pump();
+    await tester.pumpAndSettle();
 
     await tester.tap(find.byTooltip('Hang up'));
     await settle(

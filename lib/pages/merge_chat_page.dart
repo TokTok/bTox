@@ -3,8 +3,9 @@ import 'package:btox/logger.dart';
 import 'package:btox/models/chat_view.dart';
 import 'package:btox/models/crypto.dart';
 import 'package:btox/providers/chats.dart';
-import 'package:btox/providers/database.dart';
+import 'package:btox/sync/event.dart';
 import 'package:btox/widgets/chat_avatar.dart';
+import 'package:btox/widgets/database_write.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -50,17 +51,21 @@ final class MergeChatPage extends HookConsumerWidget {
       ) = chat.key is ConferenceId && target.key is GroupChatId
           ? (target, chat)
           : (chat, target);
-      final db = await ref.read(databaseProvider.future);
-      await db.addChatMerge(
-        chat.ref.profile,
-        chat: merged.ref.graph,
-        bot: botIn(merged)!,
-        into: into.ref.graph,
-        intoBot: botIn(into)!,
-        merged: true,
-      );
       _logger.i('Merging ${merged.ref.graph} into ${into.ref.graph}');
-      if (context.mounted) {
+      final saved = await ref.write(
+        context,
+        (db) => db.addIntent(
+          chat.ref.profile,
+          MergeChat(
+            chat: merged.chatId!,
+            bot: botIn(merged)!,
+            into: into.chatId!,
+            intoBot: botIn(into)!,
+            merged: true,
+          ),
+        ),
+      );
+      if (saved && context.mounted) {
         Navigator.pop(context);
       }
     }
@@ -134,15 +139,15 @@ final class RelayBotPage extends HookConsumerWidget {
         picked.value ?? senders.where((s) => s.relayed > 0).firstOrNull?.key;
 
     Future<void> use(PublicKey bot) async {
-      final db = await ref.read(databaseProvider.future);
-      await db.addRelayBot(
-        chat.ref.profile,
-        chat: chat.ref.graph,
-        bot: bot,
-        relays: true,
-      );
       _logger.i('Showing names from $bot in ${chat.ref.graph}');
-      if (context.mounted) {
+      final saved = await ref.write(
+        context,
+        (db) => db.addIntent(
+          chat.ref.profile,
+          RelayBot(chat: chat.chatId!, bot: bot, relays: true),
+        ),
+      );
+      if (saved && context.mounted) {
         Navigator.pop(context);
       }
     }

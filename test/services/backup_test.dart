@@ -63,7 +63,10 @@ Future<Id<Profiles>> _addAccount(Database db, String name, int key) async {
     ..add(chat, time, said('Reply'))
     ..add(account.account, time, ReadUpTo(graph: chat, event: first, rank: 0));
   await db.addSyncEvents(id, account.events);
-  await db.clearSetting(id, Scope.conversation(chat), Setting.muteKind);
+  await db.addIntent(
+    id,
+    ClearSetting(scope: Scope.conversation(chat), kind: Setting.muteKind),
+  );
   return id;
 }
 

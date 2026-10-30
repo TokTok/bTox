@@ -94,7 +94,7 @@ final class Calls {
     _disposed = true;
     _poll?.cancel();
     try {
-      hangUp();
+      hangUp('bTox stopped');
     } on StateError catch (e) {
       // Tox was killed first, which ended the call with it.
       _logger.d('Hanging up: $e');
@@ -116,7 +116,7 @@ final class Calls {
     }
     final call = _begin(friend, CallPhase.calling, video: withVideo);
     _logger.unawaited('start the call', _start(call, ringBack: true));
-    _unanswered = Timer(ringFor, hangUp);
+    _unanswered = Timer(ringFor, () => hangUp('not answered'));
   }
 
   void answer() {
@@ -126,18 +126,23 @@ final class Calls {
       final answered = call.copyWith(camera: withVideo);
       _set(answered);
       _logger.unawaited('start the call', _start(answered));
-      _connect(answered);
+      if (_protocol.ringsElsewhere) {
+        _stopRinging(answered);
+        _set(answered.copyWith(phase: CallPhase.connecting));
+      } else {
+        _connect(answered);
+      }
     }
   }
 
   /// Also declines it while it rings.
-  void hangUp() {
+  void hangUp([String why = 'hung up here']) {
     if (_call case final call?) {
       // Ended here, also where the friend can't be told.
       try {
         _protocol.hangUp(call.friend);
       } finally {
-        _end(call, declined: true);
+        _end(call, why, declined: true);
       }
     }
   }
@@ -190,7 +195,7 @@ final class Calls {
   /// Toxcore drops a friend's call when they go offline.
   void friendOffline(PublicKey friend) {
     if (_call case final call? when call.friend == friend) {
-      _end(call);
+      _end(call, 'the friend went offline');
     }
   }
 
@@ -235,7 +240,7 @@ final class Calls {
             if (_call case final call?
                 when call.friend == friend && call.phase == CallPhase.calling) {
               if (!again || !_protocol.call(friend, video: call.camera)) {
-                _end(call);
+                _end(call, 'placed at both ends at once');
               }
             }
           });
@@ -248,6 +253,7 @@ final class Calls {
         case CallRinging(:final friend, :final video):
           // One call at a time, across profiles: another is declined, and
           // missed.
+          _logger.i('Declined a call from $friend while busy');
           _protocol.hangUp(friend);
           final missed = _info(friend, CallPhase.ringing, video: video);
           _notifier?.missed(missed);
@@ -256,10 +262,13 @@ final class Calls {
             _ended(_startEvent(missed), null),
           );
         case CallAnswered(:final friend)
-            when call?.friend == friend && call?.phase == CallPhase.calling:
+            when call?.friend == friend &&
+                (call?.phase == CallPhase.calling ||
+                    call?.phase == CallPhase.connecting):
           _connect(call!);
-        case CallFinished(:final friend) when call?.friend == friend:
-          _end(call!);
+        case CallFinished(:final friend, :final failed)
+            when call?.friend == friend:
+          _end(call!, failed ? 'it failed' : 'the friend hung up');
         case CallAudioFrame(
               :final friend,
               :final pcm,
@@ -328,7 +337,7 @@ final class Calls {
         _notifier?.stopRinging(_profile);
       case CallPhase.calling:
         _logger.unawaited('stop ringing back', _audio.setRingBack(on: false));
-      case CallPhase.active:
+      case CallPhase.connecting || CallPhase.active:
         break;
     }
   }
@@ -349,8 +358,7 @@ final class Calls {
       await _startAudio(call);
     } on Exception catch (e) {
       // No microphone, or one another app holds: no call without it.
-      _logger.w('Starting the audio: $e');
-      _endWithout(call);
+      _endWithout(call, 'the audio could not start: $e');
       return;
     }
     if (ringBack && _call?.phase == CallPhase.calling) {
@@ -374,15 +382,12 @@ final class Calls {
         _set(call.copyWith(route: route, routes: routes));
       }
     },
-    onFailed: () {
-      _logger.w('The microphone stopped');
-      _endWithout(call);
-    },
+    onFailed: () => _endWithout(call, 'the microphone stopped'),
   );
 
-  void _endWithout(CallInfo call) {
+  void _endWithout(CallInfo call, String why) {
     if (_call?.friend == call.friend) {
-      hangUp();
+      hangUp(why);
     }
   }
 
@@ -406,7 +411,8 @@ final class Calls {
     }
   }
 
-  void _end(CallInfo call, {bool declined = false}) {
+  void _end(CallInfo call, String why, {bool declined = false}) {
+    _logger.i('A ${call.phase.name} call with ${call.friend} ended: $why');
     _stopRinging(call);
     _glare?.cancel();
     _glare = null;

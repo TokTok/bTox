@@ -92,12 +92,13 @@ _friends() async {
   final (bob, bobAddress) = await signIn('Bob', 2);
   expect(container.read(toxSessionsProvider).keys, {alice, bob});
 
-  await db.addFriendChange(
+  await db.addIntent(
     alice,
-    bobAddress.publicKey,
-    wanted: true,
-    nospam: bobAddress.nospam,
-    message: 'hi Bob',
+    WantFriend(
+      pk: bobAddress.publicKey,
+      requestMessage: 'hi Bob',
+      nospam: bobAddress.nospam,
+    ),
   );
   await db
       .watchSyncEvents(bob, GraphId.account(bobAddress.publicKey))
@@ -107,7 +108,7 @@ _friends() async {
             account.friends[aliceAddress.publicKey]?.request == 'hi Bob',
       )
       .timeout(_timeout);
-  await db.addFriendChange(bob, aliceAddress.publicKey, wanted: true);
+  await db.addIntent(bob, WantFriend(pk: aliceAddress.publicKey));
   return (
     db,
     dir,

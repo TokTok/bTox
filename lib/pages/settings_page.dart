@@ -16,6 +16,7 @@ import 'package:btox/providers/profiles.dart';
 import 'package:btox/services/backup.dart';
 import 'package:btox/widgets/account_picker.dart';
 import 'package:btox/widgets/chat_file_bubble.dart';
+import 'package:btox/widgets/database_write.dart';
 import 'package:btox/widgets/delete_profile.dart';
 import 'package:btox/widgets/import_profile.dart';
 import 'package:btox/widgets/passphrase_dialog.dart';
@@ -46,10 +47,8 @@ final class SettingsPage extends ConsumerWidget {
     final name =
         ref.watch(profileIdentityProvider(profile)).name ?? l10n.linkedAccount;
 
-    void save(Future<void> Function(Database db) change) => _logger.unawaited(
-      'save the settings',
-      ref.read(databaseProvider.future).then(change),
-    );
+    void save(Future<void> Function(Database db) change) =>
+        ref.write(context, change);
     void updateSettings(ProfileSettings Function(ProfileSettings) change) =>
         save((db) => db.updateProfileSettings(profile.id, change));
     void updateNetwork(NetworkSettings Function(NetworkSettings) change) =>

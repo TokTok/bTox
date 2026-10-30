@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:btox/db/database.dart';
@@ -16,6 +17,7 @@ import 'package:btox/providers/database.dart';
 import 'package:btox/providers/drafts.dart';
 import 'package:btox/providers/map_tile.dart';
 import 'package:btox/providers/profiles.dart';
+import 'package:btox/sync/event.dart';
 import 'package:btox/sync/setting.dart' show PictureEncoding;
 import 'package:btox/widgets/chat_text_bubble.dart';
 import 'package:btox/widgets/message_input.dart';
@@ -29,6 +31,7 @@ import 'package:hooks_riverpod/misc.dart' show Override;
 
 import 'finders.dart';
 import 'mocks/fake_tile_provider.dart';
+import 'mocks/test_app.dart';
 
 final _event = EventId(Uint8List(32));
 
@@ -80,13 +83,7 @@ void main() {
     final messages = <ChatEntry>[];
 
     await tester.pumpWidget(
-      ProviderScope(
-        overrides: [...overrides(messages)],
-        child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          home: ChatPage(chat: chat),
-        ),
-      ),
+      testApp(ChatPage(chat: chat), overrides: overrides(messages)),
     );
 
     await tester.pumpAndSettle();
@@ -119,13 +116,7 @@ void main() {
     );
 
     await tester.pumpWidget(
-      ProviderScope(
-        overrides: [...overrides(messages)],
-        child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          home: ChatPage(chat: chat),
-        ),
-      ),
+      testApp(ChatPage(chat: chat), overrides: overrides(messages)),
     );
 
     await tester.pumpAndSettle();
@@ -151,13 +142,7 @@ void main() {
     );
 
     await tester.pumpWidget(
-      ProviderScope(
-        overrides: [...overrides(messages)],
-        child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          home: ChatPage(chat: chat),
-        ),
-      ),
+      testApp(ChatPage(chat: chat), overrides: overrides(messages)),
     );
 
     await tester.pumpAndSettle();
@@ -182,13 +167,7 @@ void main() {
     ];
 
     await tester.pumpWidget(
-      ProviderScope(
-        overrides: [...overrides(messages)],
-        child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          home: ChatPage(chat: chat),
-        ),
-      ),
+      testApp(ChatPage(chat: chat), overrides: overrides(messages)),
     );
     await tester.pumpAndSettle();
     final semantics = tester.ensureSemantics();
@@ -205,12 +184,9 @@ void main() {
     final messages = <ChatEntry>[];
 
     await tester.pumpWidget(
-      ProviderScope(
-        overrides: [...overrides(messages)],
-        child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          home: ChatPage(chat: chat, recentEmojis: false),
-        ),
+      testApp(
+        ChatPage(chat: chat, recentEmojis: false),
+        overrides: overrides(messages),
       ),
     );
 
@@ -241,12 +217,9 @@ void main() {
       final messages = <ChatEntry>[];
 
       await tester.pumpWidget(
-        ProviderScope(
-          overrides: [...overrides(messages)],
-          child: MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            home: ChatPage(chat: chat, recentEmojis: false),
-          ),
+        testApp(
+          ChatPage(chat: chat, recentEmojis: false),
+          overrides: overrides(messages),
         ),
       );
 
@@ -280,12 +253,9 @@ void main() {
     ];
 
     await tester.pumpWidget(
-      ProviderScope(
-        overrides: [...overrides(messages)],
-        child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          home: ChatPage(chat: chat, recentEmojis: false),
-        ),
+      testApp(
+        ChatPage(chat: chat, recentEmojis: false),
+        overrides: overrides(messages),
       ),
     );
 
@@ -312,13 +282,7 @@ void main() {
     );
 
     await tester.pumpWidget(
-      ProviderScope(
-        overrides: [...overrides(messages)],
-        child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          home: ChatPage(chat: chat),
-        ),
-      ),
+      testApp(ChatPage(chat: chat), overrides: overrides(messages)),
     );
 
     await tester.pumpAndSettle();
@@ -353,7 +317,8 @@ void main() {
       },
     );
     await tester.pumpWidget(
-      ProviderScope(
+      testApp(
+        ChatPage(chat: chat),
         overrides: overrides([
           ChatEntry(
             event: _event,
@@ -368,10 +333,6 @@ void main() {
             content: const TextContent(text: 'Second'),
           ),
         ]),
-        child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          home: ChatPage(chat: chat),
-        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -405,7 +366,8 @@ void main() {
 
   testWidgets('message details show its times and sender', (tester) async {
     await tester.pumpWidget(
-      ProviderScope(
+      testApp(
+        ChatPage(chat: chat),
         overrides: overrides([
           ChatEntry(
             event: _event,
@@ -422,10 +384,6 @@ void main() {
             content: const TextContent(text: 'Hi'),
           ),
         ]),
-        child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          home: ChatPage(chat: chat),
-        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -455,7 +413,8 @@ void main() {
       GraphId.friend(profile.publicKey, PublicKey(Uint8List(32)..[0] = 2)),
     );
     await tester.pumpWidget(
-      ProviderScope(
+      testApp(
+        ChatPage(chat: chat),
         overrides: [
           ...overrides([
             ChatEntry(
@@ -472,10 +431,6 @@ void main() {
             ]),
           ),
         ],
-        child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          home: ChatPage(chat: chat),
-        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -490,9 +445,9 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.text('Message forwarded'), findsOneWidget);
-    final sends = await tester.runAsync(() => db.select(db.chatSends).get());
+    final sends = await tester.runAsync(() => db.select(db.intents).get());
     expect(
-      [for (final s in sends!) (s.graph, s.message)],
+      [for (final s in sends!) (s.graph, _sent(s))],
       [(other.graph, 'Pass it on')],
     );
 
@@ -517,7 +472,8 @@ void main() {
       GraphId.conference(ConferenceId(Uint8List(32))),
     );
     await tester.pumpWidget(
-      ProviderScope(
+      testApp(
+        ChatPage(chat: chat),
         overrides: [
           ...overrides([
             ChatEntry(
@@ -547,10 +503,6 @@ void main() {
             ]),
           ),
         ],
-        child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          home: ChatPage(chat: chat),
-        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -572,12 +524,12 @@ void main() {
     expect(find.text('2 messages forwarded'), findsOneWidget);
     final (sends, transfers) = (await tester.runAsync(
       () async => (
-        await db.select(db.chatSends).get(),
+        await db.select(db.intents).get(),
         await db.select(db.transfers).get(),
       ),
     ))!;
     expect(
-      [for (final s in sends) (s.graph, s.message)],
+      [for (final s in sends) (s.graph, _sent(s))],
       [(other.graph, 'Look')],
     );
     final [copy] = transfers;
@@ -641,15 +593,12 @@ void main() {
     final db = Database(NativeDatabase.memory());
     final opened = Completer<Database>();
     await tester.pumpWidget(
-      ProviderScope(
+      testApp(
+        ChatPage(chat: chat),
         overrides: [
           ...overrides(const [], shown: false),
           databaseProvider.overrideWith((ref) => opened.future),
         ],
-        child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          home: ChatPage(chat: chat),
-        ),
       ),
     );
 
@@ -733,9 +682,9 @@ void main() {
     await tester.runAsync(
       () => Future.delayed(const Duration(milliseconds: 50)),
     );
-    final sends = await tester.runAsync(() => db.select(db.chatSends).get());
+    final sends = await tester.runAsync(() => db.select(db.intents).get());
     expect(
-      [for (final s in sends!) s.message],
+      [for (final s in sends!) _sent(s)],
       [messageTextOf(location), 'here'],
     );
 
@@ -749,16 +698,8 @@ void main() {
     timestamp: DateTime(2025, 1, 1, 0, i),
     content: TextContent(text: 'message $i'),
   );
-  Future<void> show(WidgetTester tester, List<ChatEntry> entries) =>
-      tester.pumpWidget(
-        ProviderScope(
-          overrides: overrides(entries),
-          child: MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            home: ChatPage(chat: chat),
-          ),
-        ),
-      );
+  Future<void> show(WidgetTester tester, List<ChatEntry> entries) => tester
+      .pumpWidget(testApp(ChatPage(chat: chat), overrides: overrides(entries)));
 
   testWidgets('reading further up keeps its place as new messages come, '
       'which wait below', (tester) async {
@@ -790,15 +731,12 @@ void main() {
   ) async {
     final db = Database(NativeDatabase.memory());
     Future<void> show(List<ChatEntry> entries) => tester.pumpWidget(
-      ProviderScope(
+      testApp(
+        ChatPage(chat: chat),
         overrides: [
           ...overrides(entries),
           databaseProvider.overrideWith((ref) => db),
         ],
-        child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          home: ChatPage(chat: chat),
-        ),
       ),
     );
     final entries = [for (var i = 0; i < 50; i++) message(i)];
@@ -833,14 +771,11 @@ void main() {
 
   testWidgets('a chat no longer a friend\'s takes no messages', (tester) async {
     await tester.pumpWidget(
-      ProviderScope(
+      testApp(
+        ChatPage(chat: chat),
         overrides: overrides([
           message(1),
         ], summary: ChatSummary(ref: chat, key: chat.graph, closed: true)),
-        child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          home: ChatPage(chat: chat),
-        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -902,3 +837,6 @@ void main() {
     }
   });
 }
+
+String _sent(StoredIntent intent) =>
+    utf8.decode((intent.content as Send).message);

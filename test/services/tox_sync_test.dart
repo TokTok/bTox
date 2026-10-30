@@ -82,12 +82,15 @@ void main() {
   });
 
   Future<void> want({bool withRequest = false, bool wanted = true}) =>
-      db.addFriendChange(
+      db.addIntent(
         profileId,
-        _friend,
-        wanted: wanted,
-        nospam: withRequest ? _friendAddress.nospam : null,
-        message: withRequest ? 'Add me' : null,
+        wanted
+            ? WantFriend(
+                pk: _friend,
+                requestMessage: withRequest ? 'Add me' : null,
+                nospam: withRequest ? _friendAddress.nospam : null,
+              )
+            : UnwantFriend(pk: _friend),
       );
 
   Future<List<EventContent>> contents(GraphId graph) async => [
@@ -167,7 +170,7 @@ void main() {
     await want(wanted: false);
     await _until(() => tox.deletedFriends.isNotEmpty);
     expect(tox.deletedFriends, [0]);
-    expect(await db.select(db.friendChanges).get(), isEmpty);
+    expect(await db.select(db.intents).get(), isEmpty);
   });
 
   test("tracks the friend's online state", () async {
@@ -217,7 +220,7 @@ void main() {
       await db.addSend(profileId, _chat, 'hi');
       await _settle();
       expect(tox.sentMessages, isEmpty);
-      expect(await db.select(db.chatSends).get(), isEmpty);
+      expect(await db.select(db.intents).get(), isEmpty);
 
       setOnline(0, true);
       expect(sentTexts(), ['hi']);
@@ -338,12 +341,7 @@ void main() {
     );
     await _settle();
 
-    await db.addFriendChange(
-      profileId,
-      _friend,
-      wanted: false,
-      deleteChat: true,
-    );
+    await db.addIntent(profileId, UnwantFriend(pk: _friend), deleteChat: true);
     await _until(() => tox.deletedFriends.isNotEmpty);
     await _settle();
     expect(await contents(_chat), isEmpty);
@@ -384,13 +382,15 @@ void main() {
     // Muted, not even its mentions notify, until unmuted.
     shown.clear();
     final scope = Scope.conversation(_chat);
-    await db.setSetting(
+    await db.addIntent(
       profileId,
-      scope,
-      Kept(
-        Setting.mute(
-          until: DateTime.now().add(const Duration(hours: 1)),
-          mentions: false,
+      SettingContent(
+        scope: scope,
+        setting: Kept(
+          Setting.mute(
+            until: DateTime.now().add(const Duration(hours: 1)),
+            mentions: false,
+          ),
         ),
       ),
     );
@@ -398,7 +398,10 @@ void main() {
     expect((await account()).setting<Mute>(scope), isNotNull);
     receive(0, utf8.encode('Me: quiet'));
     await _settle();
-    await db.clearSetting(profileId, scope, Setting.muteKind);
+    await db.addIntent(
+      profileId,
+      ClearSetting(scope: scope, kind: Setting.muteKind),
+    );
     await _settle();
     receive(0, utf8.encode('loud'));
     await _settle();

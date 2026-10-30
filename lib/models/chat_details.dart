@@ -52,6 +52,7 @@ abstract class ChatDetails with _$ChatDetails {
         facts?.find(subject, pick);
     String? topicOf(FactValue v) => v is TopicValue ? v.topic : null;
     Role? roleOf(FactValue v) => v is RoleValue ? v.role : null;
+    PublicKey? keyOf(FactValue v) => v is SelfKeyValue ? v.key : null;
     UserStatus? statusOf(FactValue v) => v is StatusValue ? v.status : null;
 
     final ChatId chat;
@@ -80,7 +81,7 @@ abstract class ChatDetails with _$ChatDetails {
       summary: summary,
       // Conferences have only a title, their name.
       topic: chat is GroupChat ? fact(account.facts, subject, topicOf) : null,
-      selfKey: selfKey,
+      selfKey: fact(account.facts, subject, keyOf) ?? selfKey,
       selfName:
           fact(
             account.facts,

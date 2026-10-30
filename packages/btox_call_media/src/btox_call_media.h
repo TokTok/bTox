@@ -40,11 +40,13 @@ typedef void btox_permissions_cb(bool granted);
 
 /*
  * Cancels the speaker's echo from the microphone's sound. The audio goes to
- * the loudspeaker if [speaker] and there's no headset.
+ * the loudspeaker if [speaker] and there's no headset. Null once started, else
+ * what failed.
  */
-BTOX_EXPORT bool btox_audio_start(int32_t sample_rate, int32_t frame_samples,
-                                  bool speaker, btox_audio_frame_cb *on_frame,
-                                  btox_routes_cb *on_routes);
+BTOX_EXPORT const char *btox_audio_start(int32_t sample_rate,
+                                         int32_t frame_samples, bool speaker,
+                                         btox_audio_frame_cb *on_frame,
+                                         btox_routes_cb *on_routes);
 
 /* Plays as much of [pcm] as there's room for, as a call can't wait. */
 BTOX_EXPORT void btox_audio_play(const int16_t *pcm, int32_t samples);

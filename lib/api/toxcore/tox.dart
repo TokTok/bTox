@@ -1,6 +1,9 @@
+import 'dart:typed_data';
+
 import 'package:btox/api/toxcore/tox_api.dart';
 import 'package:btox/api/toxcore/tox_av.dart';
 import 'package:btox/api/toxcore/tox_events.dart';
+import 'package:btox/ffi/toxcore.dart' show Tox_File_Control;
 
 export 'package:btox/api/toxcore/tox_api.dart';
 
@@ -16,4 +19,10 @@ abstract class Tox implements ToxApi {
   ToxAv startAv();
 
   void kill();
+}
+
+abstract interface class ToxFiles {
+  void chunk(int friendNumber, int fileNumber, int position, Uint8List data);
+  void requested(int friendNumber, int fileNumber, int position, int length);
+  void controlled(int friendNumber, int fileNumber, Tox_File_Control control);
 }

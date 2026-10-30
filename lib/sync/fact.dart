@@ -30,6 +30,7 @@ const _kindPresent = 14;
 const _kindAddress = 15;
 const _kindCall = 16;
 const _kindCallRelay = 17;
+const _kindSelfKey = 18;
 
 const _callNone = 0;
 const _callRinging = 1;
@@ -93,6 +94,9 @@ sealed class FactValue with _$FactValue {
   /// The home device connects devices to the account's calls.
   const factory FactValue.callRelay(bool relays) = CallRelayValue;
 
+  /// Our key in a group, which is its own.
+  const factory FactValue.selfKey(PublicKey key) = SelfKeyValue;
+
   /// From a newer version, or a value this one doesn't know: shows nothing.
   const factory FactValue.unknown(int kind) = UnknownValue;
 
@@ -117,6 +121,7 @@ sealed class FactValue with _$FactValue {
     AddressValue() => _kindAddress,
     CallValue() => _kindCall,
     CallRelayValue() => _kindCallRelay,
+    SelfKeyValue() => _kindSelfKey,
     UnknownValue(:final kind) => kind,
   };
 }
@@ -221,6 +226,7 @@ ArrayWriter _encodeValue(FactValue value) {
       AnsweredCall() => f.uint(_callAnswered),
     },
     CallRelayValue(:final relays) => f.flag(relays),
+    SelfKeyValue(:final key) => f.bin(key.bytes),
     // Never re-encoded: stores keep the bytes they received.
     UnknownValue() => throw StateError('Unknown values are not written'),
   };
@@ -289,6 +295,7 @@ FactValue readValue(Fields f) => f.variant<FactValue>(
       null => null,
     },
     _kindCallRelay => FactValue.callRelay(v.flag()),
+    _kindSelfKey => FactValue.selfKey(PublicKey(v.bin())),
     _ => null,
   },
   FactValue.unknown,

@@ -13,9 +13,9 @@ import 'package:btox/widgets/sender_name.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../mocks/fake_tile_provider.dart';
+import '../mocks/test_app.dart';
 
 ChatEntry _entry(
   int minute, {
@@ -118,24 +118,21 @@ void main() {
   testWidgets('a location shows as a map', (tester) async {
     final fakeTileProvider = FakeTileProvider();
     await tester.pumpWidget(
-      ProviderScope(
-        overrides: [mapTileProvider.overrideWith((ref, _) => fakeTileProvider)],
-        child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          home: ChatItem(
-            chat: ChatRef(const Id(1), GraphId(Uint8List(32))),
-            entry: ChatEntry(
-              event: EventId(Uint8List(32)),
-              mine: true,
-              // Greenwich Observatory
-              content: const LocationContent(
-                latitude: 51.476853468836715,
-                longitude: -0.0005210189094241177,
-              ),
-              timestamp: DateTime(2026, 10, 20, 12),
+      testApp(
+        ChatItem(
+          chat: ChatRef(const Id(1), GraphId(Uint8List(32))),
+          entry: ChatEntry(
+            event: EventId(Uint8List(32)),
+            mine: true,
+            // Greenwich Observatory
+            content: const LocationContent(
+              latitude: 51.476853468836715,
+              longitude: -0.0005210189094241177,
             ),
+            timestamp: DateTime(2026, 10, 20, 12),
           ),
         ),
+        overrides: [mapTileProvider.overrideWith((ref, _) => fakeTileProvider)],
       ),
     );
     await tester.pumpAndSettle();
@@ -149,24 +146,21 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      ProviderScope(
+      testApp(
+        ChatItem(
+          chat: ChatRef(const Id(1), GraphId(Uint8List(32))),
+          entry: ChatEntry(
+            event: EventId(Uint8List(32)),
+            sender: 'Bob',
+            from: PublicKey(Uint8List(32)..[0] = 2),
+            mine: false,
+            content: const LocationContent(latitude: 51.48, longitude: 0),
+            timestamp: DateTime(2026, 10, 20, 12),
+          ),
+        ),
         overrides: [
           mapTileProvider.overrideWith((ref, _) => FakeTileProvider()),
         ],
-        child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          home: ChatItem(
-            chat: ChatRef(const Id(1), GraphId(Uint8List(32))),
-            entry: ChatEntry(
-              event: EventId(Uint8List(32)),
-              sender: 'Bob',
-              from: PublicKey(Uint8List(32)..[0] = 2),
-              mine: false,
-              content: const LocationContent(latitude: 51.48, longitude: 0),
-              timestamp: DateTime(2026, 10, 20, 12),
-            ),
-          ),
-        ),
       ),
     );
     await tester.pumpAndSettle();

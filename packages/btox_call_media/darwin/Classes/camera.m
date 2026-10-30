@@ -121,12 +121,23 @@ orientation_of(UIDeviceOrientation device, AVCaptureVideoOrientation current) {
                                  queue:nil
                             usingBlock:stopped]];
 #if TARGET_OS_IPHONE
-  /* As when a call or another app takes it. */
-  [_observers addObject:[center addObserverForName:
-                                    AVCaptureSessionWasInterruptedNotification
-                                            object:_session
-                                             queue:nil
-                                        usingBlock:stopped]];
+  /* As when a call or another app takes it. In the background it comes back
+     by itself. */
+  [_observers
+      addObject:
+          [center
+              addObserverForName:AVCaptureSessionWasInterruptedNotification
+                          object:_session
+                           queue:nil
+                      usingBlock:^(NSNotification *note) {
+                        NSNumber *reason =
+                            note.userInfo
+                                [AVCaptureSessionInterruptionReasonKey];
+                        if (reason.integerValue !=
+                            AVCaptureSessionInterruptionReasonVideoDeviceNotAvailableInBackground) {
+                          stopped(note);
+                        }
+                      }]];
   dispatch_async(dispatch_get_main_queue(), ^{
     [UIDevice.currentDevice beginGeneratingDeviceOrientationNotifications];
   });

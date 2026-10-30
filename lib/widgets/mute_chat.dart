@@ -1,8 +1,9 @@
 import 'package:btox/l10n/generated/app_localizations.dart';
 import 'package:btox/models/chat_view.dart';
 import 'package:btox/models/crypto.dart';
-import 'package:btox/providers/database.dart';
+import 'package:btox/sync/event.dart';
 import 'package:btox/sync/setting.dart';
+import 'package:btox/widgets/database_write.dart';
 import 'package:btox/widgets/dates.dart';
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
@@ -21,28 +22,37 @@ Future<void> muteChat(
     builder: (context) => _MuteDialog(group: chat.key is! PublicKey),
   );
   if (picked case (final duration, final mentions)) {
-    final db = await ref.read(databaseProvider.future);
-    await db.setSetting(
-      chat.ref.profile,
-      Scope.conversation(chat.ref.graph),
-      Kept(
-        Setting.mute(
-          until: duration == null ? null : clock.now().add(duration),
-          mentions: mentions,
+    if (context.mounted) {
+      await ref.write(
+        context,
+        (db) => db.addIntent(
+          chat.ref.profile,
+          SettingContent(
+            scope: Scope.conversation(chat.ref.graph),
+            setting: Kept(
+              Setting.mute(
+                until: duration == null ? null : clock.now().add(duration),
+                mentions: mentions,
+              ),
+            ),
+          ),
         ),
-      ),
-    );
+      );
+    }
   }
 }
 
-Future<void> unmuteChat(WidgetRef ref, ChatRef chat) async {
-  final db = await ref.read(databaseProvider.future);
-  await db.clearSetting(
-    chat.profile,
-    Scope.conversation(chat.graph),
-    Setting.muteKind,
-  );
-}
+Future<void> unmuteChat(BuildContext context, WidgetRef ref, ChatRef chat) =>
+    ref.write(
+      context,
+      (db) => db.addIntent(
+        chat.profile,
+        ClearSetting(
+          scope: Scope.conversation(chat.graph),
+          kind: Setting.muteKind,
+        ),
+      ),
+    );
 
 /// Until when [mute] holds: the time today, the weekday and time this
 /// week, else the date and time.

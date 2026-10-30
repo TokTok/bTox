@@ -22,6 +22,7 @@ import 'package:btox/widgets/chat_invite_list_item.dart';
 import 'package:btox/widgets/chat_list_item.dart';
 import 'package:btox/widgets/confirm_dialog.dart';
 import 'package:btox/widgets/connection_status_icon.dart';
+import 'package:btox/widgets/database_write.dart';
 import 'package:btox/widgets/dates.dart';
 import 'package:btox/widgets/friend_request_list_item.dart';
 import 'package:btox/widgets/load_failed.dart';
@@ -78,13 +79,15 @@ final class ContactListPage extends HookConsumerWidget {
         }
         password = entered.isEmpty ? null : entered;
       }
-      final db = await ref.read(databaseProvider.future);
-      await db.addInviteAnswer(
-        profile.id,
-        id,
-        accepted: join,
-        password: password,
-      );
+      if (context.mounted) {
+        await ref.write(
+          context,
+          (db) => db.addIntent(
+            profile.id,
+            AnswerInvite(invite: id, join: join, password: password),
+          ),
+        );
+      }
     }
 
     Future<void> want(
@@ -92,12 +95,13 @@ final class ContactListPage extends HookConsumerWidget {
       required bool wanted,
       bool deleteChat = false,
     }) async {
-      final db = await ref.read(databaseProvider.future);
-      await db.addFriendChange(
-        profile.id,
-        pk,
-        wanted: wanted,
-        deleteChat: deleteChat,
+      await ref.write(
+        context,
+        (db) => db.addIntent(
+          profile.id,
+          wanted ? WantFriend(pk: pk) : UnwantFriend(pk: pk),
+          deleteChat: deleteChat,
+        ),
       );
     }
 
@@ -232,12 +236,13 @@ final class ContactListPage extends HookConsumerWidget {
                     own: {profile.publicKey},
                     onAddContact: (address, message) async {
                       final db = await ref.read(databaseProvider.future);
-                      await db.addFriendChange(
+                      await db.addIntent(
                         profile.id,
-                        address.publicKey,
-                        wanted: true,
-                        nospam: address.nospam,
-                        message: message,
+                        WantFriend(
+                          pk: address.publicKey,
+                          requestMessage: message,
+                          nospam: address.nospam,
+                        ),
                       );
                       _logger.d('Added contact: ${address.publicKey}');
                     },
@@ -329,7 +334,7 @@ final class ContactListPage extends HookConsumerWidget {
         await muteChat(context, ref, chat);
         return;
       case _ChatAction.unmute:
-        await unmuteChat(ref, chat.ref);
+        await unmuteChat(context, ref, chat.ref);
         return;
       case _ChatAction.delete:
         await _confirmDelete(context, delete!, chat.name);
@@ -348,20 +353,22 @@ final class ContactListPage extends HookConsumerWidget {
         return;
       case _ChatAction.noRelayBot:
         _logger.i('No more names from the relay bot in ${chat.ref.graph}');
-        final db = await ref.read(databaseProvider.future);
-        await db.addRelayBot(
-          chat.ref.profile,
-          chat: chat.ref.graph,
-          bot: relayBot!,
-          relays: false,
+        await ref.write(
+          context,
+          (db) => db.addIntent(
+            chat.ref.profile,
+            RelayBot(chat: chat.chatId!, bot: relayBot!, relays: false),
+          ),
         );
         return;
       case _ChatAction.unmerge:
-        final db = await ref.read(databaseProvider.future);
-        await db.showApart(
-          chat.ref.profile,
-          chat.ref.graph,
-          account?.merges ?? const {},
+        await ref.write(
+          context,
+          (db) => db.showApart(
+            chat.ref.profile,
+            chat.ref.graph,
+            account?.merges ?? const {},
+          ),
         );
     }
   }

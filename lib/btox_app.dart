@@ -9,17 +9,20 @@ import 'package:btox/widgets/call_overlay.dart';
 import 'package:btox/widgets/load_failed.dart';
 import 'package:btox/widgets/system_gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-final class BtoxApp extends ConsumerWidget {
+final class BtoxApp extends HookConsumerWidget {
   final GlobalKey<NavigatorState>? navigatorKey;
 
   const BtoxApp({super.key, this.navigatorKey});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final GlobalKey<NavigatorState> navigator =
+        navigatorKey ?? useMemoized(GlobalKey.new);
     return MaterialApp(
-      navigatorKey: navigatorKey,
+      navigatorKey: navigator,
       title: 'bTox',
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
@@ -32,7 +35,9 @@ final class BtoxApp extends ConsumerWidget {
       // Browsers have no calls, nor the isolate ports they go through.
       builder: (context, child) => leaveSystemSwipes(
         context,
-        AnyPlatform.instance.isWeb ? child : CallOverlay(child: child!),
+        AnyPlatform.instance.isWeb
+            ? child
+            : CallOverlay(navigator: navigator, child: child!),
       ),
       home: _appContent(ref),
     );

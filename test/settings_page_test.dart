@@ -1,6 +1,5 @@
 import 'package:btox/db/database.dart';
 import 'package:btox/ffi/toxcore.dart' show Tox_Connection;
-import 'package:btox/l10n/generated/app_localizations.dart';
 import 'package:btox/models/connection_status.dart';
 import 'package:btox/models/crypto.dart';
 import 'package:btox/models/profile_settings.dart';
@@ -11,7 +10,8 @@ import 'package:drift/native.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hooks_riverpod/hooks_riverpod.dart';
+
+import 'mocks/test_app.dart';
 
 Future<void> _withSettingsPage(
   WidgetTester tester,
@@ -38,15 +38,12 @@ Future<void> _withSettingsPage(
   }))!;
 
   await tester.pumpWidget(
-    ProviderScope(
+    testApp(
+      SettingsPage(profile: profile),
       overrides: [
         databaseProvider.overrideWith((ref) => db),
         connectionStatusProvider.overrideWithValue(status),
       ],
-      child: MaterialApp(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        home: SettingsPage(profile: profile),
-      ),
     ),
   );
   await tester.pumpAndSettle();
