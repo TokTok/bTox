@@ -1,0 +1,1069 @@
+{
+    "@@locale": "ru",
+    "defaultContactName": "Неизвестный",
+    "@defaultContactName": {
+        "description": "The default name for a contact when the name is not yet known"
+    },
+    "addContact": "Добавить контакт",
+    "@addContact": {
+        "description": "The text for the button to add a contact"
+    },
+    "message": "Сообщение",
+    "@message": {
+        "description": "The text for the message field"
+    },
+    "messageInput": "Сообщение Tox",
+    "@messageInput": {
+        "description": "The placeholder text for the message input field"
+    },
+    "re": "Re: {message}",
+    "@re": {
+        "description": "The prefix for a reply message",
+        "placeholders": {
+            "message": {
+                "type": "String",
+                "example": "Hello"
+            }
+        }
+    },
+    "toxId": "Tox ID",
+    "@toxId": {
+        "description": "The text for the Tox ID field"
+    },
+    "copyToxId": "Копировать Tox ID",
+    "@copyToxId": {
+        "description": "The tooltip for copying your own Tox ID"
+    },
+    "toxIdCopied": "Tox ID скопирован",
+    "@toxIdCopied": {
+        "description": "The message shown after copying your own Tox ID"
+    },
+    "defaultAddContactMessage": "Привет, я {nick}, давай общаться в bTox!",
+    "@defaultAddContactMessage": {
+        "description": "The default message to send when adding a contact",
+        "placeholders": {
+            "nick": {
+                "type": "String",
+                "example": "Alice"
+            }
+        }
+    },
+    "addContactMessageLengthError": "Максимум {max} символов ({length} — слишком много)",
+    "@addContactMessageLengthError": {
+        "description": "The error message when the friend request message is too long",
+        "placeholders": {
+            "max": {
+                "type": "int",
+                "example": "256"
+            },
+            "length": {
+                "type": "int",
+                "example": "300"
+            }
+        }
+    },
+    "add": "Добавить",
+    "@add": {
+        "description": "The text for the button to add a contact"
+    },
+    "toxIdLengthError": "Должен содержать {length} шестнадцатеричных символов",
+    "@toxIdLengthError": {
+        "description": "The error message when the Tox ID is not the right length or format",
+        "placeholders": {
+            "length": {
+                "type": "int",
+                "example": "76"
+            }
+        }
+    },
+    "toxIdChecksumError": "Недействительный Tox ID, проверьте, нет ли опечаток",
+    "@toxIdChecksumError": {
+        "description": "The error message when the Tox ID's checksum doesn't match, e.g. because of a typo"
+    },
+    "messageEmptyError": "Сообщение не может быть пустым",
+    "@messageEmptyError": {
+        "description": "The error message when the message is empty"
+    },
+    "menuProfile": "Профиль",
+    "@menuProfile": {
+        "description": "The text for the profile menu item"
+    },
+    "menuSettings": "Настройки",
+    "@menuSettings": {
+        "description": "The text for the settings menu item"
+    },
+    "nickLengthError": "Псевдоним должен содержать от 1 до {max} символов",
+    "@nickLengthError": {
+        "description": "The error message when the nickname is too short or too long",
+        "placeholders": {
+            "max": {
+                "type": "int",
+                "example": "32"
+            }
+        }
+    },
+    "statusMessageLengthError": "Текст статуса не может быть длиннее {max} символов",
+    "@statusMessageLengthError": {
+        "description": "The error message when the status message is longer than the supported maximum",
+        "placeholders": {
+            "max": {
+                "type": "int",
+                "example": "128"
+            }
+        }
+    },
+    "profileTextFieldNick": "Псевдоним",
+    "@profileTextFieldNick": {
+        "description": "The text for the nickname field"
+    },
+    "profileTextFieldUserStatusMessage": "Текст статуса",
+    "@profileTextFieldUserStatusMessage": {
+        "description": "The text for the status message field"
+    },
+    "applyChanges": "Применить изменения",
+    "@applyChanges": {
+        "description": "The text for the button to apply changes"
+    },
+    "applied": "Применено",
+    "@applied": {
+        "description": "The text when changes have been applied"
+    },
+    "newProfile": "Новый профиль",
+    "@newProfile": {
+        "description": "The title text for the create profile dialog"
+    },
+    "create": "Создать",
+    "@create": {
+        "description": "The text for the button create a new profile"
+    },
+    "logout": "Выйти",
+    "@logout": {
+        "description": "The text for the logout menu item"
+    },
+    "logoutMessage": "{name} не будет получать сообщения, пока вы снова не войдёте в этот аккаунт.",
+    "@logoutMessage": {
+        "description": "Asks whether to sign the current account out",
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Alice"
+            }
+        }
+    },
+    "deleteProfile": "Удалить профиль",
+    "@deleteProfile": {
+        "description": "The text for the delete profile menu item"
+    },
+    "deleteProfileMessage": "Вы уверены, что хотите удалить профиль \"{name}\"? Это действие нельзя отменить. Будут удалены все ваши контакты и сообщения. Убедитесь, что у вас есть резервная копия.",
+    "@deleteProfileMessage": {
+        "description": "The message to confirm the deletion of a profile",
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Alice"
+            }
+        }
+    },
+    "cancel": "Отмена",
+    "@cancel": {
+        "description": "The text for the cancel button"
+    },
+    "delete": "Удалить",
+    "@delete": {
+        "description": "The text for the delete button"
+    },
+    "acceptFriendRequest": "Принять запрос в друзья",
+    "@acceptFriendRequest": {
+        "description": "The tooltip for accepting an incoming friend request"
+    },
+    "rejectFriendRequest": "Отклонить запрос в друзья",
+    "@rejectFriendRequest": {
+        "description": "The tooltip for rejecting an incoming friend request"
+    },
+    "online": "В сети",
+    "@online": {
+        "description": "A contact's connection state, for screen readers"
+    },
+    "offline": "Не в сети",
+    "@offline": {
+        "description": "A contact's connection state, for screen readers"
+    },
+    "deleteContact": "Удалить контакт",
+    "@deleteContact": {
+        "description": "The title of the dialog for deleting a contact"
+    },
+    "deleteContactMessage": "Удалить \"{name}\" из контактов?",
+    "@deleteContactMessage": {
+        "description": "The message to confirm the deletion of a contact",
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Alice"
+            }
+        }
+    },
+    "contactDeleted": "Контакт \"{name}\" удалён",
+    "@contactDeleted": {
+        "description": "The text when a contact has been deleted",
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Alice"
+            }
+        }
+    },
+    "import": "Импортировать",
+    "@import": {
+        "description": "The button that confirms importing a profile"
+    },
+    "password": "Пароль",
+    "@password": {
+        "description": "The label for a password: an encrypted profile's, or a group's"
+    },
+    "wrongPassword": "Неверный пароль",
+    "@wrongPassword": {
+        "description": "The error when an encrypted profile's password is wrong"
+    },
+    "profileImported": "Профиль \"{name}\" импортирован",
+    "@profileImported": {
+        "description": "The text when a profile has been imported",
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Alice"
+            }
+        }
+    },
+    "profileAlreadyImported": "Этот профиль уже есть в bTox",
+    "@profileAlreadyImported": {
+        "description": "The error when importing a profile that bTox already has"
+    },
+    "exportData": "Экспорт данных",
+    "@exportData": {
+        "description": "Settings entry that saves all accounts and messages to a file"
+    },
+    "exportDataHint": "Все аккаунты и сообщения, зашифрованные паролем",
+    "@exportDataHint": {
+        "description": "Explanation below the export data setting"
+    },
+    "importData": "Импорт данных",
+    "@importData": {
+        "description": "The setting, button and dialog title for importing a bTox export or a .tox profile file"
+    },
+    "importDataHint": "Экспорт bTox или профиль Tox из другого клиента",
+    "@importDataHint": {
+        "description": "Explanation below the import data setting"
+    },
+    "export": "Экспортировать",
+    "@export": {
+        "description": "Button that exports data"
+    },
+    "accountsRestored": "{count, plural, =0{В резервной копии нет новых аккаунтов} one{Восстановлен {count} аккаунт} few{Восстановлено {count} аккаунта} many{Восстановлено {count} аккаунтов} other{Восстановлено {count} аккаунта}}",
+    "@accountsRestored": {
+        "description": "Shown after importing accounts from a bTox backup",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "notAToxProfile": "Это не профиль Tox",
+    "@notAToxProfile": {
+        "description": "The error when the chosen file isn't a Tox profile"
+    },
+    "stayOnline": "Оставаться в сети после закрытия",
+    "@stayOnline": {
+        "description": "The setting to keep running in the background after closing the app"
+    },
+    "stayOnlineHint": "Все аккаунты, в которые выполнен вход, остаются в сети",
+    "@stayOnlineHint": {
+        "description": "Explains that stay online applies to every signed-in account"
+    },
+    "accounts": "Аккаунты",
+    "@accounts": {
+        "description": "The menu item for signing in and managing accounts"
+    },
+    "appSettings": "Приложение",
+    "@appSettings": {
+        "description": "The heading of the settings for the whole app"
+    },
+    "accountSettings": "Аккаунт: {name}",
+    "@accountSettings": {
+        "description": "The heading of the settings for one account",
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Alice"
+            }
+        }
+    },
+    "autoAcceptFiles": "Автоматически принимать файлы до",
+    "@autoAcceptFiles": {
+        "description": "The setting for the largest incoming file accepted without asking"
+    },
+    "never": "Никогда",
+    "@never": {
+        "description": "Auto-accepting no files at all"
+    },
+    "acceptFile": "Принять",
+    "@acceptFile": {
+        "description": "The button to receive an offered file"
+    },
+    "declineFile": "Отклонить",
+    "@declineFile": {
+        "description": "The button to refuse an offered file"
+    },
+    "downloadFile": "Скачать",
+    "@downloadFile": {
+        "description": "The button to fetch a file the account's home device holds"
+    },
+    "fileCancelled": "Отменено",
+    "@fileCancelled": {
+        "description": "A file transfer that was declined or stopped"
+    },
+    "filePaused": "Приостановлено, пока собеседник не в сети",
+    "@filePaused": {
+        "description": "An incoming file that stopped part way, which goes on when the sender sends it again"
+    },
+    "udpEnabled": "Использовать UDP",
+    "@udpEnabled": {
+        "description": "The setting for Tox's UDP transport"
+    },
+    "udpEnabledHint": "Если выключено, подключаться только через TCP-ретрансляторы",
+    "@udpEnabledHint": {
+        "description": "Explains turning off UDP"
+    },
+    "ipv6Enabled": "Использовать IPv6",
+    "@ipv6Enabled": {
+        "description": "The setting for connecting over IPv6"
+    },
+    "localDiscoveryEnabled": "Обнаружение в локальной сети",
+    "@localDiscoveryEnabled": {
+        "description": "The setting for finding friends on the local network"
+    },
+    "localDiscoveryEnabledHint": "Находить друзей в той же сети напрямую",
+    "@localDiscoveryEnabledHint": {
+        "description": "Explains local discovery"
+    },
+    "offWithProxy": "Выключено при использовании прокси, который передаёт только TCP",
+    "@offWithProxy": {
+        "description": "Why UDP and local discovery are off when a proxy is set"
+    },
+    "proxy": "Прокси",
+    "@proxy": {
+        "description": "The proxy setting and dialog title"
+    },
+    "proxyNone": "Нет",
+    "@proxyNone": {
+        "description": "No proxy"
+    },
+    "proxyHost": "Хост",
+    "@proxyHost": {
+        "description": "The label for the proxy host field"
+    },
+    "proxyPort": "Порт",
+    "@proxyPort": {
+        "description": "The label for the proxy port field"
+    },
+    "invalidProxyHost": "Введите хост",
+    "@invalidProxyHost": {
+        "description": "The error when the proxy host is empty"
+    },
+    "invalidProxyPort": "Введите порт от 1 до 65535",
+    "@invalidProxyPort": {
+        "description": "The error when the proxy port is out of range"
+    },
+    "save": "Сохранить",
+    "@save": {
+        "description": "The text for the save button"
+    },
+    "profileDeleted": "Профиль \"{name}\" удалён",
+    "@profileDeleted": {
+        "description": "The text when a profile has been deleted",
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Alice"
+            }
+        }
+    },
+    "attachCamera": "Камера",
+    "@attachCamera": {
+        "description": "Button to take a photo to send"
+    },
+    "attachGallery": "Галерея",
+    "@attachGallery": {
+        "description": "Button to choose images to send"
+    },
+    "attachFile": "Файл",
+    "@attachFile": {
+        "description": "Button to choose files to send"
+    },
+    "attachLocation": "Геопозиция",
+    "@attachLocation": {
+        "description": "Button to send the current location"
+    },
+    "linkAccount": "Привязать аккаунт",
+    "@linkAccount": {
+        "description": "Action to use an account that runs on another device"
+    },
+    "pairingLink": "Ссылка для привязки",
+    "@pairingLink": {
+        "description": "Label of the field for another device's pairing link"
+    },
+    "pairingLinkHelp": "Вставьте ссылку для привязки с устройства, на котором работает аккаунт.",
+    "@pairingLinkHelp": {
+        "description": "Explains where the pairing link comes from"
+    },
+    "invalidPairingLink": "Это не ссылка для привязки",
+    "@invalidPairingLink": {
+        "description": "Error when the pasted text isn't a pairing link"
+    },
+    "link": "Привязать",
+    "@link": {
+        "description": "Button that links an account"
+    },
+    "linkedAccount": "Привязанный аккаунт",
+    "@linkedAccount": {
+        "description": "Name of a linked account until its name has synced"
+    },
+    "linkedAccountName": "{name} (привязанный)",
+    "@linkedAccountName": {
+        "description": "A linked account where accounts are listed to choose from",
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "sendFailed": "Не удалось отправить сообщение",
+    "@sendFailed": {
+        "description": "Error when a message couldn't be saved for sending"
+    },
+    "saveFailed": "Не удалось сохранить",
+    "@saveFailed": {
+        "description": "Error when something the user did couldn't be saved"
+    },
+    "importFailed": "Не удалось импортировать этот файл",
+    "@importFailed": {
+        "description": "Error when a profile or backup file couldn't be imported"
+    },
+    "linkFailed": "Не удалось привязать аккаунт",
+    "@linkFailed": {
+        "description": "Error when a linked account couldn't be added"
+    },
+    "chats": "Чаты",
+    "@chats": {
+        "description": "The tab of the main page listing chats"
+    },
+    "calls": "Звонки",
+    "@calls": {
+        "description": "The tab of the main page listing calls"
+    },
+    "voiceCall": "Голосовой звонок",
+    "@voiceCall": {
+        "description": "A call button's tooltip, and a call still going on in a chat"
+    },
+    "videoCall": "Видеозвонок",
+    "@videoCall": {
+        "description": "A video call button's tooltip, and a video call still going on in a chat"
+    },
+    "outgoingVideoCall": "Исходящий видеозвонок",
+    "@outgoingVideoCall": {
+        "description": "A video call we made, in a chat"
+    },
+    "incomingVideoCall": "Входящий видеозвонок",
+    "@incomingVideoCall": {
+        "description": "A video call the friend made, in a chat and while it rings"
+    },
+    "missedVideoCall": "Пропущенный видеозвонок",
+    "@missedVideoCall": {
+        "description": "A video call that rang here and wasn't answered"
+    },
+    "callCamera": "Камера",
+    "@callCamera": {
+        "description": "The button that turns the camera on or off in a call"
+    },
+    "flipCamera": "Сменить камеру",
+    "@flipCamera": {
+        "description": "The button that switches between the front and back camera in a call"
+    },
+    "cameraNeeded": "У bTox нет доступа к камере, поэтому звонок продолжится без неё",
+    "@cameraNeeded": {
+        "description": "Shown when bTox may not use the camera for a video call, which goes on without video"
+    },
+    "outgoingCall": "Исходящий голосовой звонок",
+    "@outgoingCall": {
+        "description": "A call we made, in a chat"
+    },
+    "incomingCall": "Входящий голосовой звонок",
+    "@incomingCall": {
+        "description": "A call the friend made, in a chat and while it rings"
+    },
+    "missedCall": "Пропущенный голосовой звонок",
+    "@missedCall": {
+        "description": "A call that rang here and wasn't answered"
+    },
+    "callWithDuration": "{call} · {duration}",
+    "@callWithDuration": {
+        "description": "A call in a chat, with how long it was",
+        "placeholders": {
+            "call": {
+                "type": "String"
+            },
+            "duration": {
+                "type": "String"
+            }
+        }
+    },
+    "incomingCalls": "Входящие звонки",
+    "@incomingCalls": {
+        "description": "The notification channel that rings"
+    },
+    "missedCalls": "Пропущенные звонки",
+    "@missedCalls": {
+        "description": "The notification channel for missed calls"
+    },
+    "callOngoing": "Идёт звонок",
+    "@callOngoing": {
+        "description": "The notification while a call goes on"
+    },
+    "calling": "Вызов…",
+    "@calling": {
+        "description": "Our call, while it rings at the friend's"
+    },
+    "connecting": "Подключение…",
+    "@connecting": {
+        "description": "A call answered here, until it's connected"
+    },
+    "answerCall": "Ответить",
+    "@answerCall": {
+        "description": "The button that answers a call"
+    },
+    "declineCall": "Отклонить",
+    "@declineCall": {
+        "description": "The button that declines a call"
+    },
+    "hangUp": "Завершить",
+    "@hangUp": {
+        "description": "The button that ends a call"
+    },
+    "muteCall": "Выкл. звук",
+    "@muteCall": {
+        "description": "The button that mutes the microphone in a call"
+    },
+    "callSpeaker": "Динамик",
+    "@callSpeaker": {
+        "description": "The button that puts a call on the loudspeaker"
+    },
+    "callEarpiece": "Телефон",
+    "@callEarpiece": {
+        "description": "Where a call's audio can go: the phone's earpiece"
+    },
+    "callWired": "Наушники",
+    "@callWired": {
+        "description": "Where a call's audio can go: wired headphones"
+    },
+    "callBluetooth": "Bluetooth",
+    "@callBluetooth": {
+        "description": "Where a call's audio can go: a Bluetooth headset"
+    },
+    "hideCall": "Свернуть звонок",
+    "@hideCall": {
+        "description": "The button that shows the chats during a call"
+    },
+    "returnToCall": "Вернуться к звонку",
+    "@returnToCall": {
+        "description": "The banner over the chats during a call"
+    },
+    "microphoneNeeded": "Для звонков нужен доступ к микрофону",
+    "@microphoneNeeded": {
+        "description": "Shown when bTox may not use the microphone"
+    },
+    "ringOverLockScreen": "Звонки не могут появляться на экране блокировки",
+    "@ringOverLockScreen": {
+        "description": "Shown on the Calls tab while Android doesn't let bTox show incoming calls full screen"
+    },
+    "allowRingOverLockScreen": "Разрешить",
+    "@allowRingOverLockScreen": {
+        "description": "The button that opens the setting letting calls ring full screen"
+    },
+    "relayBotNames": "Имена от бота-ретранслятора",
+    "@relayBotNames": {
+        "description": "The action, and its page, that shows the names a bot relays from another chat in a group chat"
+    },
+    "stopRelayBotNames": "Не показывать имена от бота-ретранслятора",
+    "@stopRelayBotNames": {
+        "description": "The action that shows a relay bot's messages as its own again"
+    },
+    "showNames": "Показывать имена",
+    "@showNames": {
+        "description": "The button that starts showing the names a relay bot relays"
+    },
+    "noCalls": "Нет недавних звонков",
+    "@noCalls": {
+        "description": "Shown on the Calls tab when there are no calls"
+    },
+    "callsNotAvailable": "Звонки идут через устройство, к которому привязан этот аккаунт, а оно сейчас не может их принять",
+    "@callsNotAvailable": {
+        "description": "Shown on the Calls tab of a linked account while its home device is offline, or doesn't connect calls to its devices"
+    },
+    "notImplemented": "Пока недоступно",
+    "@notImplemented": {
+        "description": "Shown for a menu item that doesn't work yet"
+    },
+    "openLinkFailed": "Нет приложения, которое может открыть эту ссылку",
+    "@openLinkFailed": {
+        "description": "Shown when tapping a link in a message opens nothing"
+    },
+    "reply": "Ответить",
+    "@reply": {
+        "description": "Message menu item to reply to the message"
+    },
+    "forward": "Переслать",
+    "@forward": {
+        "description": "Message menu item to forward the message"
+    },
+    "chatDetails": "Сведения о чате",
+    "@chatDetails": {
+        "description": "The tooltip of a chat's title, which opens who the chat is with"
+    },
+    "chatMembers": "{count, plural, one{{count} участник} few{{count} участника} many{{count} участников} other{{count} участника}}",
+    "@chatMembers": {
+        "description": "The heading of the people in a group or conference, counting yourself",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "you": "Вы",
+    "@you": {
+        "description": "Yourself, among the people in a chat"
+    },
+    "muteChat": "Отключить уведомления",
+    "@muteChat": {
+        "description": "The action, and its dialog, that stops a chat's notifications for a while"
+    },
+    "unmuteChat": "Включить уведомления",
+    "@unmuteChat": {
+        "description": "The action that lets a muted chat notify again"
+    },
+    "muteForAnHour": "На 1 час",
+    "@muteForAnHour": {
+        "description": "How long to mute a chat for"
+    },
+    "muteForEightHours": "На 8 часов",
+    "@muteForEightHours": {
+        "description": "How long to mute a chat for"
+    },
+    "muteForAWeek": "На 1 неделю",
+    "@muteForAWeek": {
+        "description": "How long to mute a chat for"
+    },
+    "muteAlways": "Всегда",
+    "@muteAlways": {
+        "description": "Mutes a chat until it's unmuted"
+    },
+    "notifyMentions": "Всё равно уведомлять об упоминаниях",
+    "@notifyMentions": {
+        "description": "In the dialog muting a group chat: messages naming you still notify"
+    },
+    "mutedUntil": "Без звука до {time}",
+    "@mutedUntil": {
+        "description": "How long a chat stays muted",
+        "placeholders": {
+            "time": {
+                "type": "String",
+                "example": "Thu 17:00"
+            }
+        }
+    },
+    "mutedAlways": "Без звука",
+    "@mutedAlways": {
+        "description": "A chat muted until it's unmuted"
+    },
+    "sendPicturesAsQoi": "Отправлять изображения в QOI",
+    "@sendPicturesAsQoi": {
+        "description": "A friend chat's setting: camera and gallery pictures sent as QOI"
+    },
+    "sendPicturesAsQoiHint": "Без потерь, но файлы больше, и не все приложения показывают QOI",
+    "@sendPicturesAsQoiHint": {
+        "description": "Under the setting to send pictures as QOI"
+    },
+    "seenThrough": "Замечены через {bot}",
+    "@seenThrough": {
+        "description": "Heading of the names a relay bot has relayed in the chat's history, under the bot among the people in a chat, though they may not be there now",
+        "placeholders": {
+            "bot": {
+                "type": "String",
+                "example": "EPiG-BrDG"
+            }
+        }
+    },
+    "showMoreSeen": "Показать ещё {count}",
+    "@showMoreSeen": {
+        "description": "Shows the names a relay bot relayed longer ago",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "roleFounder": "Основатель",
+    "@roleFounder": {
+        "description": "The role of whoever created a group"
+    },
+    "roleModerator": "Модератор",
+    "@roleModerator": {
+        "description": "The role of someone who can moderate a group"
+    },
+    "roleObserver": "Наблюдатель",
+    "@roleObserver": {
+        "description": "The role of someone who can only read a group"
+    },
+    "statusAway": "Нет на месте",
+    "@statusAway": {
+        "description": "Someone's status when they're away"
+    },
+    "statusBusy": "Не беспокоить",
+    "@statusBusy": {
+        "description": "Someone's status when they're busy"
+    },
+    "membersWhileOnline": "Участники видны, пока домашнее устройство аккаунта в сети",
+    "@membersWhileOnline": {
+        "description": "In place of a linked account's chat members, while its home device can't say who they are"
+    },
+    "publicKey": "Открытый ключ",
+    "@publicKey": {
+        "description": "The heading of a friend's public key, which Tox knows them by"
+    },
+    "publicKeyCopied": "Открытый ключ скопирован",
+    "@publicKeyCopied": {
+        "description": "The message shown after copying a friend's public key"
+    },
+    "copy": "Копировать",
+    "@copy": {
+        "description": "Message menu item to copy the message's text"
+    },
+    "select": "Выбрать",
+    "@select": {
+        "description": "Message menu item to select messages"
+    },
+    "forwardTo": "Переслать в",
+    "@forwardTo": {
+        "description": "The title of the page that picks a chat to forward messages to"
+    },
+    "messagesForwarded": "{count, plural, one{{count} сообщение переслано} few{{count} сообщения пересланы} many{{count} сообщений переслано} other{{count} сообщения переслано}}",
+    "@messagesForwarded": {
+        "description": "The message shown after forwarding messages",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "messageInfo": "Сведения о сообщении",
+    "@messageInfo": {
+        "description": "The title of the page a message's Info opens"
+    },
+    "messageSent": "Отправлено",
+    "@messageSent": {
+        "description": "On a message's details, when ours was sent"
+    },
+    "messageSending": "Отправляется",
+    "@messageSending": {
+        "description": "On a message's details, in place of messageSent while ours waits to go"
+    },
+    "messageDelivered": "Доставлено",
+    "@messageDelivered": {
+        "description": "On a message's details, when ours arrived"
+    },
+    "messageReceived": "Получено",
+    "@messageReceived": {
+        "description": "On a message's details, when someone else's came"
+    },
+    "messageFrom": "От",
+    "@messageFrom": {
+        "description": "On a message's details, the heading of who sent someone else's"
+    },
+    "messagesSelected": "Выбрано: {count}",
+    "@messagesSelected": {
+        "description": "The chat's title while messages are selected",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "messagesCopied": "{count, plural, one{{count} сообщение скопировано} few{{count} сообщения скопированы} many{{count} сообщений скопировано} other{{count} сообщения скопировано}}",
+    "@messagesCopied": {
+        "description": "The message shown after copying messages' text",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "info": "Сведения",
+    "@info": {
+        "description": "Message menu item to show the message's details"
+    },
+    "today": "Сегодня",
+    "@today": {
+        "description": "Above the messages of today in a chat"
+    },
+    "yesterday": "Вчера",
+    "@yesterday": {
+        "description": "Above the messages of yesterday in a chat"
+    },
+    "loadFailed": "Что-то пошло не так",
+    "@loadFailed": {
+        "description": "Shown in place of a page that couldn't be loaded"
+    },
+    "locationMessage": "Геопозиция",
+    "@locationMessage": {
+        "description": "A shared location, as the chat list shows it"
+    },
+    "emoji": "Эмодзи",
+    "@emoji": {
+        "description": "The button in the message box that opens the emoji picker"
+    },
+    "send": "Отправить",
+    "@send": {
+        "description": "The button that sends what is written in the message box"
+    },
+    "attach": "Прикрепить",
+    "@attach": {
+        "description": "The button in the message box that opens what can be attached"
+    },
+    "cancelReply": "Отменить ответ",
+    "@cancelReply": {
+        "description": "The button that stops replying to a message"
+    },
+    "removeAttachment": "Убрать",
+    "@removeAttachment": {
+        "description": "The button on an attachment waiting to be sent that takes it away"
+    },
+    "attachFailed": "Не удалось прикрепить",
+    "@attachFailed": {
+        "description": "Shown when a picture or file couldn't be picked or copied to send"
+    },
+    "dayAndTime": "{day} {time}",
+    "@dayAndTime": {
+        "description": "A day and a time on it, as in 'muted until Fri 14:00'",
+        "placeholders": {
+            "day": {
+                "type": "String",
+                "example": "Fri"
+            },
+            "time": {
+                "type": "String",
+                "example": "14:00"
+            }
+        }
+    },
+    "draftLabel": "Черновик:",
+    "@draftLabel": {
+        "description": "Before what is being written in a chat, as the chat list shows it"
+    },
+    "messageV3": "ID сообщений TRIfA",
+    "@messageV3": {
+        "description": "Setting to read the ID TRIfA adds to its messages"
+    },
+    "messageV3Hint": "Скрывает ID, который TRIfA добавляет к сообщениям, и показывает повторно отправленное им сообщение только один раз",
+    "@messageV3Hint": {
+        "description": "What reading TRIfA's message IDs does"
+    },
+    "titleWithAccount": "bTox ({name})",
+    "@titleWithAccount": {
+        "description": "The title of the chat list, with the account it shows",
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Alice"
+            }
+        }
+    },
+    "deleteChatToo": "Также навсегда удалить переписку и файлы с этим контактом",
+    "@deleteChatToo": {
+        "description": "Option when deleting a contact to delete the chat with them too"
+    },
+    "profileDeleteFailed": "Не удалось удалить профиль \"{name}\"",
+    "@profileDeleteFailed": {
+        "description": "Error when a profile couldn't be deleted",
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Alice"
+            }
+        }
+    },
+    "mergeChat": "Объединить с другим чатом",
+    "@mergeChat": {
+        "description": "Action on a group chat to show it together with another that a bot relays messages between"
+    },
+    "unmergeChat": "Показывать чаты отдельно",
+    "@unmergeChat": {
+        "description": "Action on merged chats to show them as separate chats again"
+    },
+    "mergeChatTitle": "Объединение чатов",
+    "@mergeChatTitle": {
+        "description": "Title of the page that merges two chats"
+    },
+    "mergeWith": "Объединить с",
+    "@mergeWith": {
+        "description": "Heading of the chats one can merge with"
+    },
+    "relayBotIn": "Бот в {chat}",
+    "@relayBotIn": {
+        "description": "Heading of the members of a chat to pick the bot from that relays messages to the other chat",
+        "placeholders": {
+            "chat": {
+                "type": "String",
+                "example": "Tox"
+            }
+        }
+    },
+    "relayedMessages": "{count, plural, one{Ретранслировано {relayed} из {count} сообщения} few{Ретранслировано {relayed} из {count} сообщений} many{Ретранслировано {relayed} из {count} сообщений} other{Ретранслировано {relayed} из {count} сообщения}}",
+    "@relayedMessages": {
+        "description": "How many of a chat member's messages look like a bot relayed them",
+        "placeholders": {
+            "relayed": {
+                "type": "int"
+            },
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "noChatsToMerge": "Нет других групповых чатов",
+    "@noChatsToMerge": {
+        "description": "Shown when there are no chats to merge with"
+    },
+    "merge": "Объединить",
+    "@merge": {
+        "description": "Button that merges the chats"
+    },
+    "exported": "Данные экспортированы",
+    "@exported": {
+        "description": "Shown when the backup was saved"
+    },
+    "exportFailed": "Не удалось экспортировать данные",
+    "@exportFailed": {
+        "description": "Error when the backup couldn't be made or saved"
+    },
+    "locationOff": "Включите геолокацию, чтобы поделиться местоположением",
+    "@locationOff": {
+        "description": "Shown when sharing a location while location is off on the device"
+    },
+    "locationDenied": "bTox нужно разрешение на доступ к геопозиции",
+    "@locationDenied": {
+        "description": "Shown when sharing a location without the permission"
+    },
+    "locationFailed": "Не удалось определить ваше местоположение",
+    "@locationFailed": {
+        "description": "Error when the location couldn't be found"
+    },
+    "openSettings": "Настройки",
+    "@openSettings": {
+        "description": "Button opening the device's settings to fix a problem"
+    },
+    "ownToxIdError": "Это ваш собственный Tox ID",
+    "@ownToxIdError": {
+        "description": "Error when adding your own Tox ID as a contact"
+    },
+    "addContactFailed": "Не удалось добавить контакт",
+    "@addContactFailed": {
+        "description": "Error when a contact couldn't be saved"
+    },
+    "chatClosed": "Вы больше не можете отправлять сообщения в этот чат",
+    "@chatClosed": {
+        "description": "Shown in place of the message input for a deleted contact or a group left"
+    },
+    "friendRequest": "Запрос в друзья",
+    "@friendRequest": {
+        "description": "Title of the notification for a friend request"
+    },
+    "inviteNotification": "Приглашение в чат",
+    "@inviteNotification": {
+        "description": "Title of the notification for an invite to a group or conference"
+    },
+    "groupInvite": "Приглашение от {friend} в {chat}",
+    "@groupInvite": {
+        "description": "An invite to a group, above the chats and in its notification",
+        "placeholders": {
+            "friend": {
+                "type": "String"
+            },
+            "chat": {
+                "type": "String"
+            }
+        }
+    },
+    "conferenceInvite": "Приглашение от {friend} в конференцию",
+    "@conferenceInvite": {
+        "description": "An invite to a conference, whose invite has no name, above the chats and in its notification",
+        "placeholders": {
+            "friend": {
+                "type": "String"
+            }
+        }
+    },
+    "joinInvite": "Присоединиться",
+    "@joinInvite": {
+        "description": "The button that joins the chat of an invite"
+    },
+    "declineInvite": "Отклонить",
+    "@declineInvite": {
+        "description": "The button that declines an invite to a chat"
+    },
+    "joiningInvite": "Присоединение…",
+    "@joiningInvite": {
+        "description": "Under an invite answered to join, until the account's home device joined"
+    },
+    "inviteNeedsPassword": "Нужен пароль группы. Попросите новое приглашение.",
+    "@inviteNeedsPassword": {
+        "description": "Under an invite to a group that turned the account away for a missing or wrong password, which spent the invite"
+    },
+    "inviteSpent": "Не удалось присоединиться. Попросите новое приглашение.",
+    "@inviteSpent": {
+        "description": "Under an invite whose chat turned the account away for another reason, which spent the invite"
+    },
+    "inviteFailed": "Не удалось присоединиться",
+    "@inviteFailed": {
+        "description": "Under an invite whose chat the account's home device couldn't join, which can be tried again"
+    },
+    "groupPasswordHelper": "Оставьте пустым, если у группы нет пароля",
+    "@groupPasswordHelper": {
+        "description": "Under the password field when joining a group from an invite"
+    },
+    "retryInvite": "Повторить",
+    "@retryInvite": {
+        "description": "The button that tries joining the chat of an invite again"
+    },
+    "chatInAccount": "{chat} · {account}",
+    "@chatInAccount": {
+        "description": "Title of a chat's notification while several accounts are signed in: the chat, then the account it's in",
+        "placeholders": {
+            "chat": {
+                "type": "String"
+            },
+            "account": {
+                "type": "String"
+            }
+        }
+    },
+    "newestMessages": "К последним сообщениям",
+    "@newestMessages": {
+        "description": "Tooltip of the button that scrolls a chat to its newest messages"
+    },
+    "noChats": "Пока нет чатов",
+    "@noChats": {
+        "description": "Shown on the Chats tab when there are no chats"
+    },
+    "noChatsHint": "Добавьте контакт кнопкой +, чтобы начать общение",
+    "@noChatsHint": {
+        "description": "How to start a first chat, under noChats"
+    }
+}

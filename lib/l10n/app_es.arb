@@ -3,7 +3,7 @@
     "@defaultContactName": {
         "description": "The default name for a contact when the name is not yet known"
     },
-    "addContact": "Agregar contacto",
+    "addContact": "Añadir contacto",
     "@addContact": {
         "description": "The text for the button to add a contact"
     },
@@ -29,7 +29,7 @@
     "@toxId": {
         "description": "The text for the Tox ID field"
     },
-    "defaultAddContactMessage": "Hola, yo soy {nick}, ven a charlar conmigo en bTox!",
+    "defaultAddContactMessage": "Hola, soy {nick}, ¡ven a charlar conmigo en bTox!",
     "@defaultAddContactMessage": {
         "description": "The default message to send when adding a contact",
         "placeholders": {
@@ -57,7 +57,7 @@
     "@add": {
         "description": "The text for the button to add a contact"
     },
-    "toxIdLengthError": "Debe ser {length} caracteres hexadecimales",
+    "toxIdLengthError": "Debe tener {length} caracteres hexadecimales",
     "@toxIdLengthError": {
         "description": "The error message when the Tox ID is not the right length or format",
         "placeholders": {
@@ -79,7 +79,7 @@
     "@menuSettings": {
         "description": "The text for the settings menu item"
     },
-    "nickLengthError": "El apodo debe ser entre 1 y {max} caracteres",
+    "nickLengthError": "El apodo debe tener entre 1 y {max} caracteres",
     "@nickLengthError": {
         "description": "The error message when the nickname is too short or too long",
         "placeholders": {
@@ -107,7 +107,7 @@
     "@profileTextFieldUserStatusMessage": {
         "description": "The text for the status message field"
     },
-    "applyChanges": "Aplica cambios",
+    "applyChanges": "Aplicar cambios",
     "@applyChanges": {
         "description": "The text for the button to apply changes"
     },
@@ -158,5 +158,911 @@
                 "example": "Alice"
             }
         }
+    },
+    "copyToxId": "Copiar ID Tox",
+    "@copyToxId": {
+        "description": "The tooltip for copying your own Tox ID"
+    },
+    "toxIdCopied": "ID Tox copiado",
+    "@toxIdCopied": {
+        "description": "The message shown after copying your own Tox ID"
+    },
+    "toxIdChecksumError": "No es un ID Tox válido, revisa que no tenga errores",
+    "@toxIdChecksumError": {
+        "description": "The error message when the Tox ID's checksum doesn't match, e.g. because of a typo"
+    },
+    "logoutMessage": "{name} dejará de recibir mensajes hasta que vuelvas a iniciar sesión.",
+    "@logoutMessage": {
+        "description": "Asks whether to sign the current account out",
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Alice"
+            }
+        }
+    },
+    "acceptFriendRequest": "Aceptar solicitud de amistad",
+    "@acceptFriendRequest": {
+        "description": "The tooltip for accepting an incoming friend request"
+    },
+    "rejectFriendRequest": "Rechazar solicitud de amistad",
+    "@rejectFriendRequest": {
+        "description": "The tooltip for rejecting an incoming friend request"
+    },
+    "online": "En línea",
+    "@online": {
+        "description": "A contact's connection state, for screen readers"
+    },
+    "offline": "Desconectado",
+    "@offline": {
+        "description": "A contact's connection state, for screen readers"
+    },
+    "deleteContact": "Borrar contacto",
+    "@deleteContact": {
+        "description": "The title of the dialog for deleting a contact"
+    },
+    "deleteContactMessage": "¿Borrar a \"{name}\" de tus contactos?",
+    "@deleteContactMessage": {
+        "description": "The message to confirm the deletion of a contact",
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Alice"
+            }
+        }
+    },
+    "contactDeleted": "Contacto \"{name}\" borrado",
+    "@contactDeleted": {
+        "description": "The text when a contact has been deleted",
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Alice"
+            }
+        }
+    },
+    "import": "Importar",
+    "@import": {
+        "description": "The button that confirms importing a profile"
+    },
+    "password": "Contraseña",
+    "@password": {
+        "description": "The label for a password: an encrypted profile's, or a group's"
+    },
+    "wrongPassword": "Contraseña incorrecta",
+    "@wrongPassword": {
+        "description": "The error when an encrypted profile's password is wrong"
+    },
+    "profileImported": "Perfil \"{name}\" importado",
+    "@profileImported": {
+        "description": "The text when a profile has been imported",
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Alice"
+            }
+        }
+    },
+    "profileAlreadyImported": "Este perfil ya está en bTox",
+    "@profileAlreadyImported": {
+        "description": "The error when importing a profile that bTox already has"
+    },
+    "exportData": "Exportar datos",
+    "@exportData": {
+        "description": "Settings entry that saves all accounts and messages to a file"
+    },
+    "exportDataHint": "Todas las cuentas y mensajes, cifrados con una contraseña",
+    "@exportDataHint": {
+        "description": "Explanation below the export data setting"
+    },
+    "importData": "Importar datos",
+    "@importData": {
+        "description": "The setting, button and dialog title for importing a bTox export or a .tox profile file"
+    },
+    "importDataHint": "Una exportación de bTox o un perfil Tox de otro cliente",
+    "@importDataHint": {
+        "description": "Explanation below the import data setting"
+    },
+    "export": "Exportar",
+    "@export": {
+        "description": "Button that exports data"
+    },
+    "accountsRestored": "{count, plural, =0{La copia no tiene cuentas nuevas} =1{1 cuenta restaurada} other{{count} cuentas restauradas}}",
+    "@accountsRestored": {
+        "description": "Shown after importing accounts from a bTox backup",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "notAToxProfile": "No es un perfil Tox",
+    "@notAToxProfile": {
+        "description": "The error when the chosen file isn't a Tox profile"
+    },
+    "stayOnline": "Seguir en línea al cerrar",
+    "@stayOnline": {
+        "description": "The setting to keep running in the background after closing the app"
+    },
+    "stayOnlineHint": "Mantiene en línea todas las cuentas con sesión iniciada",
+    "@stayOnlineHint": {
+        "description": "Explains that stay online applies to every signed-in account"
+    },
+    "accounts": "Cuentas",
+    "@accounts": {
+        "description": "The menu item for signing in and managing accounts"
+    },
+    "appSettings": "Aplicación",
+    "@appSettings": {
+        "description": "The heading of the settings for the whole app"
+    },
+    "accountSettings": "Cuenta: {name}",
+    "@accountSettings": {
+        "description": "The heading of the settings for one account",
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Alice"
+            }
+        }
+    },
+    "autoAcceptFiles": "Aceptar archivos automáticamente hasta",
+    "@autoAcceptFiles": {
+        "description": "The setting for the largest incoming file accepted without asking"
+    },
+    "never": "Nunca",
+    "@never": {
+        "description": "Auto-accepting no files at all"
+    },
+    "acceptFile": "Aceptar",
+    "@acceptFile": {
+        "description": "The button to receive an offered file"
+    },
+    "declineFile": "Rechazar",
+    "@declineFile": {
+        "description": "The button to refuse an offered file"
+    },
+    "downloadFile": "Descargar",
+    "@downloadFile": {
+        "description": "The button to fetch a file the account's home device holds"
+    },
+    "fileCancelled": "Cancelado",
+    "@fileCancelled": {
+        "description": "A file transfer that was declined or stopped"
+    },
+    "filePaused": "En pausa hasta que vuelva a estar en línea",
+    "@filePaused": {
+        "description": "An incoming file that stopped part way, which goes on when the sender sends it again"
+    },
+    "udpEnabled": "Usar UDP",
+    "@udpEnabled": {
+        "description": "The setting for Tox's UDP transport"
+    },
+    "udpEnabledHint": "Si está desactivado, conecta solo mediante relés TCP",
+    "@udpEnabledHint": {
+        "description": "Explains turning off UDP"
+    },
+    "ipv6Enabled": "Usar IPv6",
+    "@ipv6Enabled": {
+        "description": "The setting for connecting over IPv6"
+    },
+    "localDiscoveryEnabled": "Descubrimiento local",
+    "@localDiscoveryEnabled": {
+        "description": "The setting for finding friends on the local network"
+    },
+    "localDiscoveryEnabledHint": "Encuentra amigos directamente en la misma red",
+    "@localDiscoveryEnabledHint": {
+        "description": "Explains local discovery"
+    },
+    "offWithProxy": "Desactivado con un proxy, que solo transmite TCP",
+    "@offWithProxy": {
+        "description": "Why UDP and local discovery are off when a proxy is set"
+    },
+    "proxy": "Proxy",
+    "@proxy": {
+        "description": "The proxy setting and dialog title"
+    },
+    "proxyNone": "Ninguno",
+    "@proxyNone": {
+        "description": "No proxy"
+    },
+    "proxyHost": "Host",
+    "@proxyHost": {
+        "description": "The label for the proxy host field"
+    },
+    "proxyPort": "Puerto",
+    "@proxyPort": {
+        "description": "The label for the proxy port field"
+    },
+    "invalidProxyHost": "Introduce un host",
+    "@invalidProxyHost": {
+        "description": "The error when the proxy host is empty"
+    },
+    "invalidProxyPort": "Introduce un puerto del 1 al 65535",
+    "@invalidProxyPort": {
+        "description": "The error when the proxy port is out of range"
+    },
+    "save": "Guardar",
+    "@save": {
+        "description": "The text for the save button"
+    },
+    "attachCamera": "Cámara",
+    "@attachCamera": {
+        "description": "Button to take a photo to send"
+    },
+    "attachGallery": "Galería",
+    "@attachGallery": {
+        "description": "Button to choose images to send"
+    },
+    "attachFile": "Archivo",
+    "@attachFile": {
+        "description": "Button to choose files to send"
+    },
+    "attachLocation": "Ubicación",
+    "@attachLocation": {
+        "description": "Button to send the current location"
+    },
+    "linkAccount": "Vincular una cuenta",
+    "@linkAccount": {
+        "description": "Action to use an account that runs on another device"
+    },
+    "pairingLink": "Enlace de vinculación",
+    "@pairingLink": {
+        "description": "Label of the field for another device's pairing link"
+    },
+    "pairingLinkHelp": "Pega el enlace de vinculación del dispositivo en el que funciona la cuenta.",
+    "@pairingLinkHelp": {
+        "description": "Explains where the pairing link comes from"
+    },
+    "invalidPairingLink": "Esto no es un enlace de vinculación",
+    "@invalidPairingLink": {
+        "description": "Error when the pasted text isn't a pairing link"
+    },
+    "link": "Vincular",
+    "@link": {
+        "description": "Button that links an account"
+    },
+    "linkedAccount": "Cuenta vinculada",
+    "@linkedAccount": {
+        "description": "Name of a linked account until its name has synced"
+    },
+    "linkedAccountName": "{name} (vinculada)",
+    "@linkedAccountName": {
+        "description": "A linked account where accounts are listed to choose from",
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "sendFailed": "No se pudo enviar el mensaje",
+    "@sendFailed": {
+        "description": "Error when a message couldn't be saved for sending"
+    },
+    "saveFailed": "No se pudo guardar",
+    "@saveFailed": {
+        "description": "Error when something the user did couldn't be saved"
+    },
+    "importFailed": "No se pudo importar este archivo",
+    "@importFailed": {
+        "description": "Error when a profile or backup file couldn't be imported"
+    },
+    "linkFailed": "No se pudo vincular la cuenta",
+    "@linkFailed": {
+        "description": "Error when a linked account couldn't be added"
+    },
+    "chats": "Chats",
+    "@chats": {
+        "description": "The tab of the main page listing chats"
+    },
+    "calls": "Llamadas",
+    "@calls": {
+        "description": "The tab of the main page listing calls"
+    },
+    "voiceCall": "Llamada de voz",
+    "@voiceCall": {
+        "description": "A call button's tooltip, and a call still going on in a chat"
+    },
+    "videoCall": "Videollamada",
+    "@videoCall": {
+        "description": "A video call button's tooltip, and a video call still going on in a chat"
+    },
+    "outgoingVideoCall": "Videollamada saliente",
+    "@outgoingVideoCall": {
+        "description": "A video call we made, in a chat"
+    },
+    "incomingVideoCall": "Videollamada entrante",
+    "@incomingVideoCall": {
+        "description": "A video call the friend made, in a chat and while it rings"
+    },
+    "missedVideoCall": "Videollamada perdida",
+    "@missedVideoCall": {
+        "description": "A video call that rang here and wasn't answered"
+    },
+    "callCamera": "Cámara",
+    "@callCamera": {
+        "description": "The button that turns the camera on or off in a call"
+    },
+    "flipCamera": "Cambiar cámara",
+    "@flipCamera": {
+        "description": "The button that switches between the front and back camera in a call"
+    },
+    "cameraNeeded": "bTox no puede usar la cámara, así que la llamada sigue sin vídeo",
+    "@cameraNeeded": {
+        "description": "Shown when bTox may not use the camera for a video call, which goes on without video"
+    },
+    "outgoingCall": "Llamada de voz saliente",
+    "@outgoingCall": {
+        "description": "A call we made, in a chat"
+    },
+    "incomingCall": "Llamada de voz entrante",
+    "@incomingCall": {
+        "description": "A call the friend made, in a chat and while it rings"
+    },
+    "missedCall": "Llamada de voz perdida",
+    "@missedCall": {
+        "description": "A call that rang here and wasn't answered"
+    },
+    "callWithDuration": "{call} · {duration}",
+    "@callWithDuration": {
+        "description": "A call in a chat, with how long it was",
+        "placeholders": {
+            "call": {
+                "type": "String"
+            },
+            "duration": {
+                "type": "String"
+            }
+        }
+    },
+    "incomingCalls": "Llamadas entrantes",
+    "@incomingCalls": {
+        "description": "The notification channel that rings"
+    },
+    "missedCalls": "Llamadas perdidas",
+    "@missedCalls": {
+        "description": "The notification channel for missed calls"
+    },
+    "callOngoing": "Llamada en curso",
+    "@callOngoing": {
+        "description": "The notification while a call goes on"
+    },
+    "calling": "Llamando…",
+    "@calling": {
+        "description": "Our call, while it rings at the friend's"
+    },
+    "connecting": "Conectando…",
+    "@connecting": {
+        "description": "A call answered here, until it's connected"
+    },
+    "answerCall": "Contestar",
+    "@answerCall": {
+        "description": "The button that answers a call"
+    },
+    "declineCall": "Rechazar",
+    "@declineCall": {
+        "description": "The button that declines a call"
+    },
+    "hangUp": "Colgar",
+    "@hangUp": {
+        "description": "The button that ends a call"
+    },
+    "muteCall": "Silenciar",
+    "@muteCall": {
+        "description": "The button that mutes the microphone in a call"
+    },
+    "callSpeaker": "Altavoz",
+    "@callSpeaker": {
+        "description": "The button that puts a call on the loudspeaker"
+    },
+    "callEarpiece": "Teléfono",
+    "@callEarpiece": {
+        "description": "Where a call's audio can go: the phone's earpiece"
+    },
+    "callWired": "Auriculares",
+    "@callWired": {
+        "description": "Where a call's audio can go: wired headphones"
+    },
+    "callBluetooth": "Bluetooth",
+    "@callBluetooth": {
+        "description": "Where a call's audio can go: a Bluetooth headset"
+    },
+    "hideCall": "Ocultar la llamada",
+    "@hideCall": {
+        "description": "The button that shows the chats during a call"
+    },
+    "returnToCall": "Volver a la llamada",
+    "@returnToCall": {
+        "description": "The banner over the chats during a call"
+    },
+    "microphoneNeeded": "Las llamadas necesitan el micrófono",
+    "@microphoneNeeded": {
+        "description": "Shown when bTox may not use the microphone"
+    },
+    "ringOverLockScreen": "Las llamadas no pueden sonar sobre la pantalla de bloqueo",
+    "@ringOverLockScreen": {
+        "description": "Shown on the Calls tab while Android doesn't let bTox show incoming calls full screen"
+    },
+    "allowRingOverLockScreen": "Permitir",
+    "@allowRingOverLockScreen": {
+        "description": "The button that opens the setting letting calls ring full screen"
+    },
+    "relayBotNames": "Nombres de un bot retransmisor",
+    "@relayBotNames": {
+        "description": "The action, and its page, that shows the names a bot relays from another chat in a group chat"
+    },
+    "stopRelayBotNames": "Dejar de mostrar los nombres del bot retransmisor",
+    "@stopRelayBotNames": {
+        "description": "The action that shows a relay bot's messages as its own again"
+    },
+    "showNames": "Mostrar nombres",
+    "@showNames": {
+        "description": "The button that starts showing the names a relay bot relays"
+    },
+    "noCalls": "No hay llamadas recientes",
+    "@noCalls": {
+        "description": "Shown on the Calls tab when there are no calls"
+    },
+    "callsNotAvailable": "Las llamadas pasan por el dispositivo al que está vinculada esta cuenta, que ahora no puede atenderlas",
+    "@callsNotAvailable": {
+        "description": "Shown on the Calls tab of a linked account while its home device is offline, or doesn't connect calls to its devices"
+    },
+    "notImplemented": "Aún no disponible",
+    "@notImplemented": {
+        "description": "Shown for a menu item that doesn't work yet"
+    },
+    "openLinkFailed": "Ninguna app puede abrir este enlace",
+    "@openLinkFailed": {
+        "description": "Shown when tapping a link in a message opens nothing"
+    },
+    "reply": "Responder",
+    "@reply": {
+        "description": "Message menu item to reply to the message"
+    },
+    "forward": "Reenviar",
+    "@forward": {
+        "description": "Message menu item to forward the message"
+    },
+    "chatDetails": "Detalles del chat",
+    "@chatDetails": {
+        "description": "The tooltip of a chat's title, which opens who the chat is with"
+    },
+    "chatMembers": "{count, plural, =1{1 miembro} other{{count} miembros}}",
+    "@chatMembers": {
+        "description": "The heading of the people in a group or conference, counting yourself",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "you": "Tú",
+    "@you": {
+        "description": "Yourself, among the people in a chat"
+    },
+    "muteChat": "Silenciar notificaciones",
+    "@muteChat": {
+        "description": "The action, and its dialog, that stops a chat's notifications for a while"
+    },
+    "unmuteChat": "Activar notificaciones",
+    "@unmuteChat": {
+        "description": "The action that lets a muted chat notify again"
+    },
+    "muteForAnHour": "Durante 1 hora",
+    "@muteForAnHour": {
+        "description": "How long to mute a chat for"
+    },
+    "muteForEightHours": "Durante 8 horas",
+    "@muteForEightHours": {
+        "description": "How long to mute a chat for"
+    },
+    "muteForAWeek": "Durante 1 semana",
+    "@muteForAWeek": {
+        "description": "How long to mute a chat for"
+    },
+    "muteAlways": "Siempre",
+    "@muteAlways": {
+        "description": "Mutes a chat until it's unmuted"
+    },
+    "notifyMentions": "Notificarme igualmente las menciones",
+    "@notifyMentions": {
+        "description": "In the dialog muting a group chat: messages naming you still notify"
+    },
+    "mutedUntil": "Silenciado hasta {time}",
+    "@mutedUntil": {
+        "description": "How long a chat stays muted",
+        "placeholders": {
+            "time": {
+                "type": "String",
+                "example": "Thu 17:00"
+            }
+        }
+    },
+    "mutedAlways": "Silenciado",
+    "@mutedAlways": {
+        "description": "A chat muted until it's unmuted"
+    },
+    "sendPicturesAsQoi": "Enviar imágenes como QOI",
+    "@sendPicturesAsQoi": {
+        "description": "A friend chat's setting: camera and gallery pictures sent as QOI"
+    },
+    "sendPicturesAsQoiHint": "Sin pérdida, pero más pesadas, y no todas las apps muestran QOI",
+    "@sendPicturesAsQoiHint": {
+        "description": "Under the setting to send pictures as QOI"
+    },
+    "seenThrough": "Vistos a través de {bot}",
+    "@seenThrough": {
+        "description": "Heading of the names a relay bot has relayed in the chat's history, under the bot among the people in a chat, though they may not be there now",
+        "placeholders": {
+            "bot": {
+                "type": "String",
+                "example": "EPiG-BrDG"
+            }
+        }
+    },
+    "showMoreSeen": "{count, plural, =1{Mostrar 1 más} other{Mostrar {count} más}}",
+    "@showMoreSeen": {
+        "description": "Shows the names a relay bot relayed longer ago",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "roleFounder": "Fundador",
+    "@roleFounder": {
+        "description": "The role of whoever created a group"
+    },
+    "roleModerator": "Moderador",
+    "@roleModerator": {
+        "description": "The role of someone who can moderate a group"
+    },
+    "roleObserver": "Observador",
+    "@roleObserver": {
+        "description": "The role of someone who can only read a group"
+    },
+    "statusAway": "Ausente",
+    "@statusAway": {
+        "description": "Someone's status when they're away"
+    },
+    "statusBusy": "Ocupado",
+    "@statusBusy": {
+        "description": "Someone's status when they're busy"
+    },
+    "membersWhileOnline": "Los miembros se muestran mientras el dispositivo principal de la cuenta está en línea",
+    "@membersWhileOnline": {
+        "description": "In place of a linked account's chat members, while its home device can't say who they are"
+    },
+    "publicKey": "Clave pública",
+    "@publicKey": {
+        "description": "The heading of a friend's public key, which Tox knows them by"
+    },
+    "publicKeyCopied": "Clave pública copiada",
+    "@publicKeyCopied": {
+        "description": "The message shown after copying a friend's public key"
+    },
+    "copy": "Copiar",
+    "@copy": {
+        "description": "Message menu item to copy the message's text"
+    },
+    "select": "Seleccionar",
+    "@select": {
+        "description": "Message menu item to select messages"
+    },
+    "forwardTo": "Reenviar a",
+    "@forwardTo": {
+        "description": "The title of the page that picks a chat to forward messages to"
+    },
+    "messagesForwarded": "{count, plural, =1{Mensaje reenviado} other{{count} mensajes reenviados}}",
+    "@messagesForwarded": {
+        "description": "The message shown after forwarding messages",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "messageInfo": "Detalles del mensaje",
+    "@messageInfo": {
+        "description": "The title of the page a message's Info opens"
+    },
+    "messageSent": "Enviado",
+    "@messageSent": {
+        "description": "On a message's details, when ours was sent"
+    },
+    "messageSending": "Enviando",
+    "@messageSending": {
+        "description": "On a message's details, in place of messageSent while ours waits to go"
+    },
+    "messageDelivered": "Entregado",
+    "@messageDelivered": {
+        "description": "On a message's details, when ours arrived"
+    },
+    "messageReceived": "Recibido",
+    "@messageReceived": {
+        "description": "On a message's details, when someone else's came"
+    },
+    "messageFrom": "De",
+    "@messageFrom": {
+        "description": "On a message's details, the heading of who sent someone else's"
+    },
+    "messagesSelected": "{count, plural, =1{1 seleccionado} other{{count} seleccionados}}",
+    "@messagesSelected": {
+        "description": "The chat's title while messages are selected",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "messagesCopied": "{count, plural, =1{Mensaje copiado} other{{count} mensajes copiados}}",
+    "@messagesCopied": {
+        "description": "The message shown after copying messages' text",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "info": "Info",
+    "@info": {
+        "description": "Message menu item to show the message's details"
+    },
+    "today": "Hoy",
+    "@today": {
+        "description": "Above the messages of today in a chat"
+    },
+    "yesterday": "Ayer",
+    "@yesterday": {
+        "description": "Above the messages of yesterday in a chat"
+    },
+    "loadFailed": "Algo salió mal",
+    "@loadFailed": {
+        "description": "Shown in place of a page that couldn't be loaded"
+    },
+    "locationMessage": "Ubicación",
+    "@locationMessage": {
+        "description": "A shared location, as the chat list shows it"
+    },
+    "emoji": "Emoji",
+    "@emoji": {
+        "description": "The button in the message box that opens the emoji picker"
+    },
+    "send": "Enviar",
+    "@send": {
+        "description": "The button that sends what is written in the message box"
+    },
+    "attach": "Adjuntar",
+    "@attach": {
+        "description": "The button in the message box that opens what can be attached"
+    },
+    "cancelReply": "Cancelar respuesta",
+    "@cancelReply": {
+        "description": "The button that stops replying to a message"
+    },
+    "removeAttachment": "Quitar",
+    "@removeAttachment": {
+        "description": "The button on an attachment waiting to be sent that takes it away"
+    },
+    "attachFailed": "No se pudo adjuntar",
+    "@attachFailed": {
+        "description": "Shown when a picture or file couldn't be picked or copied to send"
+    },
+    "dayAndTime": "{day} {time}",
+    "@dayAndTime": {
+        "description": "A day and a time on it, as in 'muted until Fri 14:00'",
+        "placeholders": {
+            "day": {
+                "type": "String",
+                "example": "Fri"
+            },
+            "time": {
+                "type": "String",
+                "example": "14:00"
+            }
+        }
+    },
+    "draftLabel": "Borrador:",
+    "@draftLabel": {
+        "description": "Before what is being written in a chat, as the chat list shows it"
+    },
+    "messageV3": "ID de mensaje de TRIfA",
+    "@messageV3": {
+        "description": "Setting to read the ID TRIfA adds to its messages"
+    },
+    "messageV3Hint": "Oculta el ID que TRIfA añade a los mensajes y muestra solo una vez un mensaje que reenvía",
+    "@messageV3Hint": {
+        "description": "What reading TRIfA's message IDs does"
+    },
+    "titleWithAccount": "bTox ({name})",
+    "@titleWithAccount": {
+        "description": "The title of the chat list, with the account it shows",
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Alice"
+            }
+        }
+    },
+    "deleteChatToo": "Borrar también para siempre tus mensajes y archivos con este contacto",
+    "@deleteChatToo": {
+        "description": "Option when deleting a contact to delete the chat with them too"
+    },
+    "profileDeleteFailed": "No se pudo borrar el perfil \"{name}\"",
+    "@profileDeleteFailed": {
+        "description": "Error when a profile couldn't be deleted",
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Alice"
+            }
+        }
+    },
+    "mergeChat": "Unir con otro chat",
+    "@mergeChat": {
+        "description": "Action on a group chat to show it together with another that a bot relays messages between"
+    },
+    "unmergeChat": "Mostrar los chats por separado",
+    "@unmergeChat": {
+        "description": "Action on merged chats to show them as separate chats again"
+    },
+    "mergeChatTitle": "Unir chats",
+    "@mergeChatTitle": {
+        "description": "Title of the page that merges two chats"
+    },
+    "mergeWith": "Unir con",
+    "@mergeWith": {
+        "description": "Heading of the chats one can merge with"
+    },
+    "relayBotIn": "Bot en {chat}",
+    "@relayBotIn": {
+        "description": "Heading of the members of a chat to pick the bot from that relays messages to the other chat",
+        "placeholders": {
+            "chat": {
+                "type": "String",
+                "example": "Tox"
+            }
+        }
+    },
+    "relayedMessages": "{relayed} de {count} mensajes retransmitidos",
+    "@relayedMessages": {
+        "description": "How many of a chat member's messages look like a bot relayed them",
+        "placeholders": {
+            "relayed": {
+                "type": "int"
+            },
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "noChatsToMerge": "No hay otros chats de grupo",
+    "@noChatsToMerge": {
+        "description": "Shown when there are no chats to merge with"
+    },
+    "merge": "Unir",
+    "@merge": {
+        "description": "Button that merges the chats"
+    },
+    "exported": "Datos exportados",
+    "@exported": {
+        "description": "Shown when the backup was saved"
+    },
+    "exportFailed": "No se pudieron exportar los datos",
+    "@exportFailed": {
+        "description": "Error when the backup couldn't be made or saved"
+    },
+    "locationOff": "Activa la ubicación para compartir dónde estás",
+    "@locationOff": {
+        "description": "Shown when sharing a location while location is off on the device"
+    },
+    "locationDenied": "bTox necesita permiso para usar tu ubicación",
+    "@locationDenied": {
+        "description": "Shown when sharing a location without the permission"
+    },
+    "locationFailed": "No se pudo encontrar tu ubicación",
+    "@locationFailed": {
+        "description": "Error when the location couldn't be found"
+    },
+    "openSettings": "Ajustes",
+    "@openSettings": {
+        "description": "Button opening the device's settings to fix a problem"
+    },
+    "ownToxIdError": "Este es tu propio ID Tox",
+    "@ownToxIdError": {
+        "description": "Error when adding your own Tox ID as a contact"
+    },
+    "addContactFailed": "No se pudo añadir el contacto",
+    "@addContactFailed": {
+        "description": "Error when a contact couldn't be saved"
+    },
+    "chatClosed": "Ya no puedes enviar mensajes a este chat",
+    "@chatClosed": {
+        "description": "Shown in place of the message input for a deleted contact or a group left"
+    },
+    "friendRequest": "Solicitud de amistad",
+    "@friendRequest": {
+        "description": "Title of the notification for a friend request"
+    },
+    "inviteNotification": "Invitación a un chat",
+    "@inviteNotification": {
+        "description": "Title of the notification for an invite to a group or conference"
+    },
+    "groupInvite": "{friend} te invitó a {chat}",
+    "@groupInvite": {
+        "description": "An invite to a group, above the chats and in its notification",
+        "placeholders": {
+            "friend": {
+                "type": "String"
+            },
+            "chat": {
+                "type": "String"
+            }
+        }
+    },
+    "conferenceInvite": "{friend} te invitó a una conferencia",
+    "@conferenceInvite": {
+        "description": "An invite to a conference, whose invite has no name, above the chats and in its notification",
+        "placeholders": {
+            "friend": {
+                "type": "String"
+            }
+        }
+    },
+    "joinInvite": "Unirse",
+    "@joinInvite": {
+        "description": "The button that joins the chat of an invite"
+    },
+    "declineInvite": "Rechazar",
+    "@declineInvite": {
+        "description": "The button that declines an invite to a chat"
+    },
+    "joiningInvite": "Uniéndote…",
+    "@joiningInvite": {
+        "description": "Under an invite answered to join, until the account's home device joined"
+    },
+    "inviteNeedsPassword": "Hace falta la contraseña del grupo. Pide una nueva invitación.",
+    "@inviteNeedsPassword": {
+        "description": "Under an invite to a group that turned the account away for a missing or wrong password, which spent the invite"
+    },
+    "inviteSpent": "No fue posible unirse. Pide una nueva invitación.",
+    "@inviteSpent": {
+        "description": "Under an invite whose chat turned the account away for another reason, which spent the invite"
+    },
+    "inviteFailed": "No fue posible unirse",
+    "@inviteFailed": {
+        "description": "Under an invite whose chat the account's home device couldn't join, which can be tried again"
+    },
+    "groupPasswordHelper": "Déjalo vacío si el grupo no tiene ninguna",
+    "@groupPasswordHelper": {
+        "description": "Under the password field when joining a group from an invite"
+    },
+    "retryInvite": "Reintentar",
+    "@retryInvite": {
+        "description": "The button that tries joining the chat of an invite again"
+    },
+    "chatInAccount": "{chat} · {account}",
+    "@chatInAccount": {
+        "description": "Title of a chat's notification while several accounts are signed in: the chat, then the account it's in",
+        "placeholders": {
+            "chat": {
+                "type": "String"
+            },
+            "account": {
+                "type": "String"
+            }
+        }
+    },
+    "newestMessages": "Mensajes más recientes",
+    "@newestMessages": {
+        "description": "Tooltip of the button that scrolls a chat to its newest messages"
+    },
+    "noChats": "Aún no hay chats",
+    "@noChats": {
+        "description": "Shown on the Chats tab when there are no chats"
+    },
+    "noChatsHint": "Añade un contacto con el botón + para empezar a chatear",
+    "@noChatsHint": {
+        "description": "How to start a first chat, under noChats"
     }
 }

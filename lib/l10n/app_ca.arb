@@ -24,5 +24,1045 @@
                 "example": "Hello"
             }
         }
+    },
+    "toxId": "ID de Tox",
+    "@toxId": {
+        "description": "The text for the Tox ID field"
+    },
+    "copyToxId": "Copia l'ID de Tox",
+    "@copyToxId": {
+        "description": "The tooltip for copying your own Tox ID"
+    },
+    "toxIdCopied": "S'ha copiat l'ID de Tox",
+    "@toxIdCopied": {
+        "description": "The message shown after copying your own Tox ID"
+    },
+    "defaultAddContactMessage": "Ei, sóc {nick}, vine a xatejar amb mi a bTox!",
+    "@defaultAddContactMessage": {
+        "description": "The default message to send when adding a contact",
+        "placeholders": {
+            "nick": {
+                "type": "String",
+                "example": "Alice"
+            }
+        }
+    },
+    "addContactMessageLengthError": "Màxim {max} caràcters ({length} és massa llarg)",
+    "@addContactMessageLengthError": {
+        "description": "The error message when the friend request message is too long",
+        "placeholders": {
+            "max": {
+                "type": "int",
+                "example": "256"
+            },
+            "length": {
+                "type": "int",
+                "example": "300"
+            }
+        }
+    },
+    "add": "Afegeix",
+    "@add": {
+        "description": "The text for the button to add a contact"
+    },
+    "toxIdLengthError": "Ha de tenir {length} caràcters hexadecimals",
+    "@toxIdLengthError": {
+        "description": "The error message when the Tox ID is not the right length or format",
+        "placeholders": {
+            "length": {
+                "type": "int",
+                "example": "76"
+            }
+        }
+    },
+    "toxIdChecksumError": "No és un ID de Tox vàlid, comprova si hi ha errors",
+    "@toxIdChecksumError": {
+        "description": "The error message when the Tox ID's checksum doesn't match, e.g. because of a typo"
+    },
+    "messageEmptyError": "El missatge no pot estar buit",
+    "@messageEmptyError": {
+        "description": "The error message when the message is empty"
+    },
+    "menuProfile": "Perfil",
+    "@menuProfile": {
+        "description": "The text for the profile menu item"
+    },
+    "menuSettings": "Configuració",
+    "@menuSettings": {
+        "description": "The text for the settings menu item"
+    },
+    "nickLengthError": "El sobrenom ha de tenir entre 1 i {max} caràcters",
+    "@nickLengthError": {
+        "description": "The error message when the nickname is too short or too long",
+        "placeholders": {
+            "max": {
+                "type": "int",
+                "example": "32"
+            }
+        }
+    },
+    "statusMessageLengthError": "El missatge d'estat no pot superar els {max} caràcters",
+    "@statusMessageLengthError": {
+        "description": "The error message when the status message is longer than the supported maximum",
+        "placeholders": {
+            "max": {
+                "type": "int",
+                "example": "128"
+            }
+        }
+    },
+    "profileTextFieldNick": "Sobrenom",
+    "@profileTextFieldNick": {
+        "description": "The text for the nickname field"
+    },
+    "profileTextFieldUserStatusMessage": "Missatge d'estat",
+    "@profileTextFieldUserStatusMessage": {
+        "description": "The text for the status message field"
+    },
+    "applyChanges": "Aplica els canvis",
+    "@applyChanges": {
+        "description": "The text for the button to apply changes"
+    },
+    "applied": "Aplicat",
+    "@applied": {
+        "description": "The text when changes have been applied"
+    },
+    "newProfile": "Perfil nou",
+    "@newProfile": {
+        "description": "The title text for the create profile dialog"
+    },
+    "create": "Crea",
+    "@create": {
+        "description": "The text for the button create a new profile"
+    },
+    "logout": "Tanca la sessió",
+    "@logout": {
+        "description": "The text for the logout menu item"
+    },
+    "logoutMessage": "{name} deixarà de rebre missatges fins que hi tornis a iniciar la sessió.",
+    "@logoutMessage": {
+        "description": "Asks whether to sign the current account out",
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Alice"
+            }
+        }
+    },
+    "deleteProfile": "Suprimeix el perfil",
+    "@deleteProfile": {
+        "description": "The text for the delete profile menu item"
+    },
+    "deleteProfileMessage": "Segur que vols suprimir el teu perfil \"{name}\"? Aquesta acció no es pot desfer. Se suprimiran tots els teus contactes i missatges. Assegura't que tens una còpia de seguretat.",
+    "@deleteProfileMessage": {
+        "description": "The message to confirm the deletion of a profile",
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Alice"
+            }
+        }
+    },
+    "cancel": "Cancel·la",
+    "@cancel": {
+        "description": "The text for the cancel button"
+    },
+    "delete": "Suprimeix",
+    "@delete": {
+        "description": "The text for the delete button"
+    },
+    "acceptFriendRequest": "Accepta la sol·licitud d'amistat",
+    "@acceptFriendRequest": {
+        "description": "The tooltip for accepting an incoming friend request"
+    },
+    "rejectFriendRequest": "Rebutja la sol·licitud d'amistat",
+    "@rejectFriendRequest": {
+        "description": "The tooltip for rejecting an incoming friend request"
+    },
+    "online": "En línia",
+    "@online": {
+        "description": "A contact's connection state, for screen readers"
+    },
+    "offline": "Fora de línia",
+    "@offline": {
+        "description": "A contact's connection state, for screen readers"
+    },
+    "deleteContact": "Suprimeix el contacte",
+    "@deleteContact": {
+        "description": "The title of the dialog for deleting a contact"
+    },
+    "deleteContactMessage": "Vols suprimir \"{name}\" dels teus contactes?",
+    "@deleteContactMessage": {
+        "description": "The message to confirm the deletion of a contact",
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Alice"
+            }
+        }
+    },
+    "contactDeleted": "S'ha suprimit el contacte \"{name}\"",
+    "@contactDeleted": {
+        "description": "The text when a contact has been deleted",
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Alice"
+            }
+        }
+    },
+    "import": "Importa",
+    "@import": {
+        "description": "The button that confirms importing a profile"
+    },
+    "password": "Contrasenya",
+    "@password": {
+        "description": "The label for a password: an encrypted profile's, or a group's"
+    },
+    "wrongPassword": "Contrasenya incorrecta",
+    "@wrongPassword": {
+        "description": "The error when an encrypted profile's password is wrong"
+    },
+    "profileImported": "S'ha importat el perfil \"{name}\"",
+    "@profileImported": {
+        "description": "The text when a profile has been imported",
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Alice"
+            }
+        }
+    },
+    "profileAlreadyImported": "Aquest perfil ja és a bTox",
+    "@profileAlreadyImported": {
+        "description": "The error when importing a profile that bTox already has"
+    },
+    "exportData": "Exporta les dades",
+    "@exportData": {
+        "description": "Settings entry that saves all accounts and messages to a file"
+    },
+    "exportDataHint": "Tots els comptes i missatges, xifrats amb una contrasenya",
+    "@exportDataHint": {
+        "description": "Explanation below the export data setting"
+    },
+    "importData": "Importa dades",
+    "@importData": {
+        "description": "The setting, button and dialog title for importing a bTox export or a .tox profile file"
+    },
+    "importDataHint": "Una exportació de bTox o un perfil de Tox d'un altre client",
+    "@importDataHint": {
+        "description": "Explanation below the import data setting"
+    },
+    "export": "Exporta",
+    "@export": {
+        "description": "Button that exports data"
+    },
+    "accountsRestored": "{count, plural, =0{La còpia de seguretat no té cap compte nou} =1{S'ha restaurat 1 compte} other{S'han restaurat {count} comptes}}",
+    "@accountsRestored": {
+        "description": "Shown after importing accounts from a bTox backup",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "notAToxProfile": "No és un perfil de Tox",
+    "@notAToxProfile": {
+        "description": "The error when the chosen file isn't a Tox profile"
+    },
+    "stayOnline": "Mantén-te en línia en tancar",
+    "@stayOnline": {
+        "description": "The setting to keep running in the background after closing the app"
+    },
+    "stayOnlineHint": "Manté en línia tots els comptes amb la sessió iniciada",
+    "@stayOnlineHint": {
+        "description": "Explains that stay online applies to every signed-in account"
+    },
+    "accounts": "Comptes",
+    "@accounts": {
+        "description": "The menu item for signing in and managing accounts"
+    },
+    "appSettings": "Aplicació",
+    "@appSettings": {
+        "description": "The heading of the settings for the whole app"
+    },
+    "accountSettings": "Compte: {name}",
+    "@accountSettings": {
+        "description": "The heading of the settings for one account",
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Alice"
+            }
+        }
+    },
+    "autoAcceptFiles": "Accepta fitxers automàticament fins a",
+    "@autoAcceptFiles": {
+        "description": "The setting for the largest incoming file accepted without asking"
+    },
+    "never": "Mai",
+    "@never": {
+        "description": "Auto-accepting no files at all"
+    },
+    "acceptFile": "Accepta",
+    "@acceptFile": {
+        "description": "The button to receive an offered file"
+    },
+    "declineFile": "Rebutja",
+    "@declineFile": {
+        "description": "The button to refuse an offered file"
+    },
+    "downloadFile": "Baixa",
+    "@downloadFile": {
+        "description": "The button to fetch a file the account's home device holds"
+    },
+    "fileCancelled": "Cancel·lat",
+    "@fileCancelled": {
+        "description": "A file transfer that was declined or stopped"
+    },
+    "filePaused": "En pausa fins que torni a estar en línia",
+    "@filePaused": {
+        "description": "An incoming file that stopped part way, which goes on when the sender sends it again"
+    },
+    "udpEnabled": "Utilitza UDP",
+    "@udpEnabled": {
+        "description": "The setting for Tox's UDP transport"
+    },
+    "udpEnabledHint": "Si està desactivat, només es connecta a través de repetidors TCP",
+    "@udpEnabledHint": {
+        "description": "Explains turning off UDP"
+    },
+    "ipv6Enabled": "Utilitza IPv6",
+    "@ipv6Enabled": {
+        "description": "The setting for connecting over IPv6"
+    },
+    "localDiscoveryEnabled": "Descobriment local",
+    "@localDiscoveryEnabled": {
+        "description": "The setting for finding friends on the local network"
+    },
+    "localDiscoveryEnabledHint": "Troba directament amics a la mateixa xarxa",
+    "@localDiscoveryEnabledHint": {
+        "description": "Explains local discovery"
+    },
+    "offWithProxy": "Desactivat mentre s'utilitzi un servidor intermediari, que només transporta TCP",
+    "@offWithProxy": {
+        "description": "Why UDP and local discovery are off when a proxy is set"
+    },
+    "proxy": "Servidor intermediari",
+    "@proxy": {
+        "description": "The proxy setting and dialog title"
+    },
+    "proxyNone": "Cap",
+    "@proxyNone": {
+        "description": "No proxy"
+    },
+    "proxyHost": "Amfitrió",
+    "@proxyHost": {
+        "description": "The label for the proxy host field"
+    },
+    "proxyPort": "Port",
+    "@proxyPort": {
+        "description": "The label for the proxy port field"
+    },
+    "invalidProxyHost": "Introdueix un amfitrió",
+    "@invalidProxyHost": {
+        "description": "The error when the proxy host is empty"
+    },
+    "invalidProxyPort": "Introdueix un port de l'1 al 65535",
+    "@invalidProxyPort": {
+        "description": "The error when the proxy port is out of range"
+    },
+    "save": "Desa",
+    "@save": {
+        "description": "The text for the save button"
+    },
+    "profileDeleted": "S'ha suprimit el perfil \"{name}\"",
+    "@profileDeleted": {
+        "description": "The text when a profile has been deleted",
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Alice"
+            }
+        }
+    },
+    "attachCamera": "Càmera",
+    "@attachCamera": {
+        "description": "Button to take a photo to send"
+    },
+    "attachGallery": "Galeria",
+    "@attachGallery": {
+        "description": "Button to choose images to send"
+    },
+    "attachFile": "Fitxer",
+    "@attachFile": {
+        "description": "Button to choose files to send"
+    },
+    "attachLocation": "Ubicació",
+    "@attachLocation": {
+        "description": "Button to send the current location"
+    },
+    "linkAccount": "Vincula un compte",
+    "@linkAccount": {
+        "description": "Action to use an account that runs on another device"
+    },
+    "pairingLink": "Enllaç de vinculació",
+    "@pairingLink": {
+        "description": "Label of the field for another device's pairing link"
+    },
+    "pairingLinkHelp": "Enganxa l'enllaç de vinculació del dispositiu on s'executa el compte.",
+    "@pairingLinkHelp": {
+        "description": "Explains where the pairing link comes from"
+    },
+    "invalidPairingLink": "Això no és un enllaç de vinculació",
+    "@invalidPairingLink": {
+        "description": "Error when the pasted text isn't a pairing link"
+    },
+    "link": "Vincula",
+    "@link": {
+        "description": "Button that links an account"
+    },
+    "linkedAccount": "Compte vinculat",
+    "@linkedAccount": {
+        "description": "Name of a linked account until its name has synced"
+    },
+    "linkedAccountName": "{name} (vinculat)",
+    "@linkedAccountName": {
+        "description": "A linked account where accounts are listed to choose from",
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "sendFailed": "No s'ha pogut enviar el missatge",
+    "@sendFailed": {
+        "description": "Error when a message couldn't be saved for sending"
+    },
+    "saveFailed": "No s'ha pogut desar",
+    "@saveFailed": {
+        "description": "Error when something the user did couldn't be saved"
+    },
+    "importFailed": "No s'ha pogut importar aquest fitxer",
+    "@importFailed": {
+        "description": "Error when a profile or backup file couldn't be imported"
+    },
+    "linkFailed": "No s'ha pogut vincular el compte",
+    "@linkFailed": {
+        "description": "Error when a linked account couldn't be added"
+    },
+    "chats": "Xats",
+    "@chats": {
+        "description": "The tab of the main page listing chats"
+    },
+    "calls": "Trucades",
+    "@calls": {
+        "description": "The tab of the main page listing calls"
+    },
+    "voiceCall": "Trucada de veu",
+    "@voiceCall": {
+        "description": "A call button's tooltip, and a call still going on in a chat"
+    },
+    "videoCall": "Videotrucada",
+    "@videoCall": {
+        "description": "A video call button's tooltip, and a video call still going on in a chat"
+    },
+    "outgoingVideoCall": "Videotrucada sortint",
+    "@outgoingVideoCall": {
+        "description": "A video call we made, in a chat"
+    },
+    "incomingVideoCall": "Videotrucada entrant",
+    "@incomingVideoCall": {
+        "description": "A video call the friend made, in a chat and while it rings"
+    },
+    "missedVideoCall": "Videotrucada perduda",
+    "@missedVideoCall": {
+        "description": "A video call that rang here and wasn't answered"
+    },
+    "callCamera": "Càmera",
+    "@callCamera": {
+        "description": "The button that turns the camera on or off in a call"
+    },
+    "flipCamera": "Canvia de càmera",
+    "@flipCamera": {
+        "description": "The button that switches between the front and back camera in a call"
+    },
+    "cameraNeeded": "bTox no pot utilitzar la càmera, així que la trucada continua sense",
+    "@cameraNeeded": {
+        "description": "Shown when bTox may not use the camera for a video call, which goes on without video"
+    },
+    "outgoingCall": "Trucada de veu sortint",
+    "@outgoingCall": {
+        "description": "A call we made, in a chat"
+    },
+    "incomingCall": "Trucada de veu entrant",
+    "@incomingCall": {
+        "description": "A call the friend made, in a chat and while it rings"
+    },
+    "missedCall": "Trucada de veu perduda",
+    "@missedCall": {
+        "description": "A call that rang here and wasn't answered"
+    },
+    "callWithDuration": "{call} · {duration}",
+    "@callWithDuration": {
+        "description": "A call in a chat, with how long it was",
+        "placeholders": {
+            "call": {
+                "type": "String"
+            },
+            "duration": {
+                "type": "String"
+            }
+        }
+    },
+    "incomingCalls": "Trucades entrants",
+    "@incomingCalls": {
+        "description": "The notification channel that rings"
+    },
+    "missedCalls": "Trucades perdudes",
+    "@missedCalls": {
+        "description": "The notification channel for missed calls"
+    },
+    "callOngoing": "Trucada en curs",
+    "@callOngoing": {
+        "description": "The notification while a call goes on"
+    },
+    "calling": "S'està trucant…",
+    "@calling": {
+        "description": "Our call, while it rings at the friend's"
+    },
+    "connecting": "S'està connectant…",
+    "@connecting": {
+        "description": "A call answered here, until it's connected"
+    },
+    "answerCall": "Respon",
+    "@answerCall": {
+        "description": "The button that answers a call"
+    },
+    "declineCall": "Rebutja",
+    "@declineCall": {
+        "description": "The button that declines a call"
+    },
+    "hangUp": "Penja",
+    "@hangUp": {
+        "description": "The button that ends a call"
+    },
+    "muteCall": "Silencia",
+    "@muteCall": {
+        "description": "The button that mutes the microphone in a call"
+    },
+    "callSpeaker": "Altaveu",
+    "@callSpeaker": {
+        "description": "The button that puts a call on the loudspeaker"
+    },
+    "callEarpiece": "Telèfon",
+    "@callEarpiece": {
+        "description": "Where a call's audio can go: the phone's earpiece"
+    },
+    "callWired": "Auriculars",
+    "@callWired": {
+        "description": "Where a call's audio can go: wired headphones"
+    },
+    "callBluetooth": "Bluetooth",
+    "@callBluetooth": {
+        "description": "Where a call's audio can go: a Bluetooth headset"
+    },
+    "hideCall": "Amaga la trucada",
+    "@hideCall": {
+        "description": "The button that shows the chats during a call"
+    },
+    "returnToCall": "Torna a la trucada",
+    "@returnToCall": {
+        "description": "The banner over the chats during a call"
+    },
+    "microphoneNeeded": "Les trucades necessiten el micròfon",
+    "@microphoneNeeded": {
+        "description": "Shown when bTox may not use the microphone"
+    },
+    "ringOverLockScreen": "Les trucades no poden sonar sobre la pantalla de bloqueig",
+    "@ringOverLockScreen": {
+        "description": "Shown on the Calls tab while Android doesn't let bTox show incoming calls full screen"
+    },
+    "allowRingOverLockScreen": "Permet",
+    "@allowRingOverLockScreen": {
+        "description": "The button that opens the setting letting calls ring full screen"
+    },
+    "relayBotNames": "Noms d'un bot de retransmissió",
+    "@relayBotNames": {
+        "description": "The action, and its page, that shows the names a bot relays from another chat in a group chat"
+    },
+    "stopRelayBotNames": "Deixa de mostrar els noms del bot de retransmissió",
+    "@stopRelayBotNames": {
+        "description": "The action that shows a relay bot's messages as its own again"
+    },
+    "showNames": "Mostra els noms",
+    "@showNames": {
+        "description": "The button that starts showing the names a relay bot relays"
+    },
+    "noCalls": "No hi ha trucades recents",
+    "@noCalls": {
+        "description": "Shown on the Calls tab when there are no calls"
+    },
+    "callsNotAvailable": "Les trucades passen pel dispositiu al qual està vinculat aquest compte, que ara no les pot atendre",
+    "@callsNotAvailable": {
+        "description": "Shown on the Calls tab of a linked account while its home device is offline, or doesn't connect calls to its devices"
+    },
+    "notImplemented": "Encara no està disponible",
+    "@notImplemented": {
+        "description": "Shown for a menu item that doesn't work yet"
+    },
+    "openLinkFailed": "Cap aplicació pot obrir aquest enllaç",
+    "@openLinkFailed": {
+        "description": "Shown when tapping a link in a message opens nothing"
+    },
+    "reply": "Respon",
+    "@reply": {
+        "description": "Message menu item to reply to the message"
+    },
+    "forward": "Reenvia",
+    "@forward": {
+        "description": "Message menu item to forward the message"
+    },
+    "chatDetails": "Detalls del xat",
+    "@chatDetails": {
+        "description": "The tooltip of a chat's title, which opens who the chat is with"
+    },
+    "chatMembers": "{count, plural, =1{1 membre} other{{count} membres}}",
+    "@chatMembers": {
+        "description": "The heading of the people in a group or conference, counting yourself",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "you": "Tu",
+    "@you": {
+        "description": "Yourself, among the people in a chat"
+    },
+    "muteChat": "Silencia les notificacions",
+    "@muteChat": {
+        "description": "The action, and its dialog, that stops a chat's notifications for a while"
+    },
+    "unmuteChat": "Activa les notificacions",
+    "@unmuteChat": {
+        "description": "The action that lets a muted chat notify again"
+    },
+    "muteForAnHour": "Durant 1 hora",
+    "@muteForAnHour": {
+        "description": "How long to mute a chat for"
+    },
+    "muteForEightHours": "Durant 8 hores",
+    "@muteForEightHours": {
+        "description": "How long to mute a chat for"
+    },
+    "muteForAWeek": "Durant 1 setmana",
+    "@muteForAWeek": {
+        "description": "How long to mute a chat for"
+    },
+    "muteAlways": "Sempre",
+    "@muteAlways": {
+        "description": "Mutes a chat until it's unmuted"
+    },
+    "notifyMentions": "Notifica'm igualment les mencions",
+    "@notifyMentions": {
+        "description": "In the dialog muting a group chat: messages naming you still notify"
+    },
+    "mutedUntil": "Silenciat fins a {time}",
+    "@mutedUntil": {
+        "description": "How long a chat stays muted",
+        "placeholders": {
+            "time": {
+                "type": "String",
+                "example": "Thu 17:00"
+            }
+        }
+    },
+    "mutedAlways": "Silenciat",
+    "@mutedAlways": {
+        "description": "A chat muted until it's unmuted"
+    },
+    "sendPicturesAsQoi": "Envia les imatges com a QOI",
+    "@sendPicturesAsQoi": {
+        "description": "A friend chat's setting: camera and gallery pictures sent as QOI"
+    },
+    "sendPicturesAsQoiHint": "Sense pèrdua, però més grans, i no totes les aplicacions mostren QOI",
+    "@sendPicturesAsQoiHint": {
+        "description": "Under the setting to send pictures as QOI"
+    },
+    "seenThrough": "Vist a través de {bot}",
+    "@seenThrough": {
+        "description": "Heading of the names a relay bot has relayed in the chat's history, under the bot among the people in a chat, though they may not be there now",
+        "placeholders": {
+            "bot": {
+                "type": "String",
+                "example": "EPiG-BrDG"
+            }
+        }
+    },
+    "showMoreSeen": "{count, plural, =1{Mostra'n 1 més} other{Mostra'n {count} més}}",
+    "@showMoreSeen": {
+        "description": "Shows the names a relay bot relayed longer ago",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "roleFounder": "Fundador",
+    "@roleFounder": {
+        "description": "The role of whoever created a group"
+    },
+    "roleModerator": "Moderador",
+    "@roleModerator": {
+        "description": "The role of someone who can moderate a group"
+    },
+    "roleObserver": "Observador",
+    "@roleObserver": {
+        "description": "The role of someone who can only read a group"
+    },
+    "statusAway": "Absent",
+    "@statusAway": {
+        "description": "Someone's status when they're away"
+    },
+    "statusBusy": "Ocupat",
+    "@statusBusy": {
+        "description": "Someone's status when they're busy"
+    },
+    "membersWhileOnline": "Qui hi ha es mostra mentre el dispositiu principal del compte està en línia",
+    "@membersWhileOnline": {
+        "description": "In place of a linked account's chat members, while its home device can't say who they are"
+    },
+    "publicKey": "Clau pública",
+    "@publicKey": {
+        "description": "The heading of a friend's public key, which Tox knows them by"
+    },
+    "publicKeyCopied": "S'ha copiat la clau pública",
+    "@publicKeyCopied": {
+        "description": "The message shown after copying a friend's public key"
+    },
+    "copy": "Copia",
+    "@copy": {
+        "description": "Message menu item to copy the message's text"
+    },
+    "select": "Selecciona",
+    "@select": {
+        "description": "Message menu item to select messages"
+    },
+    "forwardTo": "Reenvia a",
+    "@forwardTo": {
+        "description": "The title of the page that picks a chat to forward messages to"
+    },
+    "messagesForwarded": "{count, plural, =1{S'ha reenviat el missatge} other{S'han reenviat {count} missatges}}",
+    "@messagesForwarded": {
+        "description": "The message shown after forwarding messages",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "messageInfo": "Detalls del missatge",
+    "@messageInfo": {
+        "description": "The title of the page a message's Info opens"
+    },
+    "messageSent": "Enviat",
+    "@messageSent": {
+        "description": "On a message's details, when ours was sent"
+    },
+    "messageSending": "S'està enviant",
+    "@messageSending": {
+        "description": "On a message's details, in place of messageSent while ours waits to go"
+    },
+    "messageDelivered": "Lliurat",
+    "@messageDelivered": {
+        "description": "On a message's details, when ours arrived"
+    },
+    "messageReceived": "Rebut",
+    "@messageReceived": {
+        "description": "On a message's details, when someone else's came"
+    },
+    "messageFrom": "De",
+    "@messageFrom": {
+        "description": "On a message's details, the heading of who sent someone else's"
+    },
+    "messagesSelected": "{count, plural, one{{count} seleccionat} other{{count} seleccionats}}",
+    "@messagesSelected": {
+        "description": "The chat's title while messages are selected",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "messagesCopied": "{count, plural, =1{S'ha copiat el missatge} other{S'han copiat {count} missatges}}",
+    "@messagesCopied": {
+        "description": "The message shown after copying messages' text",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "info": "Informació",
+    "@info": {
+        "description": "Message menu item to show the message's details"
+    },
+    "today": "Avui",
+    "@today": {
+        "description": "Above the messages of today in a chat"
+    },
+    "yesterday": "Ahir",
+    "@yesterday": {
+        "description": "Above the messages of yesterday in a chat"
+    },
+    "loadFailed": "Alguna cosa ha anat malament",
+    "@loadFailed": {
+        "description": "Shown in place of a page that couldn't be loaded"
+    },
+    "locationMessage": "Ubicació",
+    "@locationMessage": {
+        "description": "A shared location, as the chat list shows it"
+    },
+    "emoji": "Emoji",
+    "@emoji": {
+        "description": "The button in the message box that opens the emoji picker"
+    },
+    "send": "Envia",
+    "@send": {
+        "description": "The button that sends what is written in the message box"
+    },
+    "attach": "Adjunta",
+    "@attach": {
+        "description": "The button in the message box that opens what can be attached"
+    },
+    "cancelReply": "Cancel·la la resposta",
+    "@cancelReply": {
+        "description": "The button that stops replying to a message"
+    },
+    "removeAttachment": "Elimina",
+    "@removeAttachment": {
+        "description": "The button on an attachment waiting to be sent that takes it away"
+    },
+    "attachFailed": "No s'ha pogut adjuntar",
+    "@attachFailed": {
+        "description": "Shown when a picture or file couldn't be picked or copied to send"
+    },
+    "dayAndTime": "{day} {time}",
+    "@dayAndTime": {
+        "description": "A day and a time on it, as in 'muted until Fri 14:00'",
+        "placeholders": {
+            "day": {
+                "type": "String",
+                "example": "Fri"
+            },
+            "time": {
+                "type": "String",
+                "example": "14:00"
+            }
+        }
+    },
+    "draftLabel": "Esborrany:",
+    "@draftLabel": {
+        "description": "Before what is being written in a chat, as the chat list shows it"
+    },
+    "messageV3": "ID de missatge de TRIfA",
+    "@messageV3": {
+        "description": "Setting to read the ID TRIfA adds to its messages"
+    },
+    "messageV3Hint": "Amaga l'ID que TRIfA afegeix als missatges i mostra només un cop un missatge que torna a enviar",
+    "@messageV3Hint": {
+        "description": "What reading TRIfA's message IDs does"
+    },
+    "titleWithAccount": "bTox ({name})",
+    "@titleWithAccount": {
+        "description": "The title of the chat list, with the account it shows",
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Alice"
+            }
+        }
+    },
+    "deleteChatToo": "Suprimeix també definitivament els teus missatges i fitxers amb aquesta persona",
+    "@deleteChatToo": {
+        "description": "Option when deleting a contact to delete the chat with them too"
+    },
+    "profileDeleteFailed": "No s'ha pogut suprimir el perfil \"{name}\"",
+    "@profileDeleteFailed": {
+        "description": "Error when a profile couldn't be deleted",
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Alice"
+            }
+        }
+    },
+    "mergeChat": "Combina amb un altre xat",
+    "@mergeChat": {
+        "description": "Action on a group chat to show it together with another that a bot relays messages between"
+    },
+    "unmergeChat": "Mostra els xats per separat",
+    "@unmergeChat": {
+        "description": "Action on merged chats to show them as separate chats again"
+    },
+    "mergeChatTitle": "Combina xats",
+    "@mergeChatTitle": {
+        "description": "Title of the page that merges two chats"
+    },
+    "mergeWith": "Combina amb",
+    "@mergeWith": {
+        "description": "Heading of the chats one can merge with"
+    },
+    "relayBotIn": "Bot a {chat}",
+    "@relayBotIn": {
+        "description": "Heading of the members of a chat to pick the bot from that relays messages to the other chat",
+        "placeholders": {
+            "chat": {
+                "type": "String",
+                "example": "Tox"
+            }
+        }
+    },
+    "relayedMessages": "{relayed} de {count} missatges retransmesos",
+    "@relayedMessages": {
+        "description": "How many of a chat member's messages look like a bot relayed them",
+        "placeholders": {
+            "relayed": {
+                "type": "int"
+            },
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "noChatsToMerge": "No hi ha altres xats de grup",
+    "@noChatsToMerge": {
+        "description": "Shown when there are no chats to merge with"
+    },
+    "merge": "Combina",
+    "@merge": {
+        "description": "Button that merges the chats"
+    },
+    "exported": "S'han exportat les dades",
+    "@exported": {
+        "description": "Shown when the backup was saved"
+    },
+    "exportFailed": "No s'han pogut exportar les dades",
+    "@exportFailed": {
+        "description": "Error when the backup couldn't be made or saved"
+    },
+    "locationOff": "Activa la ubicació per compartir on ets",
+    "@locationOff": {
+        "description": "Shown when sharing a location while location is off on the device"
+    },
+    "locationDenied": "bTox necessita permís per utilitzar la teva ubicació",
+    "@locationDenied": {
+        "description": "Shown when sharing a location without the permission"
+    },
+    "locationFailed": "No s'ha pogut trobar on ets",
+    "@locationFailed": {
+        "description": "Error when the location couldn't be found"
+    },
+    "openSettings": "Configuració",
+    "@openSettings": {
+        "description": "Button opening the device's settings to fix a problem"
+    },
+    "ownToxIdError": "Aquest és el teu propi ID de Tox",
+    "@ownToxIdError": {
+        "description": "Error when adding your own Tox ID as a contact"
+    },
+    "addContactFailed": "No s'ha pogut afegir el contacte",
+    "@addContactFailed": {
+        "description": "Error when a contact couldn't be saved"
+    },
+    "chatClosed": "Ja no pots enviar missatges a aquest xat",
+    "@chatClosed": {
+        "description": "Shown in place of the message input for a deleted contact or a group left"
+    },
+    "friendRequest": "Sol·licitud d'amistat",
+    "@friendRequest": {
+        "description": "Title of the notification for a friend request"
+    },
+    "inviteNotification": "Invitació a un xat",
+    "@inviteNotification": {
+        "description": "Title of the notification for an invite to a group or conference"
+    },
+    "groupInvite": "{friend} t'ha convidat a {chat}",
+    "@groupInvite": {
+        "description": "An invite to a group, above the chats and in its notification",
+        "placeholders": {
+            "friend": {
+                "type": "String"
+            },
+            "chat": {
+                "type": "String"
+            }
+        }
+    },
+    "conferenceInvite": "{friend} t'ha convidat a una conferència",
+    "@conferenceInvite": {
+        "description": "An invite to a conference, whose invite has no name, above the chats and in its notification",
+        "placeholders": {
+            "friend": {
+                "type": "String"
+            }
+        }
+    },
+    "joinInvite": "Uneix-t'hi",
+    "@joinInvite": {
+        "description": "The button that joins the chat of an invite"
+    },
+    "declineInvite": "Rebutja",
+    "@declineInvite": {
+        "description": "The button that declines an invite to a chat"
+    },
+    "joiningInvite": "S'està unint…",
+    "@joiningInvite": {
+        "description": "Under an invite answered to join, until the account's home device joined"
+    },
+    "inviteNeedsPassword": "Cal la contrasenya del grup. Demana una invitació nova.",
+    "@inviteNeedsPassword": {
+        "description": "Under an invite to a group that turned the account away for a missing or wrong password, which spent the invite"
+    },
+    "inviteSpent": "No t'hi has pogut unir. Demana una invitació nova.",
+    "@inviteSpent": {
+        "description": "Under an invite whose chat turned the account away for another reason, which spent the invite"
+    },
+    "inviteFailed": "No t'hi has pogut unir",
+    "@inviteFailed": {
+        "description": "Under an invite whose chat the account's home device couldn't join, which can be tried again"
+    },
+    "groupPasswordHelper": "Deixa-ho buit si el grup no en té",
+    "@groupPasswordHelper": {
+        "description": "Under the password field when joining a group from an invite"
+    },
+    "retryInvite": "Torna-ho a provar",
+    "@retryInvite": {
+        "description": "The button that tries joining the chat of an invite again"
+    },
+    "chatInAccount": "{chat} · {account}",
+    "@chatInAccount": {
+        "description": "Title of a chat's notification while several accounts are signed in: the chat, then the account it's in",
+        "placeholders": {
+            "chat": {
+                "type": "String"
+            },
+            "account": {
+                "type": "String"
+            }
+        }
+    },
+    "newestMessages": "Missatges més recents",
+    "@newestMessages": {
+        "description": "Tooltip of the button that scrolls a chat to its newest messages"
+    },
+    "noChats": "Encara no hi ha xats",
+    "@noChats": {
+        "description": "Shown on the Chats tab when there are no chats"
+    },
+    "noChatsHint": "Afegeix un contacte amb el botó + per començar a xatejar",
+    "@noChatsHint": {
+        "description": "How to start a first chat, under noChats"
     }
 }

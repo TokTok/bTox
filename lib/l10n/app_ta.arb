@@ -11,15 +11,15 @@
   "@message": {
     "description": "The text for the message field"
   },
-  "messageInput": "டாக்சு செய்தி",
+  "messageInput": "Tox செய்தி",
   "@messageInput": {
     "description": "The placeholder text for the message input field"
   },
-  "toxId": "நச்சு ஐடி",
+  "toxId": "Tox ஐடி",
   "@toxId": {
     "description": "The text for the Tox ID field"
   },
-  "defaultAddContactMessage": "ஏய், நான் {nick}, BTOX இல் என்னுடன் அரட்டையடிக்க வாருங்கள்!",
+  "defaultAddContactMessage": "வணக்கம், நான் {nick}, bTox-இல் என்னுடன் அரட்டையடிக்க வாருங்கள்!",
   "@defaultAddContactMessage": {
     "description": "The default message to send when adding a contact",
     "placeholders": {
@@ -43,7 +43,7 @@
       }
     }
   },
-  "add": "கூட்டு",
+  "add": "சேர்",
   "@add": {
     "description": "The text for the button to add a contact"
   },
@@ -99,7 +99,7 @@
   "@create": {
     "description": "The text for the button create a new profile"
   },
-  "logout": "வெளியேற்றம்",
+  "logout": "வெளியேறு",
   "@logout": {
     "description": "The text for the logout menu item"
   },
@@ -135,7 +135,7 @@
       }
     }
   },
-  "statusMessageLengthError": "நிலை செய்தி {max} எழுத்துக்களை விட அதிகமாக இருக்காது",
+  "statusMessageLengthError": "நிலை செய்தி {max} எழுத்துக்களை விட அதிகமாக இருக்கக்கூடாது",
   "@statusMessageLengthError": {
     "description": "The error message when the status message is longer than the supported maximum",
     "placeholders": {
@@ -158,5 +158,911 @@
         "example": "Hello"
       }
     }
+  },
+  "copyToxId": "Tox ஐடியை நகலெடு",
+  "@copyToxId": {
+    "description": "The tooltip for copying your own Tox ID"
+  },
+  "toxIdCopied": "Tox ஐடி நகலெடுக்கப்பட்டது",
+  "@toxIdCopied": {
+    "description": "The message shown after copying your own Tox ID"
+  },
+  "toxIdChecksumError": "சரியான Tox ஐடி அல்ல, எழுத்துப் பிழைகள் உள்ளனவா எனச் சரிபார்க்கவும்",
+  "@toxIdChecksumError": {
+    "description": "The error message when the Tox ID's checksum doesn't match, e.g. because of a typo"
+  },
+  "logoutMessage": "மீண்டும் உள்நுழையும் வரை {name} செய்திகளைப் பெறாது.",
+  "@logoutMessage": {
+    "description": "Asks whether to sign the current account out",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Alice"
+      }
+    }
+  },
+  "acceptFriendRequest": "நண்பர் கோரிக்கையை ஏற்கவும்",
+  "@acceptFriendRequest": {
+    "description": "The tooltip for accepting an incoming friend request"
+  },
+  "rejectFriendRequest": "நண்பர் கோரிக்கையை நிராகரிக்கவும்",
+  "@rejectFriendRequest": {
+    "description": "The tooltip for rejecting an incoming friend request"
+  },
+  "online": "ஆன்லைன்",
+  "@online": {
+    "description": "A contact's connection state, for screen readers"
+  },
+  "offline": "ஆஃப்லைன்",
+  "@offline": {
+    "description": "A contact's connection state, for screen readers"
+  },
+  "deleteContact": "தொடர்பை நீக்கு",
+  "@deleteContact": {
+    "description": "The title of the dialog for deleting a contact"
+  },
+  "deleteContactMessage": "\"{name}\" என்பவரை உங்கள் தொடர்புகளிலிருந்து நீக்கவா?",
+  "@deleteContactMessage": {
+    "description": "The message to confirm the deletion of a contact",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Alice"
+      }
+    }
+  },
+  "contactDeleted": "தொடர்பு \"{name}\" நீக்கப்பட்டது",
+  "@contactDeleted": {
+    "description": "The text when a contact has been deleted",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Alice"
+      }
+    }
+  },
+  "import": "இறக்குமதி செய்",
+  "@import": {
+    "description": "The button that confirms importing a profile"
+  },
+  "password": "கடவுச்சொல்",
+  "@password": {
+    "description": "The label for a password: an encrypted profile's, or a group's"
+  },
+  "wrongPassword": "தவறான கடவுச்சொல்",
+  "@wrongPassword": {
+    "description": "The error when an encrypted profile's password is wrong"
+  },
+  "profileImported": "சுயவிவரம் \"{name}\" இறக்குமதி செய்யப்பட்டது",
+  "@profileImported": {
+    "description": "The text when a profile has been imported",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Alice"
+      }
+    }
+  },
+  "profileAlreadyImported": "இந்தச் சுயவிவரம் ஏற்கெனவே bTox-இல் உள்ளது",
+  "@profileAlreadyImported": {
+    "description": "The error when importing a profile that bTox already has"
+  },
+  "exportData": "தரவை ஏற்றுமதி செய்",
+  "@exportData": {
+    "description": "Settings entry that saves all accounts and messages to a file"
+  },
+  "exportDataHint": "எல்லாக் கணக்குகளும் செய்திகளும், கடவுச்சொல்லால் மறையாக்கப்பட்டவை",
+  "@exportDataHint": {
+    "description": "Explanation below the export data setting"
+  },
+  "importData": "தரவை இறக்குமதி செய்",
+  "@importData": {
+    "description": "The setting, button and dialog title for importing a bTox export or a .tox profile file"
+  },
+  "importDataHint": "bTox ஏற்றுமதி, அல்லது வேறொரு கிளையண்டின் Tox சுயவிவரம்",
+  "@importDataHint": {
+    "description": "Explanation below the import data setting"
+  },
+  "export": "ஏற்றுமதி செய்",
+  "@export": {
+    "description": "Button that exports data"
+  },
+  "accountsRestored": "{count, plural, =0{காப்புப்பிரதியில் புதிய கணக்குகள் இல்லை} =1{1 கணக்கு மீட்டெடுக்கப்பட்டது} other{{count} கணக்குகள் மீட்டெடுக்கப்பட்டன}}",
+  "@accountsRestored": {
+    "description": "Shown after importing accounts from a bTox backup",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "notAToxProfile": "இது Tox சுயவிவரம் அல்ல",
+  "@notAToxProfile": {
+    "description": "The error when the chosen file isn't a Tox profile"
+  },
+  "stayOnline": "மூடிய பிறகும் ஆன்லைனில் இரு",
+  "@stayOnline": {
+    "description": "The setting to keep running in the background after closing the app"
+  },
+  "stayOnlineHint": "உள்நுழைந்துள்ள எல்லாக் கணக்குகளையும் ஆன்லைனில் வைத்திருக்கும்",
+  "@stayOnlineHint": {
+    "description": "Explains that stay online applies to every signed-in account"
+  },
+  "accounts": "கணக்குகள்",
+  "@accounts": {
+    "description": "The menu item for signing in and managing accounts"
+  },
+  "appSettings": "செயலி",
+  "@appSettings": {
+    "description": "The heading of the settings for the whole app"
+  },
+  "accountSettings": "கணக்கு: {name}",
+  "@accountSettings": {
+    "description": "The heading of the settings for one account",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Alice"
+      }
+    }
+  },
+  "autoAcceptFiles": "இந்த அளவு வரையிலான கோப்புகளைத் தானாக ஏற்கவும்",
+  "@autoAcceptFiles": {
+    "description": "The setting for the largest incoming file accepted without asking"
+  },
+  "never": "ஒருபோதும் இல்லை",
+  "@never": {
+    "description": "Auto-accepting no files at all"
+  },
+  "acceptFile": "ஏற்கவும்",
+  "@acceptFile": {
+    "description": "The button to receive an offered file"
+  },
+  "declineFile": "மறு",
+  "@declineFile": {
+    "description": "The button to refuse an offered file"
+  },
+  "downloadFile": "பதிவிறக்கு",
+  "@downloadFile": {
+    "description": "The button to fetch a file the account's home device holds"
+  },
+  "fileCancelled": "ரத்துசெய்யப்பட்டது",
+  "@fileCancelled": {
+    "description": "A file transfer that was declined or stopped"
+  },
+  "filePaused": "அவர் மீண்டும் ஆன்லைனுக்கு வரும் வரை இடைநிறுத்தப்பட்டது",
+  "@filePaused": {
+    "description": "An incoming file that stopped part way, which goes on when the sender sends it again"
+  },
+  "udpEnabled": "UDP-ஐப் பயன்படுத்து",
+  "@udpEnabled": {
+    "description": "The setting for Tox's UDP transport"
+  },
+  "udpEnabledHint": "முடக்கினால், TCP ரிலேக்கள் வழியாக மட்டுமே இணையும்",
+  "@udpEnabledHint": {
+    "description": "Explains turning off UDP"
+  },
+  "ipv6Enabled": "IPv6-ஐப் பயன்படுத்து",
+  "@ipv6Enabled": {
+    "description": "The setting for connecting over IPv6"
+  },
+  "localDiscoveryEnabled": "உள்ளூர் கண்டறிதல்",
+  "@localDiscoveryEnabled": {
+    "description": "The setting for finding friends on the local network"
+  },
+  "localDiscoveryEnabledHint": "அதே நெட்வொர்க்கில் உள்ள நண்பர்களை நேரடியாகக் கண்டறியும்",
+  "@localDiscoveryEnabledHint": {
+    "description": "Explains local discovery"
+  },
+  "offWithProxy": "ப்ராக்ஸி பயன்படுத்தும்போது முடக்கப்படும், அது TCP-ஐ மட்டுமே கொண்டுசெல்லும்",
+  "@offWithProxy": {
+    "description": "Why UDP and local discovery are off when a proxy is set"
+  },
+  "proxy": "ப்ராக்ஸி",
+  "@proxy": {
+    "description": "The proxy setting and dialog title"
+  },
+  "proxyNone": "எதுவுமில்லை",
+  "@proxyNone": {
+    "description": "No proxy"
+  },
+  "proxyHost": "ஹோஸ்ட்",
+  "@proxyHost": {
+    "description": "The label for the proxy host field"
+  },
+  "proxyPort": "போர்ட்",
+  "@proxyPort": {
+    "description": "The label for the proxy port field"
+  },
+  "invalidProxyHost": "ஒரு ஹோஸ்டை உள்ளிடவும்",
+  "@invalidProxyHost": {
+    "description": "The error when the proxy host is empty"
+  },
+  "invalidProxyPort": "1 முதல் 65535 வரையிலான போர்ட்டை உள்ளிடவும்",
+  "@invalidProxyPort": {
+    "description": "The error when the proxy port is out of range"
+  },
+  "save": "சேமி",
+  "@save": {
+    "description": "The text for the save button"
+  },
+  "attachCamera": "கேமரா",
+  "@attachCamera": {
+    "description": "Button to take a photo to send"
+  },
+  "attachGallery": "கேலரி",
+  "@attachGallery": {
+    "description": "Button to choose images to send"
+  },
+  "attachFile": "கோப்பு",
+  "@attachFile": {
+    "description": "Button to choose files to send"
+  },
+  "attachLocation": "இருப்பிடம்",
+  "@attachLocation": {
+    "description": "Button to send the current location"
+  },
+  "linkAccount": "கணக்கை இணை",
+  "@linkAccount": {
+    "description": "Action to use an account that runs on another device"
+  },
+  "pairingLink": "ஜோடியாக்கும் இணைப்பு",
+  "@pairingLink": {
+    "description": "Label of the field for another device's pairing link"
+  },
+  "pairingLinkHelp": "கணக்கை இயக்கும் சாதனத்திலிருந்து ஜோடியாக்கும் இணைப்பை ஒட்டவும்.",
+  "@pairingLinkHelp": {
+    "description": "Explains where the pairing link comes from"
+  },
+  "invalidPairingLink": "இது ஜோடியாக்கும் இணைப்பு அல்ல",
+  "@invalidPairingLink": {
+    "description": "Error when the pasted text isn't a pairing link"
+  },
+  "link": "இணை",
+  "@link": {
+    "description": "Button that links an account"
+  },
+  "linkedAccount": "இணைக்கப்பட்ட கணக்கு",
+  "@linkedAccount": {
+    "description": "Name of a linked account until its name has synced"
+  },
+  "linkedAccountName": "{name} (இணைக்கப்பட்டது)",
+  "@linkedAccountName": {
+    "description": "A linked account where accounts are listed to choose from",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "sendFailed": "செய்தியை அனுப்ப முடியவில்லை",
+  "@sendFailed": {
+    "description": "Error when a message couldn't be saved for sending"
+  },
+  "saveFailed": "அதைச் சேமிக்க முடியவில்லை",
+  "@saveFailed": {
+    "description": "Error when something the user did couldn't be saved"
+  },
+  "importFailed": "இந்தக் கோப்பை இறக்குமதி செய்ய முடியவில்லை",
+  "@importFailed": {
+    "description": "Error when a profile or backup file couldn't be imported"
+  },
+  "linkFailed": "கணக்கை இணைக்க முடியவில்லை",
+  "@linkFailed": {
+    "description": "Error when a linked account couldn't be added"
+  },
+  "chats": "அரட்டைகள்",
+  "@chats": {
+    "description": "The tab of the main page listing chats"
+  },
+  "calls": "அழைப்புகள்",
+  "@calls": {
+    "description": "The tab of the main page listing calls"
+  },
+  "voiceCall": "குரல் அழைப்பு",
+  "@voiceCall": {
+    "description": "A call button's tooltip, and a call still going on in a chat"
+  },
+  "videoCall": "வீடியோ அழைப்பு",
+  "@videoCall": {
+    "description": "A video call button's tooltip, and a video call still going on in a chat"
+  },
+  "outgoingVideoCall": "வெளிச்செல்லும் வீடியோ அழைப்பு",
+  "@outgoingVideoCall": {
+    "description": "A video call we made, in a chat"
+  },
+  "incomingVideoCall": "உள்வரும் வீடியோ அழைப்பு",
+  "@incomingVideoCall": {
+    "description": "A video call the friend made, in a chat and while it rings"
+  },
+  "missedVideoCall": "தவறிய வீடியோ அழைப்பு",
+  "@missedVideoCall": {
+    "description": "A video call that rang here and wasn't answered"
+  },
+  "callCamera": "கேமரா",
+  "@callCamera": {
+    "description": "The button that turns the camera on or off in a call"
+  },
+  "flipCamera": "கேமராவை மாற்று",
+  "@flipCamera": {
+    "description": "The button that switches between the front and back camera in a call"
+  },
+  "cameraNeeded": "bTox கேமராவைப் பயன்படுத்த அனுமதி இல்லை, எனவே அழைப்பு கேமரா இல்லாமல் தொடரும்",
+  "@cameraNeeded": {
+    "description": "Shown when bTox may not use the camera for a video call, which goes on without video"
+  },
+  "outgoingCall": "வெளிச்செல்லும் குரல் அழைப்பு",
+  "@outgoingCall": {
+    "description": "A call we made, in a chat"
+  },
+  "incomingCall": "உள்வரும் குரல் அழைப்பு",
+  "@incomingCall": {
+    "description": "A call the friend made, in a chat and while it rings"
+  },
+  "missedCall": "தவறிய குரல் அழைப்பு",
+  "@missedCall": {
+    "description": "A call that rang here and wasn't answered"
+  },
+  "callWithDuration": "{call} · {duration}",
+  "@callWithDuration": {
+    "description": "A call in a chat, with how long it was",
+    "placeholders": {
+      "call": {
+        "type": "String"
+      },
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "incomingCalls": "உள்வரும் அழைப்புகள்",
+  "@incomingCalls": {
+    "description": "The notification channel that rings"
+  },
+  "missedCalls": "தவறிய அழைப்புகள்",
+  "@missedCalls": {
+    "description": "The notification channel for missed calls"
+  },
+  "callOngoing": "அழைப்பு நடைபெறுகிறது",
+  "@callOngoing": {
+    "description": "The notification while a call goes on"
+  },
+  "calling": "அழைக்கிறது…",
+  "@calling": {
+    "description": "Our call, while it rings at the friend's"
+  },
+  "connecting": "இணைக்கிறது…",
+  "@connecting": {
+    "description": "A call answered here, until it's connected"
+  },
+  "answerCall": "பதிலளி",
+  "@answerCall": {
+    "description": "The button that answers a call"
+  },
+  "declineCall": "மறு",
+  "@declineCall": {
+    "description": "The button that declines a call"
+  },
+  "hangUp": "துண்டி",
+  "@hangUp": {
+    "description": "The button that ends a call"
+  },
+  "muteCall": "ஒலியடக்கு",
+  "@muteCall": {
+    "description": "The button that mutes the microphone in a call"
+  },
+  "callSpeaker": "ஸ்பீக்கர்",
+  "@callSpeaker": {
+    "description": "The button that puts a call on the loudspeaker"
+  },
+  "callEarpiece": "ஃபோன்",
+  "@callEarpiece": {
+    "description": "Where a call's audio can go: the phone's earpiece"
+  },
+  "callWired": "ஹெட்ஃபோன்கள்",
+  "@callWired": {
+    "description": "Where a call's audio can go: wired headphones"
+  },
+  "callBluetooth": "Bluetooth",
+  "@callBluetooth": {
+    "description": "Where a call's audio can go: a Bluetooth headset"
+  },
+  "hideCall": "அழைப்பை மறை",
+  "@hideCall": {
+    "description": "The button that shows the chats during a call"
+  },
+  "returnToCall": "அழைப்புக்குத் திரும்பு",
+  "@returnToCall": {
+    "description": "The banner over the chats during a call"
+  },
+  "microphoneNeeded": "அழைப்புகளுக்கு மைக்ரோஃபோன் தேவை",
+  "@microphoneNeeded": {
+    "description": "Shown when bTox may not use the microphone"
+  },
+  "ringOverLockScreen": "பூட்டுத் திரையின் மேல் அழைப்புகள் ஒலிக்க முடியாது",
+  "@ringOverLockScreen": {
+    "description": "Shown on the Calls tab while Android doesn't let bTox show incoming calls full screen"
+  },
+  "allowRingOverLockScreen": "அனுமதி",
+  "@allowRingOverLockScreen": {
+    "description": "The button that opens the setting letting calls ring full screen"
+  },
+  "relayBotNames": "ரிலே பாட் வழியான பெயர்கள்",
+  "@relayBotNames": {
+    "description": "The action, and its page, that shows the names a bot relays from another chat in a group chat"
+  },
+  "stopRelayBotNames": "ரிலே பாட் வழியான பெயர்களைக் காட்டுவதை நிறுத்து",
+  "@stopRelayBotNames": {
+    "description": "The action that shows a relay bot's messages as its own again"
+  },
+  "showNames": "பெயர்களைக் காட்டு",
+  "@showNames": {
+    "description": "The button that starts showing the names a relay bot relays"
+  },
+  "noCalls": "சமீபத்திய அழைப்புகள் இல்லை",
+  "@noCalls": {
+    "description": "Shown on the Calls tab when there are no calls"
+  },
+  "callsNotAvailable": "அழைப்புகள் இந்தக் கணக்கு இணைக்கப்பட்டுள்ள சாதனம் வழியாகச் செல்கின்றன, அது இப்போது அவற்றை ஏற்க முடியாது",
+  "@callsNotAvailable": {
+    "description": "Shown on the Calls tab of a linked account while its home device is offline, or doesn't connect calls to its devices"
+  },
+  "notImplemented": "இன்னும் கிடைக்கவில்லை",
+  "@notImplemented": {
+    "description": "Shown for a menu item that doesn't work yet"
+  },
+  "openLinkFailed": "இந்த இணைப்பைத் திறக்க எந்தச் செயலியும் இல்லை",
+  "@openLinkFailed": {
+    "description": "Shown when tapping a link in a message opens nothing"
+  },
+  "reply": "பதிலளி",
+  "@reply": {
+    "description": "Message menu item to reply to the message"
+  },
+  "forward": "முன்னனுப்பு",
+  "@forward": {
+    "description": "Message menu item to forward the message"
+  },
+  "chatDetails": "அரட்டை விவரங்கள்",
+  "@chatDetails": {
+    "description": "The tooltip of a chat's title, which opens who the chat is with"
+  },
+  "chatMembers": "{count, plural, =1{1 உறுப்பினர்} other{{count} உறுப்பினர்கள்}}",
+  "@chatMembers": {
+    "description": "The heading of the people in a group or conference, counting yourself",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "you": "நீங்கள்",
+  "@you": {
+    "description": "Yourself, among the people in a chat"
+  },
+  "muteChat": "அறிவிப்புகளை ஒலியடக்கு",
+  "@muteChat": {
+    "description": "The action, and its dialog, that stops a chat's notifications for a while"
+  },
+  "unmuteChat": "அறிவிப்புகளின் ஒலியடக்கத்தை நீக்கு",
+  "@unmuteChat": {
+    "description": "The action that lets a muted chat notify again"
+  },
+  "muteForAnHour": "1 மணிநேரத்திற்கு",
+  "@muteForAnHour": {
+    "description": "How long to mute a chat for"
+  },
+  "muteForEightHours": "8 மணிநேரத்திற்கு",
+  "@muteForEightHours": {
+    "description": "How long to mute a chat for"
+  },
+  "muteForAWeek": "1 வாரத்திற்கு",
+  "@muteForAWeek": {
+    "description": "How long to mute a chat for"
+  },
+  "muteAlways": "எப்போதும்",
+  "@muteAlways": {
+    "description": "Mutes a chat until it's unmuted"
+  },
+  "notifyMentions": "குறிப்பிடப்பட்டால் இன்னும் அறிவி",
+  "@notifyMentions": {
+    "description": "In the dialog muting a group chat: messages naming you still notify"
+  },
+  "mutedUntil": "{time} வரை ஒலியடக்கப்பட்டது",
+  "@mutedUntil": {
+    "description": "How long a chat stays muted",
+    "placeholders": {
+      "time": {
+        "type": "String",
+        "example": "Thu 17:00"
+      }
+    }
+  },
+  "mutedAlways": "ஒலியடக்கப்பட்டது",
+  "@mutedAlways": {
+    "description": "A chat muted until it's unmuted"
+  },
+  "sendPicturesAsQoi": "படங்களை QOI ஆக அனுப்பு",
+  "@sendPicturesAsQoi": {
+    "description": "A friend chat's setting: camera and gallery pictures sent as QOI"
+  },
+  "sendPicturesAsQoiHint": "தரம் குறையாது, ஆனால் பெரியது, எல்லாச் செயலிகளும் QOI-ஐக் காட்டாது",
+  "@sendPicturesAsQoiHint": {
+    "description": "Under the setting to send pictures as QOI"
+  },
+  "seenThrough": "{bot} வழியாகக் காணப்பட்டவர்கள்",
+  "@seenThrough": {
+    "description": "Heading of the names a relay bot has relayed in the chat's history, under the bot among the people in a chat, though they may not be there now",
+    "placeholders": {
+      "bot": {
+        "type": "String",
+        "example": "EPiG-BrDG"
+      }
+    }
+  },
+  "showMoreSeen": "{count, plural, =1{மேலும் 1 காட்டு} other{மேலும் {count} காட்டு}}",
+  "@showMoreSeen": {
+    "description": "Shows the names a relay bot relayed longer ago",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "roleFounder": "நிறுவனர்",
+  "@roleFounder": {
+    "description": "The role of whoever created a group"
+  },
+  "roleModerator": "மட்டுறுத்துநர்",
+  "@roleModerator": {
+    "description": "The role of someone who can moderate a group"
+  },
+  "roleObserver": "பார்வையாளர்",
+  "@roleObserver": {
+    "description": "The role of someone who can only read a group"
+  },
+  "statusAway": "வெளியே",
+  "@statusAway": {
+    "description": "Someone's status when they're away"
+  },
+  "statusBusy": "பிஸி",
+  "@statusBusy": {
+    "description": "Someone's status when they're busy"
+  },
+  "membersWhileOnline": "கணக்கின் முதன்மைச் சாதனம் ஆன்லைனில் இருக்கும்போது இங்கு உள்ளவர்கள் தெரிவார்கள்",
+  "@membersWhileOnline": {
+    "description": "In place of a linked account's chat members, while its home device can't say who they are"
+  },
+  "publicKey": "பொது விசை",
+  "@publicKey": {
+    "description": "The heading of a friend's public key, which Tox knows them by"
+  },
+  "publicKeyCopied": "பொது விசை நகலெடுக்கப்பட்டது",
+  "@publicKeyCopied": {
+    "description": "The message shown after copying a friend's public key"
+  },
+  "copy": "நகலெடு",
+  "@copy": {
+    "description": "Message menu item to copy the message's text"
+  },
+  "select": "தேர்ந்தெடு",
+  "@select": {
+    "description": "Message menu item to select messages"
+  },
+  "forwardTo": "இதற்கு முன்னனுப்பு",
+  "@forwardTo": {
+    "description": "The title of the page that picks a chat to forward messages to"
+  },
+  "messagesForwarded": "{count, plural, =1{செய்தி முன்னனுப்பப்பட்டது} other{{count} செய்திகள் முன்னனுப்பப்பட்டன}}",
+  "@messagesForwarded": {
+    "description": "The message shown after forwarding messages",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "messageInfo": "செய்தி விவரங்கள்",
+  "@messageInfo": {
+    "description": "The title of the page a message's Info opens"
+  },
+  "messageSent": "அனுப்பப்பட்டது",
+  "@messageSent": {
+    "description": "On a message's details, when ours was sent"
+  },
+  "messageSending": "அனுப்புகிறது",
+  "@messageSending": {
+    "description": "On a message's details, in place of messageSent while ours waits to go"
+  },
+  "messageDelivered": "சென்றடைந்தது",
+  "@messageDelivered": {
+    "description": "On a message's details, when ours arrived"
+  },
+  "messageReceived": "பெறப்பட்டது",
+  "@messageReceived": {
+    "description": "On a message's details, when someone else's came"
+  },
+  "messageFrom": "அனுப்பியவர்",
+  "@messageFrom": {
+    "description": "On a message's details, the heading of who sent someone else's"
+  },
+  "messagesSelected": "{count} தேர்ந்தெடுக்கப்பட்டன",
+  "@messagesSelected": {
+    "description": "The chat's title while messages are selected",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "messagesCopied": "{count, plural, =1{செய்தி நகலெடுக்கப்பட்டது} other{{count} செய்திகள் நகலெடுக்கப்பட்டன}}",
+  "@messagesCopied": {
+    "description": "The message shown after copying messages' text",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "info": "தகவல்",
+  "@info": {
+    "description": "Message menu item to show the message's details"
+  },
+  "today": "இன்று",
+  "@today": {
+    "description": "Above the messages of today in a chat"
+  },
+  "yesterday": "நேற்று",
+  "@yesterday": {
+    "description": "Above the messages of yesterday in a chat"
+  },
+  "loadFailed": "ஏதோ தவறு நடந்துவிட்டது",
+  "@loadFailed": {
+    "description": "Shown in place of a page that couldn't be loaded"
+  },
+  "locationMessage": "இருப்பிடம்",
+  "@locationMessage": {
+    "description": "A shared location, as the chat list shows it"
+  },
+  "emoji": "எமோஜி",
+  "@emoji": {
+    "description": "The button in the message box that opens the emoji picker"
+  },
+  "send": "அனுப்பு",
+  "@send": {
+    "description": "The button that sends what is written in the message box"
+  },
+  "attach": "இணைப்பு சேர்",
+  "@attach": {
+    "description": "The button in the message box that opens what can be attached"
+  },
+  "cancelReply": "பதிலை ரத்துசெய்",
+  "@cancelReply": {
+    "description": "The button that stops replying to a message"
+  },
+  "removeAttachment": "அகற்று",
+  "@removeAttachment": {
+    "description": "The button on an attachment waiting to be sent that takes it away"
+  },
+  "attachFailed": "அதை இணைக்க முடியவில்லை",
+  "@attachFailed": {
+    "description": "Shown when a picture or file couldn't be picked or copied to send"
+  },
+  "dayAndTime": "{day} {time}",
+  "@dayAndTime": {
+    "description": "A day and a time on it, as in 'muted until Fri 14:00'",
+    "placeholders": {
+      "day": {
+        "type": "String",
+        "example": "Fri"
+      },
+      "time": {
+        "type": "String",
+        "example": "14:00"
+      }
+    }
+  },
+  "draftLabel": "வரைவு:",
+  "@draftLabel": {
+    "description": "Before what is being written in a chat, as the chat list shows it"
+  },
+  "messageV3": "TRIfA செய்தி ஐடிகள்",
+  "@messageV3": {
+    "description": "Setting to read the ID TRIfA adds to its messages"
+  },
+  "messageV3Hint": "TRIfA செய்திகளில் சேர்க்கும் ஐடியை மறைக்கும், அது மீண்டும் அனுப்பும் செய்தியை ஒருமுறை மட்டுமே காட்டும்",
+  "@messageV3Hint": {
+    "description": "What reading TRIfA's message IDs does"
+  },
+  "titleWithAccount": "bTox ({name})",
+  "@titleWithAccount": {
+    "description": "The title of the chat list, with the account it shows",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Alice"
+      }
+    }
+  },
+  "deleteChatToo": "அவருடனான உங்கள் செய்திகளையும் கோப்புகளையும் நிரந்தரமாக நீக்கு",
+  "@deleteChatToo": {
+    "description": "Option when deleting a contact to delete the chat with them too"
+  },
+  "profileDeleteFailed": "சுயவிவரம் \"{name}\"-ஐ நீக்க முடியவில்லை",
+  "@profileDeleteFailed": {
+    "description": "Error when a profile couldn't be deleted",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Alice"
+      }
+    }
+  },
+  "mergeChat": "வேறொரு அரட்டையுடன் இணை",
+  "@mergeChat": {
+    "description": "Action on a group chat to show it together with another that a bot relays messages between"
+  },
+  "unmergeChat": "அரட்டைகளைத் தனித்தனியாகக் காட்டு",
+  "@unmergeChat": {
+    "description": "Action on merged chats to show them as separate chats again"
+  },
+  "mergeChatTitle": "அரட்டைகளை இணை",
+  "@mergeChatTitle": {
+    "description": "Title of the page that merges two chats"
+  },
+  "mergeWith": "இதனுடன் இணை",
+  "@mergeWith": {
+    "description": "Heading of the chats one can merge with"
+  },
+  "relayBotIn": "{chat}-இல் உள்ள பாட்",
+  "@relayBotIn": {
+    "description": "Heading of the members of a chat to pick the bot from that relays messages to the other chat",
+    "placeholders": {
+      "chat": {
+        "type": "String",
+        "example": "Tox"
+      }
+    }
+  },
+  "relayedMessages": "{count} செய்திகளில் {relayed} ரிலே செய்யப்பட்டன",
+  "@relayedMessages": {
+    "description": "How many of a chat member's messages look like a bot relayed them",
+    "placeholders": {
+      "relayed": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "noChatsToMerge": "வேறு குழு அரட்டைகள் இல்லை",
+  "@noChatsToMerge": {
+    "description": "Shown when there are no chats to merge with"
+  },
+  "merge": "இணை",
+  "@merge": {
+    "description": "Button that merges the chats"
+  },
+  "exported": "தரவு ஏற்றுமதி செய்யப்பட்டது",
+  "@exported": {
+    "description": "Shown when the backup was saved"
+  },
+  "exportFailed": "தரவை ஏற்றுமதி செய்ய முடியவில்லை",
+  "@exportFailed": {
+    "description": "Error when the backup couldn't be made or saved"
+  },
+  "locationOff": "நீங்கள் இருக்கும் இடத்தைப் பகிர இருப்பிடத்தை இயக்கவும்",
+  "@locationOff": {
+    "description": "Shown when sharing a location while location is off on the device"
+  },
+  "locationDenied": "உங்கள் இருப்பிடத்தைப் பயன்படுத்த bTox-க்கு அனுமதி தேவை",
+  "@locationDenied": {
+    "description": "Shown when sharing a location without the permission"
+  },
+  "locationFailed": "நீங்கள் இருக்கும் இடத்தைக் கண்டறிய முடியவில்லை",
+  "@locationFailed": {
+    "description": "Error when the location couldn't be found"
+  },
+  "openSettings": "அமைப்புகள்",
+  "@openSettings": {
+    "description": "Button opening the device's settings to fix a problem"
+  },
+  "ownToxIdError": "இது உங்கள் சொந்த Tox ஐடி",
+  "@ownToxIdError": {
+    "description": "Error when adding your own Tox ID as a contact"
+  },
+  "addContactFailed": "தொடர்பைச் சேர்க்க முடியவில்லை",
+  "@addContactFailed": {
+    "description": "Error when a contact couldn't be saved"
+  },
+  "chatClosed": "இந்த அரட்டைக்கு இனி செய்திகளை அனுப்ப முடியாது",
+  "@chatClosed": {
+    "description": "Shown in place of the message input for a deleted contact or a group left"
+  },
+  "friendRequest": "நண்பர் கோரிக்கை",
+  "@friendRequest": {
+    "description": "Title of the notification for a friend request"
+  },
+  "inviteNotification": "அரட்டைக்கான அழைப்பு",
+  "@inviteNotification": {
+    "description": "Title of the notification for an invite to a group or conference"
+  },
+  "groupInvite": "{friend} உங்களை {chat}-க்கு அழைத்துள்ளார்",
+  "@groupInvite": {
+    "description": "An invite to a group, above the chats and in its notification",
+    "placeholders": {
+      "friend": {
+        "type": "String"
+      },
+      "chat": {
+        "type": "String"
+      }
+    }
+  },
+  "conferenceInvite": "{friend} உங்களை ஒரு மாநாட்டுக்கு அழைத்துள்ளார்",
+  "@conferenceInvite": {
+    "description": "An invite to a conference, whose invite has no name, above the chats and in its notification",
+    "placeholders": {
+      "friend": {
+        "type": "String"
+      }
+    }
+  },
+  "joinInvite": "சேர்",
+  "@joinInvite": {
+    "description": "The button that joins the chat of an invite"
+  },
+  "declineInvite": "மறு",
+  "@declineInvite": {
+    "description": "The button that declines an invite to a chat"
+  },
+  "joiningInvite": "சேர்கிறது…",
+  "@joiningInvite": {
+    "description": "Under an invite answered to join, until the account's home device joined"
+  },
+  "inviteNeedsPassword": "குழுவின் கடவுச்சொல் தேவை. புதிய அழைப்பைக் கேளுங்கள்.",
+  "@inviteNeedsPassword": {
+    "description": "Under an invite to a group that turned the account away for a missing or wrong password, which spent the invite"
+  },
+  "inviteSpent": "சேர முடியவில்லை. புதிய அழைப்பைக் கேளுங்கள்.",
+  "@inviteSpent": {
+    "description": "Under an invite whose chat turned the account away for another reason, which spent the invite"
+  },
+  "inviteFailed": "சேர முடியவில்லை",
+  "@inviteFailed": {
+    "description": "Under an invite whose chat the account's home device couldn't join, which can be tried again"
+  },
+  "groupPasswordHelper": "குழுவுக்குக் கடவுச்சொல் இல்லையெனில் காலியாக விடவும்",
+  "@groupPasswordHelper": {
+    "description": "Under the password field when joining a group from an invite"
+  },
+  "retryInvite": "மீண்டும் முயல்க",
+  "@retryInvite": {
+    "description": "The button that tries joining the chat of an invite again"
+  },
+  "chatInAccount": "{chat} · {account}",
+  "@chatInAccount": {
+    "description": "Title of a chat's notification while several accounts are signed in: the chat, then the account it's in",
+    "placeholders": {
+      "chat": {
+        "type": "String"
+      },
+      "account": {
+        "type": "String"
+      }
+    }
+  },
+  "newestMessages": "புதிய செய்திகள்",
+  "@newestMessages": {
+    "description": "Tooltip of the button that scrolls a chat to its newest messages"
+  },
+  "noChats": "இன்னும் அரட்டைகள் இல்லை",
+  "@noChats": {
+    "description": "Shown on the Chats tab when there are no chats"
+  },
+  "noChatsHint": "அரட்டையைத் தொடங்க + பொத்தான் மூலம் ஒரு தொடர்பைச் சேர்க்கவும்",
+  "@noChatsHint": {
+    "description": "How to start a first chat, under noChats"
   }
 }

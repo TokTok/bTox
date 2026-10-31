@@ -1,5 +1,5 @@
 {
-  "profileDeleted": "Профилът „{name}“ е премахнат",
+  "profileDeleted": "Профилът \"{name}\" е премахнат",
   "@profileDeleted": {
     "description": "The text when a profile has been deleted",
     "placeholders": {
@@ -139,7 +139,7 @@
       }
     }
   },
-  "deleteProfileMessage": "Желаете ли профила „{name}“ да бъде премахнат? Действието е необратимо. То ще премахне всички контакти и съобщения. Уверете се, че имате резервно копие.",
+  "deleteProfileMessage": "Желаете ли профила \"{name}\" да бъде премахнат? Действието е необратимо. То ще премахне всички контакти и съобщения. Уверете се, че имате резервно копие.",
   "@deleteProfileMessage": {
     "description": "The message to confirm the deletion of a profile",
     "placeholders": {
@@ -158,5 +158,911 @@
         "example": "Hello"
       }
     }
+  },
+  "copyToxId": "Копиране на Tox ID",
+  "@copyToxId": {
+    "description": "The tooltip for copying your own Tox ID"
+  },
+  "toxIdCopied": "Tox ID е копиран",
+  "@toxIdCopied": {
+    "description": "The message shown after copying your own Tox ID"
+  },
+  "toxIdChecksumError": "Невалиден Tox ID, проверете го за грешки",
+  "@toxIdChecksumError": {
+    "description": "The error message when the Tox ID's checksum doesn't match, e.g. because of a typo"
+  },
+  "logoutMessage": "{name} няма да получава съобщения, докато не влезете отново в него.",
+  "@logoutMessage": {
+    "description": "Asks whether to sign the current account out",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Alice"
+      }
+    }
+  },
+  "acceptFriendRequest": "Приемане на заявката за приятелство",
+  "@acceptFriendRequest": {
+    "description": "The tooltip for accepting an incoming friend request"
+  },
+  "rejectFriendRequest": "Отхвърляне на заявката за приятелство",
+  "@rejectFriendRequest": {
+    "description": "The tooltip for rejecting an incoming friend request"
+  },
+  "online": "На линия",
+  "@online": {
+    "description": "A contact's connection state, for screen readers"
+  },
+  "offline": "Извън линия",
+  "@offline": {
+    "description": "A contact's connection state, for screen readers"
+  },
+  "deleteContact": "Премахване на контакт",
+  "@deleteContact": {
+    "description": "The title of the dialog for deleting a contact"
+  },
+  "deleteContactMessage": "Да се премахне ли \"{name}\" от контактите Ви?",
+  "@deleteContactMessage": {
+    "description": "The message to confirm the deletion of a contact",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Alice"
+      }
+    }
+  },
+  "contactDeleted": "Контактът \"{name}\" е премахнат",
+  "@contactDeleted": {
+    "description": "The text when a contact has been deleted",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Alice"
+      }
+    }
+  },
+  "import": "Импортиране",
+  "@import": {
+    "description": "The button that confirms importing a profile"
+  },
+  "password": "Парола",
+  "@password": {
+    "description": "The label for a password: an encrypted profile's, or a group's"
+  },
+  "wrongPassword": "Грешна парола",
+  "@wrongPassword": {
+    "description": "The error when an encrypted profile's password is wrong"
+  },
+  "profileImported": "Профилът \"{name}\" е импортиран",
+  "@profileImported": {
+    "description": "The text when a profile has been imported",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Alice"
+      }
+    }
+  },
+  "profileAlreadyImported": "Този профил вече е в bTox",
+  "@profileAlreadyImported": {
+    "description": "The error when importing a profile that bTox already has"
+  },
+  "exportData": "Експортиране на данните",
+  "@exportData": {
+    "description": "Settings entry that saves all accounts and messages to a file"
+  },
+  "exportDataHint": "Всички акаунти и съобщения, шифровани с парола",
+  "@exportDataHint": {
+    "description": "Explanation below the export data setting"
+  },
+  "importData": "Импортиране на данни",
+  "@importData": {
+    "description": "The setting, button and dialog title for importing a bTox export or a .tox profile file"
+  },
+  "importDataHint": "Експорт от bTox или профил на Tox от друг клиент",
+  "@importDataHint": {
+    "description": "Explanation below the import data setting"
+  },
+  "export": "Експортиране",
+  "@export": {
+    "description": "Button that exports data"
+  },
+  "accountsRestored": "{count, plural, =0{Резервното копие няма нови акаунти} =1{1 акаунт е възстановен} other{{count} акаунта са възстановени}}",
+  "@accountsRestored": {
+    "description": "Shown after importing accounts from a bTox backup",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "notAToxProfile": "Това не е профил на Tox",
+  "@notAToxProfile": {
+    "description": "The error when the chosen file isn't a Tox profile"
+  },
+  "stayOnline": "Оставане на линия при затваряне",
+  "@stayOnline": {
+    "description": "The setting to keep running in the background after closing the app"
+  },
+  "stayOnlineHint": "Поддържа на линия всички акаунти, в които сте влезли",
+  "@stayOnlineHint": {
+    "description": "Explains that stay online applies to every signed-in account"
+  },
+  "accounts": "Акаунти",
+  "@accounts": {
+    "description": "The menu item for signing in and managing accounts"
+  },
+  "appSettings": "Приложение",
+  "@appSettings": {
+    "description": "The heading of the settings for the whole app"
+  },
+  "accountSettings": "Акаунт: {name}",
+  "@accountSettings": {
+    "description": "The heading of the settings for one account",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Alice"
+      }
+    }
+  },
+  "autoAcceptFiles": "Автоматично приемане на файлове до",
+  "@autoAcceptFiles": {
+    "description": "The setting for the largest incoming file accepted without asking"
+  },
+  "never": "Никога",
+  "@never": {
+    "description": "Auto-accepting no files at all"
+  },
+  "acceptFile": "Приемане",
+  "@acceptFile": {
+    "description": "The button to receive an offered file"
+  },
+  "declineFile": "Отхвърляне",
+  "@declineFile": {
+    "description": "The button to refuse an offered file"
+  },
+  "downloadFile": "Изтегляне",
+  "@downloadFile": {
+    "description": "The button to fetch a file the account's home device holds"
+  },
+  "fileCancelled": "Отменено",
+  "@fileCancelled": {
+    "description": "A file transfer that was declined or stopped"
+  },
+  "filePaused": "На пауза, докато подателят не се появи на линия",
+  "@filePaused": {
+    "description": "An incoming file that stopped part way, which goes on when the sender sends it again"
+  },
+  "udpEnabled": "Използване на UDP",
+  "@udpEnabled": {
+    "description": "The setting for Tox's UDP transport"
+  },
+  "udpEnabledHint": "Когато е изключено, връзката е само през TCP релета",
+  "@udpEnabledHint": {
+    "description": "Explains turning off UDP"
+  },
+  "ipv6Enabled": "Използване на IPv6",
+  "@ipv6Enabled": {
+    "description": "The setting for connecting over IPv6"
+  },
+  "localDiscoveryEnabled": "Локално откриване",
+  "@localDiscoveryEnabled": {
+    "description": "The setting for finding friends on the local network"
+  },
+  "localDiscoveryEnabledHint": "Директно намиране на приятели в същата мрежа",
+  "@localDiscoveryEnabledHint": {
+    "description": "Explains local discovery"
+  },
+  "offWithProxy": "Изключено при използване на прокси, което пренася само TCP",
+  "@offWithProxy": {
+    "description": "Why UDP and local discovery are off when a proxy is set"
+  },
+  "proxy": "Прокси",
+  "@proxy": {
+    "description": "The proxy setting and dialog title"
+  },
+  "proxyNone": "Без",
+  "@proxyNone": {
+    "description": "No proxy"
+  },
+  "proxyHost": "Хост",
+  "@proxyHost": {
+    "description": "The label for the proxy host field"
+  },
+  "proxyPort": "Порт",
+  "@proxyPort": {
+    "description": "The label for the proxy port field"
+  },
+  "invalidProxyHost": "Въведете хост",
+  "@invalidProxyHost": {
+    "description": "The error when the proxy host is empty"
+  },
+  "invalidProxyPort": "Въведете порт от 1 до 65535",
+  "@invalidProxyPort": {
+    "description": "The error when the proxy port is out of range"
+  },
+  "save": "Запазване",
+  "@save": {
+    "description": "The text for the save button"
+  },
+  "attachCamera": "Камера",
+  "@attachCamera": {
+    "description": "Button to take a photo to send"
+  },
+  "attachGallery": "Галерия",
+  "@attachGallery": {
+    "description": "Button to choose images to send"
+  },
+  "attachFile": "Файл",
+  "@attachFile": {
+    "description": "Button to choose files to send"
+  },
+  "attachLocation": "Местоположение",
+  "@attachLocation": {
+    "description": "Button to send the current location"
+  },
+  "linkAccount": "Свързване на акаунт",
+  "@linkAccount": {
+    "description": "Action to use an account that runs on another device"
+  },
+  "pairingLink": "Връзка за сдвояване",
+  "@pairingLink": {
+    "description": "Label of the field for another device's pairing link"
+  },
+  "pairingLinkHelp": "Поставете връзката за сдвояване от устройството, на което работи акаунтът.",
+  "@pairingLinkHelp": {
+    "description": "Explains where the pairing link comes from"
+  },
+  "invalidPairingLink": "Това не е връзка за сдвояване",
+  "@invalidPairingLink": {
+    "description": "Error when the pasted text isn't a pairing link"
+  },
+  "link": "Свързване",
+  "@link": {
+    "description": "Button that links an account"
+  },
+  "linkedAccount": "Свързан акаунт",
+  "@linkedAccount": {
+    "description": "Name of a linked account until its name has synced"
+  },
+  "linkedAccountName": "{name} (свързан)",
+  "@linkedAccountName": {
+    "description": "A linked account where accounts are listed to choose from",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "sendFailed": "Съобщението не можа да бъде изпратено",
+  "@sendFailed": {
+    "description": "Error when a message couldn't be saved for sending"
+  },
+  "saveFailed": "Не можа да бъде запазено",
+  "@saveFailed": {
+    "description": "Error when something the user did couldn't be saved"
+  },
+  "importFailed": "Файлът не можа да бъде импортиран",
+  "@importFailed": {
+    "description": "Error when a profile or backup file couldn't be imported"
+  },
+  "linkFailed": "Акаунтът не можа да бъде свързан",
+  "@linkFailed": {
+    "description": "Error when a linked account couldn't be added"
+  },
+  "chats": "Чатове",
+  "@chats": {
+    "description": "The tab of the main page listing chats"
+  },
+  "calls": "Обаждания",
+  "@calls": {
+    "description": "The tab of the main page listing calls"
+  },
+  "voiceCall": "Гласово обаждане",
+  "@voiceCall": {
+    "description": "A call button's tooltip, and a call still going on in a chat"
+  },
+  "videoCall": "Видеообаждане",
+  "@videoCall": {
+    "description": "A video call button's tooltip, and a video call still going on in a chat"
+  },
+  "outgoingVideoCall": "Изходящо видеообаждане",
+  "@outgoingVideoCall": {
+    "description": "A video call we made, in a chat"
+  },
+  "incomingVideoCall": "Входящо видеообаждане",
+  "@incomingVideoCall": {
+    "description": "A video call the friend made, in a chat and while it rings"
+  },
+  "missedVideoCall": "Пропуснато видеообаждане",
+  "@missedVideoCall": {
+    "description": "A video call that rang here and wasn't answered"
+  },
+  "callCamera": "Камера",
+  "@callCamera": {
+    "description": "The button that turns the camera on or off in a call"
+  },
+  "flipCamera": "Смяна на камерата",
+  "@flipCamera": {
+    "description": "The button that switches between the front and back camera in a call"
+  },
+  "cameraNeeded": "bTox няма достъп до камерата, затова обаждането продължава без нея",
+  "@cameraNeeded": {
+    "description": "Shown when bTox may not use the camera for a video call, which goes on without video"
+  },
+  "outgoingCall": "Изходящо гласово обаждане",
+  "@outgoingCall": {
+    "description": "A call we made, in a chat"
+  },
+  "incomingCall": "Входящо гласово обаждане",
+  "@incomingCall": {
+    "description": "A call the friend made, in a chat and while it rings"
+  },
+  "missedCall": "Пропуснато гласово обаждане",
+  "@missedCall": {
+    "description": "A call that rang here and wasn't answered"
+  },
+  "callWithDuration": "{call} · {duration}",
+  "@callWithDuration": {
+    "description": "A call in a chat, with how long it was",
+    "placeholders": {
+      "call": {
+        "type": "String"
+      },
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "incomingCalls": "Входящи обаждания",
+  "@incomingCalls": {
+    "description": "The notification channel that rings"
+  },
+  "missedCalls": "Пропуснати обаждания",
+  "@missedCalls": {
+    "description": "The notification channel for missed calls"
+  },
+  "callOngoing": "Обаждане в ход",
+  "@callOngoing": {
+    "description": "The notification while a call goes on"
+  },
+  "calling": "Обаждане…",
+  "@calling": {
+    "description": "Our call, while it rings at the friend's"
+  },
+  "connecting": "Свързване…",
+  "@connecting": {
+    "description": "A call answered here, until it's connected"
+  },
+  "answerCall": "Отговор",
+  "@answerCall": {
+    "description": "The button that answers a call"
+  },
+  "declineCall": "Отхвърляне",
+  "@declineCall": {
+    "description": "The button that declines a call"
+  },
+  "hangUp": "Затваряне",
+  "@hangUp": {
+    "description": "The button that ends a call"
+  },
+  "muteCall": "Заглушаване",
+  "@muteCall": {
+    "description": "The button that mutes the microphone in a call"
+  },
+  "callSpeaker": "Високоговорител",
+  "@callSpeaker": {
+    "description": "The button that puts a call on the loudspeaker"
+  },
+  "callEarpiece": "Телефон",
+  "@callEarpiece": {
+    "description": "Where a call's audio can go: the phone's earpiece"
+  },
+  "callWired": "Слушалки",
+  "@callWired": {
+    "description": "Where a call's audio can go: wired headphones"
+  },
+  "callBluetooth": "Bluetooth",
+  "@callBluetooth": {
+    "description": "Where a call's audio can go: a Bluetooth headset"
+  },
+  "hideCall": "Скриване на обаждането",
+  "@hideCall": {
+    "description": "The button that shows the chats during a call"
+  },
+  "returnToCall": "Връщане към обаждането",
+  "@returnToCall": {
+    "description": "The banner over the chats during a call"
+  },
+  "microphoneNeeded": "Обажданията изискват микрофона",
+  "@microphoneNeeded": {
+    "description": "Shown when bTox may not use the microphone"
+  },
+  "ringOverLockScreen": "Обажданията не могат да звънят върху заключения екран",
+  "@ringOverLockScreen": {
+    "description": "Shown on the Calls tab while Android doesn't let bTox show incoming calls full screen"
+  },
+  "allowRingOverLockScreen": "Разрешаване",
+  "@allowRingOverLockScreen": {
+    "description": "The button that opens the setting letting calls ring full screen"
+  },
+  "relayBotNames": "Имена от ретранслиращ бот",
+  "@relayBotNames": {
+    "description": "The action, and its page, that shows the names a bot relays from another chat in a group chat"
+  },
+  "stopRelayBotNames": "Спиране на показването на имена от ретранслиращия бот",
+  "@stopRelayBotNames": {
+    "description": "The action that shows a relay bot's messages as its own again"
+  },
+  "showNames": "Показване на имената",
+  "@showNames": {
+    "description": "The button that starts showing the names a relay bot relays"
+  },
+  "noCalls": "Няма скорошни обаждания",
+  "@noCalls": {
+    "description": "Shown on the Calls tab when there are no calls"
+  },
+  "callsNotAvailable": "Обажданията минават през устройството, с което е свързан този акаунт, а то не може да ги приеме сега",
+  "@callsNotAvailable": {
+    "description": "Shown on the Calls tab of a linked account while its home device is offline, or doesn't connect calls to its devices"
+  },
+  "notImplemented": "Все още не е налично",
+  "@notImplemented": {
+    "description": "Shown for a menu item that doesn't work yet"
+  },
+  "openLinkFailed": "Няма приложение, което да отвори тази връзка",
+  "@openLinkFailed": {
+    "description": "Shown when tapping a link in a message opens nothing"
+  },
+  "reply": "Отговор",
+  "@reply": {
+    "description": "Message menu item to reply to the message"
+  },
+  "forward": "Препращане",
+  "@forward": {
+    "description": "Message menu item to forward the message"
+  },
+  "chatDetails": "Подробности за чата",
+  "@chatDetails": {
+    "description": "The tooltip of a chat's title, which opens who the chat is with"
+  },
+  "chatMembers": "{count, plural, =1{1 участник} other{{count} участници}}",
+  "@chatMembers": {
+    "description": "The heading of the people in a group or conference, counting yourself",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "you": "Вие",
+  "@you": {
+    "description": "Yourself, among the people in a chat"
+  },
+  "muteChat": "Заглушаване на известията",
+  "@muteChat": {
+    "description": "The action, and its dialog, that stops a chat's notifications for a while"
+  },
+  "unmuteChat": "Включване на известията",
+  "@unmuteChat": {
+    "description": "The action that lets a muted chat notify again"
+  },
+  "muteForAnHour": "За 1 час",
+  "@muteForAnHour": {
+    "description": "How long to mute a chat for"
+  },
+  "muteForEightHours": "За 8 часа",
+  "@muteForEightHours": {
+    "description": "How long to mute a chat for"
+  },
+  "muteForAWeek": "За 1 седмица",
+  "@muteForAWeek": {
+    "description": "How long to mute a chat for"
+  },
+  "muteAlways": "Винаги",
+  "@muteAlways": {
+    "description": "Mutes a chat until it's unmuted"
+  },
+  "notifyMentions": "Известявай ме все пак при споменаване",
+  "@notifyMentions": {
+    "description": "In the dialog muting a group chat: messages naming you still notify"
+  },
+  "mutedUntil": "Заглушен до {time}",
+  "@mutedUntil": {
+    "description": "How long a chat stays muted",
+    "placeholders": {
+      "time": {
+        "type": "String",
+        "example": "Thu 17:00"
+      }
+    }
+  },
+  "mutedAlways": "Заглушен",
+  "@mutedAlways": {
+    "description": "A chat muted until it's unmuted"
+  },
+  "sendPicturesAsQoi": "Изпращане на снимките като QOI",
+  "@sendPicturesAsQoi": {
+    "description": "A friend chat's setting: camera and gallery pictures sent as QOI"
+  },
+  "sendPicturesAsQoiHint": "Без загуби, но по-големи, а и не всяко приложение показва QOI",
+  "@sendPicturesAsQoiHint": {
+    "description": "Under the setting to send pictures as QOI"
+  },
+  "seenThrough": "Видени чрез {bot}",
+  "@seenThrough": {
+    "description": "Heading of the names a relay bot has relayed in the chat's history, under the bot among the people in a chat, though they may not be there now",
+    "placeholders": {
+      "bot": {
+        "type": "String",
+        "example": "EPiG-BrDG"
+      }
+    }
+  },
+  "showMoreSeen": "{count, plural, =1{Показване на още 1} other{Показване на още {count}}}",
+  "@showMoreSeen": {
+    "description": "Shows the names a relay bot relayed longer ago",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "roleFounder": "Основател",
+  "@roleFounder": {
+    "description": "The role of whoever created a group"
+  },
+  "roleModerator": "Модератор",
+  "@roleModerator": {
+    "description": "The role of someone who can moderate a group"
+  },
+  "roleObserver": "Наблюдател",
+  "@roleObserver": {
+    "description": "The role of someone who can only read a group"
+  },
+  "statusAway": "Отсъства",
+  "@statusAway": {
+    "description": "Someone's status when they're away"
+  },
+  "statusBusy": "Зает",
+  "@statusBusy": {
+    "description": "Someone's status when they're busy"
+  },
+  "membersWhileOnline": "Участниците се показват, докато основното устройство на акаунта е на линия",
+  "@membersWhileOnline": {
+    "description": "In place of a linked account's chat members, while its home device can't say who they are"
+  },
+  "publicKey": "Публичен ключ",
+  "@publicKey": {
+    "description": "The heading of a friend's public key, which Tox knows them by"
+  },
+  "publicKeyCopied": "Публичният ключ е копиран",
+  "@publicKeyCopied": {
+    "description": "The message shown after copying a friend's public key"
+  },
+  "copy": "Копиране",
+  "@copy": {
+    "description": "Message menu item to copy the message's text"
+  },
+  "select": "Избиране",
+  "@select": {
+    "description": "Message menu item to select messages"
+  },
+  "forwardTo": "Препращане до",
+  "@forwardTo": {
+    "description": "The title of the page that picks a chat to forward messages to"
+  },
+  "messagesForwarded": "{count, plural, =1{Съобщението е препратено} other{{count} съобщения са препратени}}",
+  "@messagesForwarded": {
+    "description": "The message shown after forwarding messages",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "messageInfo": "Подробности за съобщението",
+  "@messageInfo": {
+    "description": "The title of the page a message's Info opens"
+  },
+  "messageSent": "Изпратено",
+  "@messageSent": {
+    "description": "On a message's details, when ours was sent"
+  },
+  "messageSending": "Изпраща се",
+  "@messageSending": {
+    "description": "On a message's details, in place of messageSent while ours waits to go"
+  },
+  "messageDelivered": "Доставено",
+  "@messageDelivered": {
+    "description": "On a message's details, when ours arrived"
+  },
+  "messageReceived": "Получено",
+  "@messageReceived": {
+    "description": "On a message's details, when someone else's came"
+  },
+  "messageFrom": "От",
+  "@messageFrom": {
+    "description": "On a message's details, the heading of who sent someone else's"
+  },
+  "messagesSelected": "Избрани: {count}",
+  "@messagesSelected": {
+    "description": "The chat's title while messages are selected",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "messagesCopied": "{count, plural, =1{Съобщението е копирано} other{{count} съобщения са копирани}}",
+  "@messagesCopied": {
+    "description": "The message shown after copying messages' text",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "info": "Информация",
+  "@info": {
+    "description": "Message menu item to show the message's details"
+  },
+  "today": "Днес",
+  "@today": {
+    "description": "Above the messages of today in a chat"
+  },
+  "yesterday": "Вчера",
+  "@yesterday": {
+    "description": "Above the messages of yesterday in a chat"
+  },
+  "loadFailed": "Нещо се обърка",
+  "@loadFailed": {
+    "description": "Shown in place of a page that couldn't be loaded"
+  },
+  "locationMessage": "Местоположение",
+  "@locationMessage": {
+    "description": "A shared location, as the chat list shows it"
+  },
+  "emoji": "Емоджи",
+  "@emoji": {
+    "description": "The button in the message box that opens the emoji picker"
+  },
+  "send": "Изпращане",
+  "@send": {
+    "description": "The button that sends what is written in the message box"
+  },
+  "attach": "Прикачване",
+  "@attach": {
+    "description": "The button in the message box that opens what can be attached"
+  },
+  "cancelReply": "Отказ от отговора",
+  "@cancelReply": {
+    "description": "The button that stops replying to a message"
+  },
+  "removeAttachment": "Премахване",
+  "@removeAttachment": {
+    "description": "The button on an attachment waiting to be sent that takes it away"
+  },
+  "attachFailed": "Не можа да бъде прикачено",
+  "@attachFailed": {
+    "description": "Shown when a picture or file couldn't be picked or copied to send"
+  },
+  "dayAndTime": "{day} {time}",
+  "@dayAndTime": {
+    "description": "A day and a time on it, as in 'muted until Fri 14:00'",
+    "placeholders": {
+      "day": {
+        "type": "String",
+        "example": "Fri"
+      },
+      "time": {
+        "type": "String",
+        "example": "14:00"
+      }
+    }
+  },
+  "draftLabel": "Чернова:",
+  "@draftLabel": {
+    "description": "Before what is being written in a chat, as the chat list shows it"
+  },
+  "messageV3": "ID на съобщенията от TRIfA",
+  "@messageV3": {
+    "description": "Setting to read the ID TRIfA adds to its messages"
+  },
+  "messageV3Hint": "Скрива ID, което TRIfA добавя към съобщенията, и показва само веднъж съобщение, което изпраща повторно",
+  "@messageV3Hint": {
+    "description": "What reading TRIfA's message IDs does"
+  },
+  "titleWithAccount": "bTox ({name})",
+  "@titleWithAccount": {
+    "description": "The title of the chat list, with the account it shows",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Alice"
+      }
+    }
+  },
+  "deleteChatToo": "Премахване завинаги и на съобщенията и файловете Ви в чата",
+  "@deleteChatToo": {
+    "description": "Option when deleting a contact to delete the chat with them too"
+  },
+  "profileDeleteFailed": "Профилът \"{name}\" не можа да бъде премахнат",
+  "@profileDeleteFailed": {
+    "description": "Error when a profile couldn't be deleted",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Alice"
+      }
+    }
+  },
+  "mergeChat": "Обединяване с друг чат",
+  "@mergeChat": {
+    "description": "Action on a group chat to show it together with another that a bot relays messages between"
+  },
+  "unmergeChat": "Показване на чатовете поотделно",
+  "@unmergeChat": {
+    "description": "Action on merged chats to show them as separate chats again"
+  },
+  "mergeChatTitle": "Обединяване на чатове",
+  "@mergeChatTitle": {
+    "description": "Title of the page that merges two chats"
+  },
+  "mergeWith": "Обединяване с",
+  "@mergeWith": {
+    "description": "Heading of the chats one can merge with"
+  },
+  "relayBotIn": "Бот в {chat}",
+  "@relayBotIn": {
+    "description": "Heading of the members of a chat to pick the bot from that relays messages to the other chat",
+    "placeholders": {
+      "chat": {
+        "type": "String",
+        "example": "Tox"
+      }
+    }
+  },
+  "relayedMessages": "Ретранслирани {relayed} от {count} съобщения",
+  "@relayedMessages": {
+    "description": "How many of a chat member's messages look like a bot relayed them",
+    "placeholders": {
+      "relayed": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "noChatsToMerge": "Няма други групови чатове",
+  "@noChatsToMerge": {
+    "description": "Shown when there are no chats to merge with"
+  },
+  "merge": "Обединяване",
+  "@merge": {
+    "description": "Button that merges the chats"
+  },
+  "exported": "Данните са експортирани",
+  "@exported": {
+    "description": "Shown when the backup was saved"
+  },
+  "exportFailed": "Данните не можаха да бъдат експортирани",
+  "@exportFailed": {
+    "description": "Error when the backup couldn't be made or saved"
+  },
+  "locationOff": "Включете местоположението, за да споделите къде сте",
+  "@locationOff": {
+    "description": "Shown when sharing a location while location is off on the device"
+  },
+  "locationDenied": "bTox се нуждае от разрешение за достъп до местоположението Ви",
+  "@locationDenied": {
+    "description": "Shown when sharing a location without the permission"
+  },
+  "locationFailed": "Местоположението Ви не можа да бъде определено",
+  "@locationFailed": {
+    "description": "Error when the location couldn't be found"
+  },
+  "openSettings": "Настройки",
+  "@openSettings": {
+    "description": "Button opening the device's settings to fix a problem"
+  },
+  "ownToxIdError": "Това е Вашият собствен Tox ID",
+  "@ownToxIdError": {
+    "description": "Error when adding your own Tox ID as a contact"
+  },
+  "addContactFailed": "Контактът не можа да бъде добавен",
+  "@addContactFailed": {
+    "description": "Error when a contact couldn't be saved"
+  },
+  "chatClosed": "Вече не можете да изпращате съобщения в този чат",
+  "@chatClosed": {
+    "description": "Shown in place of the message input for a deleted contact or a group left"
+  },
+  "friendRequest": "Заявка за приятелство",
+  "@friendRequest": {
+    "description": "Title of the notification for a friend request"
+  },
+  "inviteNotification": "Покана за чат",
+  "@inviteNotification": {
+    "description": "Title of the notification for an invite to a group or conference"
+  },
+  "groupInvite": "{friend} Ви покани в {chat}",
+  "@groupInvite": {
+    "description": "An invite to a group, above the chats and in its notification",
+    "placeholders": {
+      "friend": {
+        "type": "String"
+      },
+      "chat": {
+        "type": "String"
+      }
+    }
+  },
+  "conferenceInvite": "{friend} Ви покани в конференция",
+  "@conferenceInvite": {
+    "description": "An invite to a conference, whose invite has no name, above the chats and in its notification",
+    "placeholders": {
+      "friend": {
+        "type": "String"
+      }
+    }
+  },
+  "joinInvite": "Присъединяване",
+  "@joinInvite": {
+    "description": "The button that joins the chat of an invite"
+  },
+  "declineInvite": "Отхвърляне",
+  "@declineInvite": {
+    "description": "The button that declines an invite to a chat"
+  },
+  "joiningInvite": "Присъединяване…",
+  "@joiningInvite": {
+    "description": "Under an invite answered to join, until the account's home device joined"
+  },
+  "inviteNeedsPassword": "Нужна е паролата на групата. Поискайте нова покана.",
+  "@inviteNeedsPassword": {
+    "description": "Under an invite to a group that turned the account away for a missing or wrong password, which spent the invite"
+  },
+  "inviteSpent": "Присъединяването не бе успешно. Поискайте нова покана.",
+  "@inviteSpent": {
+    "description": "Under an invite whose chat turned the account away for another reason, which spent the invite"
+  },
+  "inviteFailed": "Присъединяването не бе успешно",
+  "@inviteFailed": {
+    "description": "Under an invite whose chat the account's home device couldn't join, which can be tried again"
+  },
+  "groupPasswordHelper": "Оставете празно, ако групата няма парола",
+  "@groupPasswordHelper": {
+    "description": "Under the password field when joining a group from an invite"
+  },
+  "retryInvite": "Нов опит",
+  "@retryInvite": {
+    "description": "The button that tries joining the chat of an invite again"
+  },
+  "chatInAccount": "{chat} · {account}",
+  "@chatInAccount": {
+    "description": "Title of a chat's notification while several accounts are signed in: the chat, then the account it's in",
+    "placeholders": {
+      "chat": {
+        "type": "String"
+      },
+      "account": {
+        "type": "String"
+      }
+    }
+  },
+  "newestMessages": "Най-новите съобщения",
+  "@newestMessages": {
+    "description": "Tooltip of the button that scrolls a chat to its newest messages"
+  },
+  "noChats": "Все още няма чатове",
+  "@noChats": {
+    "description": "Shown on the Chats tab when there are no chats"
+  },
+  "noChatsHint": "Добавете контакт с бутона +, за да започнете чат",
+  "@noChatsHint": {
+    "description": "How to start a first chat, under noChats"
   }
 }

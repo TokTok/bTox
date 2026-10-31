@@ -1,6 +1,6 @@
 {
     "@@locale": "vec",
-    "defaultContactName": "Mìa conjonesto",
+    "defaultContactName": "Desconosesto",
     "@defaultContactName": {
         "description": "The default name for a contact when the name is not yet known"
     },
@@ -12,11 +12,11 @@
     "@message": {
         "description": "The text for the message field"
     },
-    "messageInput": "Tox mesajo",
+    "messageInput": "Mesajo Tox",
     "@messageInput": {
         "description": "The placeholder text for the message input field"
     },
-    "re": "Re:{message}",
+    "re": "Re: {message}",
     "@re": {
         "description": "The prefix for a reply message",
         "placeholders": {
@@ -40,7 +40,7 @@
             }
         }
     },
-    "addContactMessageLengthError": "Maximum {max} caractere({length} l'è stra grando)",
+    "addContactMessageLengthError": "Màsimo {max} caràtari ({length} xe massa)",
     "@addContactMessageLengthError": {
         "description": "The error message when the friend request message is too long",
         "placeholders": {
@@ -58,7 +58,7 @@
     "@add": {
         "description": "The text for the button to add a contact"
     },
-    "toxIdLengthError": "Toca da èsar {length} hexadecimal caractere",
+    "toxIdLengthError": "Ła ga da èsar de {length} caràtari esadesimałi",
     "@toxIdLengthError": {
         "description": "The error message when the Tox ID is not the right length or format",
         "placeholders": {
@@ -68,7 +68,7 @@
             }
         }
     },
-    "messageEmptyError": "El mesajo no pol mìa da èsar łevro",
+    "messageEmptyError": "El mesajo no pol mìa èsar vodo",
     "@messageEmptyError": {
         "description": "The error message when the message is empty"
     },
@@ -80,7 +80,7 @@
     "@menuSettings": {
         "description": "The text for the settings menu item"
     },
-    "nickLengthError": "Nickname el toca da gaver 1 e {max} caractere",
+    "nickLengthError": "El nickname el ga da gaver tra 1 e {max} caràtari",
     "@nickLengthError": {
         "description": "The error message when the nickname is too short or too long",
         "placeholders": {
@@ -90,7 +90,7 @@
             }
         }
     },
-    "statusMessageLengthError": "El Status mesajo no pol èsar pì {max} caractere",
+    "statusMessageLengthError": "El mesajo de stato no pol pasar i {max} caràtari",
     "@statusMessageLengthError": {
         "description": "The error message when the status message is longer than the supported maximum",
         "placeholders": {
@@ -104,15 +104,15 @@
     "@profileTextFieldNick": {
         "description": "The text for the nickname field"
     },
-    "profileTextFieldUserStatusMessage": "Status mesajo",
+    "profileTextFieldUserStatusMessage": "Mesajo de stato",
     "@profileTextFieldUserStatusMessage": {
         "description": "The text for the status message field"
     },
-    "applyChanges": "Łaudar łe muanse",
+    "applyChanges": "Aplicar łe muanse",
     "@applyChanges": {
         "description": "The text for the button to apply changes"
     },
-    "applied": "Łaudà",
+    "applied": "Aplicà",
     "@applied": {
         "description": "The text when changes have been applied"
     },
@@ -132,7 +132,7 @@
     "@deleteProfile": {
         "description": "The text for the delete profile menu item"
     },
-    "deleteProfileMessage": "Sito ti segur da butar via el to \"{name}\" profiło? 'Sto no pol èsar undone. Tuti i contati e i mesaji tui i sarà butar via. Vardè se te ghè un backup.",
+    "deleteProfileMessage": "Sito segur de voler butar via el to profiło \"{name}\"? No se pol pì tornar indrio. Tuti i to contati e mesaji i vegnarà butài via. Varda de gaver un backup.",
     "@deleteProfileMessage": {
         "description": "The message to confirm the deletion of a profile",
         "placeholders": {
@@ -150,7 +150,7 @@
     "@delete": {
         "description": "The text for the delete button"
     },
-    "profileDeleted": "Profiło \"{name}\" el ga butà via",
+    "profileDeleted": "Profiło \"{name}\" butà via",
     "@profileDeleted": {
         "description": "The text when a profile has been deleted",
         "placeholders": {
@@ -159,5 +159,911 @@
                 "example": "Alice"
             }
         }
+    },
+    "copyToxId": "Copiar ła Tox ID",
+    "@copyToxId": {
+        "description": "The tooltip for copying your own Tox ID"
+    },
+    "toxIdCopied": "Tox ID copiada",
+    "@toxIdCopied": {
+        "description": "The message shown after copying your own Tox ID"
+    },
+    "toxIdChecksumError": "No ła xe mìa na Tox ID vàłida, controła se ghe xe erori",
+    "@toxIdChecksumError": {
+        "description": "The error message when the Tox ID's checksum doesn't match, e.g. because of a typo"
+    },
+    "logoutMessage": "{name} no ricevarà pì mesaji fin che no te ghe fa de novo el login.",
+    "@logoutMessage": {
+        "description": "Asks whether to sign the current account out",
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Alice"
+            }
+        }
+    },
+    "acceptFriendRequest": "Acetar ła domanda de amicisia",
+    "@acceptFriendRequest": {
+        "description": "The tooltip for accepting an incoming friend request"
+    },
+    "rejectFriendRequest": "Refudar ła domanda de amicisia",
+    "@rejectFriendRequest": {
+        "description": "The tooltip for rejecting an incoming friend request"
+    },
+    "online": "In łinea",
+    "@online": {
+        "description": "A contact's connection state, for screen readers"
+    },
+    "offline": "Fora łinea",
+    "@offline": {
+        "description": "A contact's connection state, for screen readers"
+    },
+    "deleteContact": "Butar via el contato",
+    "@deleteContact": {
+        "description": "The title of the dialog for deleting a contact"
+    },
+    "deleteContactMessage": "Butar via \"{name}\" dai to contati?",
+    "@deleteContactMessage": {
+        "description": "The message to confirm the deletion of a contact",
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Alice"
+            }
+        }
+    },
+    "contactDeleted": "Contato \"{name}\" butà via",
+    "@contactDeleted": {
+        "description": "The text when a contact has been deleted",
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Alice"
+            }
+        }
+    },
+    "import": "Inportar",
+    "@import": {
+        "description": "The button that confirms importing a profile"
+    },
+    "password": "Password",
+    "@password": {
+        "description": "The label for a password: an encrypted profile's, or a group's"
+    },
+    "wrongPassword": "Password sbajada",
+    "@wrongPassword": {
+        "description": "The error when an encrypted profile's password is wrong"
+    },
+    "profileImported": "Profiło \"{name}\" inportà",
+    "@profileImported": {
+        "description": "The text when a profile has been imported",
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Alice"
+            }
+        }
+    },
+    "profileAlreadyImported": "'Sto profiło el xe zà in bTox",
+    "@profileAlreadyImported": {
+        "description": "The error when importing a profile that bTox already has"
+    },
+    "exportData": "Esportar i dati",
+    "@exportData": {
+        "description": "Settings entry that saves all accounts and messages to a file"
+    },
+    "exportDataHint": "Tuti i account e i mesaji, sifrài co na password",
+    "@exportDataHint": {
+        "description": "Explanation below the export data setting"
+    },
+    "importData": "Inportar i dati",
+    "@importData": {
+        "description": "The setting, button and dialog title for importing a bTox export or a .tox profile file"
+    },
+    "importDataHint": "N'esportasion de bTox, o un profiło Tox da n'altro client",
+    "@importDataHint": {
+        "description": "Explanation below the import data setting"
+    },
+    "export": "Esportar",
+    "@export": {
+        "description": "Button that exports data"
+    },
+    "accountsRestored": "{count, plural, =0{El backup no'l ga account novi} =1{1 account recuperà} other{{count} account recuperài}}",
+    "@accountsRestored": {
+        "description": "Shown after importing accounts from a bTox backup",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "notAToxProfile": "No'l xe mìa un profiło Tox",
+    "@notAToxProfile": {
+        "description": "The error when the chosen file isn't a Tox profile"
+    },
+    "stayOnline": "Restar in łinea co ła app xe sarada",
+    "@stayOnline": {
+        "description": "The setting to keep running in the background after closing the app"
+    },
+    "stayOnlineHint": "Tien in łinea tuti i account conetùi",
+    "@stayOnlineHint": {
+        "description": "Explains that stay online applies to every signed-in account"
+    },
+    "accounts": "Account",
+    "@accounts": {
+        "description": "The menu item for signing in and managing accounts"
+    },
+    "appSettings": "App",
+    "@appSettings": {
+        "description": "The heading of the settings for the whole app"
+    },
+    "accountSettings": "Account: {name}",
+    "@accountSettings": {
+        "description": "The heading of the settings for one account",
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Alice"
+            }
+        }
+    },
+    "autoAcceptFiles": "Acetar i file in automàtico fin a",
+    "@autoAcceptFiles": {
+        "description": "The setting for the largest incoming file accepted without asking"
+    },
+    "never": "Mai",
+    "@never": {
+        "description": "Auto-accepting no files at all"
+    },
+    "acceptFile": "Acetar",
+    "@acceptFile": {
+        "description": "The button to receive an offered file"
+    },
+    "declineFile": "Refudar",
+    "@declineFile": {
+        "description": "The button to refuse an offered file"
+    },
+    "downloadFile": "Scaricar",
+    "@downloadFile": {
+        "description": "The button to fetch a file the account's home device holds"
+    },
+    "fileCancelled": "Anułà",
+    "@fileCancelled": {
+        "description": "A file transfer that was declined or stopped"
+    },
+    "filePaused": "In pausa fin che no i torna in łinea",
+    "@filePaused": {
+        "description": "An incoming file that stopped part way, which goes on when the sender sends it again"
+    },
+    "udpEnabled": "Doparar UDP",
+    "@udpEnabled": {
+        "description": "The setting for Tox's UDP transport"
+    },
+    "udpEnabledHint": "Se destivà, conetarse soło traverso i relay TCP",
+    "@udpEnabledHint": {
+        "description": "Explains turning off UDP"
+    },
+    "ipv6Enabled": "Doparar IPv6",
+    "@ipv6Enabled": {
+        "description": "The setting for connecting over IPv6"
+    },
+    "localDiscoveryEnabled": "Scoperta łocałe",
+    "@localDiscoveryEnabled": {
+        "description": "The setting for finding friends on the local network"
+    },
+    "localDiscoveryEnabledHint": "Catar diretamente i amighi so ła stesa rede",
+    "@localDiscoveryEnabledHint": {
+        "description": "Explains local discovery"
+    },
+    "offWithProxy": "Destivà co se dopara un proxy, che'l porta soło TCP",
+    "@offWithProxy": {
+        "description": "Why UDP and local discovery are off when a proxy is set"
+    },
+    "proxy": "Proxy",
+    "@proxy": {
+        "description": "The proxy setting and dialog title"
+    },
+    "proxyNone": "Nisun",
+    "@proxyNone": {
+        "description": "No proxy"
+    },
+    "proxyHost": "Host",
+    "@proxyHost": {
+        "description": "The label for the proxy host field"
+    },
+    "proxyPort": "Porta",
+    "@proxyPort": {
+        "description": "The label for the proxy port field"
+    },
+    "invalidProxyHost": "Meti un host",
+    "@invalidProxyHost": {
+        "description": "The error when the proxy host is empty"
+    },
+    "invalidProxyPort": "Meti na porta da 1 a 65535",
+    "@invalidProxyPort": {
+        "description": "The error when the proxy port is out of range"
+    },
+    "save": "Salvar",
+    "@save": {
+        "description": "The text for the save button"
+    },
+    "attachCamera": "Fotocàmara",
+    "@attachCamera": {
+        "description": "Button to take a photo to send"
+    },
+    "attachGallery": "Gałeria",
+    "@attachGallery": {
+        "description": "Button to choose images to send"
+    },
+    "attachFile": "File",
+    "@attachFile": {
+        "description": "Button to choose files to send"
+    },
+    "attachLocation": "Posision",
+    "@attachLocation": {
+        "description": "Button to send the current location"
+    },
+    "linkAccount": "Cołegar un account",
+    "@linkAccount": {
+        "description": "Action to use an account that runs on another device"
+    },
+    "pairingLink": "Link de abinamento",
+    "@pairingLink": {
+        "description": "Label of the field for another device's pairing link"
+    },
+    "pairingLinkHelp": "Incoła el link de abinamento dal dispositivo che fa ndar l'account.",
+    "@pairingLinkHelp": {
+        "description": "Explains where the pairing link comes from"
+    },
+    "invalidPairingLink": "'Sto chi no'l xe mìa un link de abinamento",
+    "@invalidPairingLink": {
+        "description": "Error when the pasted text isn't a pairing link"
+    },
+    "link": "Cołegar",
+    "@link": {
+        "description": "Button that links an account"
+    },
+    "linkedAccount": "Account cołegà",
+    "@linkedAccount": {
+        "description": "Name of a linked account until its name has synced"
+    },
+    "linkedAccountName": "{name} (cołegà)",
+    "@linkedAccountName": {
+        "description": "A linked account where accounts are listed to choose from",
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "sendFailed": "No se ga podùo mandar el mesajo",
+    "@sendFailed": {
+        "description": "Error when a message couldn't be saved for sending"
+    },
+    "saveFailed": "No se ga podùo salvarlo",
+    "@saveFailed": {
+        "description": "Error when something the user did couldn't be saved"
+    },
+    "importFailed": "No se ga podùo inportar 'sto file",
+    "@importFailed": {
+        "description": "Error when a profile or backup file couldn't be imported"
+    },
+    "linkFailed": "No se ga podùo cołegar l'account",
+    "@linkFailed": {
+        "description": "Error when a linked account couldn't be added"
+    },
+    "chats": "Chat",
+    "@chats": {
+        "description": "The tab of the main page listing chats"
+    },
+    "calls": "Ciamade",
+    "@calls": {
+        "description": "The tab of the main page listing calls"
+    },
+    "voiceCall": "Ciamada vocałe",
+    "@voiceCall": {
+        "description": "A call button's tooltip, and a call still going on in a chat"
+    },
+    "videoCall": "Videociamada",
+    "@videoCall": {
+        "description": "A video call button's tooltip, and a video call still going on in a chat"
+    },
+    "outgoingVideoCall": "Videociamada in partensa",
+    "@outgoingVideoCall": {
+        "description": "A video call we made, in a chat"
+    },
+    "incomingVideoCall": "Videociamada in arivo",
+    "@incomingVideoCall": {
+        "description": "A video call the friend made, in a chat and while it rings"
+    },
+    "missedVideoCall": "Videociamada persa",
+    "@missedVideoCall": {
+        "description": "A video call that rang here and wasn't answered"
+    },
+    "callCamera": "Fotocàmara",
+    "@callCamera": {
+        "description": "The button that turns the camera on or off in a call"
+    },
+    "flipCamera": "Canbiar fotocàmara",
+    "@flipCamera": {
+        "description": "The button that switches between the front and back camera in a call"
+    },
+    "cameraNeeded": "bTox no pol doparar ła fotocàmara, cusì ła ciamada ła va vanti sensa",
+    "@cameraNeeded": {
+        "description": "Shown when bTox may not use the camera for a video call, which goes on without video"
+    },
+    "outgoingCall": "Ciamada vocałe in partensa",
+    "@outgoingCall": {
+        "description": "A call we made, in a chat"
+    },
+    "incomingCall": "Ciamada vocałe in arivo",
+    "@incomingCall": {
+        "description": "A call the friend made, in a chat and while it rings"
+    },
+    "missedCall": "Ciamada vocałe persa",
+    "@missedCall": {
+        "description": "A call that rang here and wasn't answered"
+    },
+    "callWithDuration": "{call} · {duration}",
+    "@callWithDuration": {
+        "description": "A call in a chat, with how long it was",
+        "placeholders": {
+            "call": {
+                "type": "String"
+            },
+            "duration": {
+                "type": "String"
+            }
+        }
+    },
+    "incomingCalls": "Ciamade in arivo",
+    "@incomingCalls": {
+        "description": "The notification channel that rings"
+    },
+    "missedCalls": "Ciamade perse",
+    "@missedCalls": {
+        "description": "The notification channel for missed calls"
+    },
+    "callOngoing": "Ciamada in corso",
+    "@callOngoing": {
+        "description": "The notification while a call goes on"
+    },
+    "calling": "Drio ciamar…",
+    "@calling": {
+        "description": "Our call, while it rings at the friend's"
+    },
+    "connecting": "Drio conetarse…",
+    "@connecting": {
+        "description": "A call answered here, until it's connected"
+    },
+    "answerCall": "Respóndar",
+    "@answerCall": {
+        "description": "The button that answers a call"
+    },
+    "declineCall": "Refudar",
+    "@declineCall": {
+        "description": "The button that declines a call"
+    },
+    "hangUp": "Tacar sù",
+    "@hangUp": {
+        "description": "The button that ends a call"
+    },
+    "muteCall": "Muto",
+    "@muteCall": {
+        "description": "The button that mutes the microphone in a call"
+    },
+    "callSpeaker": "Vivavose",
+    "@callSpeaker": {
+        "description": "The button that puts a call on the loudspeaker"
+    },
+    "callEarpiece": "Tełéfono",
+    "@callEarpiece": {
+        "description": "Where a call's audio can go: the phone's earpiece"
+    },
+    "callWired": "Cufie",
+    "@callWired": {
+        "description": "Where a call's audio can go: wired headphones"
+    },
+    "callBluetooth": "Bluetooth",
+    "@callBluetooth": {
+        "description": "Where a call's audio can go: a Bluetooth headset"
+    },
+    "hideCall": "Scóndar ła ciamada",
+    "@hideCall": {
+        "description": "The button that shows the chats during a call"
+    },
+    "returnToCall": "Tornar a ła ciamada",
+    "@returnToCall": {
+        "description": "The banner over the chats during a call"
+    },
+    "microphoneNeeded": "Łe ciamade łe ga bisogno del micròfono",
+    "@microphoneNeeded": {
+        "description": "Shown when bTox may not use the microphone"
+    },
+    "ringOverLockScreen": "Łe ciamade no łe pol sonar so ła schermada de bloco",
+    "@ringOverLockScreen": {
+        "description": "Shown on the Calls tab while Android doesn't let bTox show incoming calls full screen"
+    },
+    "allowRingOverLockScreen": "Parmétar",
+    "@allowRingOverLockScreen": {
+        "description": "The button that opens the setting letting calls ring full screen"
+    },
+    "relayBotNames": "Nomi da un bot ponte",
+    "@relayBotNames": {
+        "description": "The action, and its page, that shows the names a bot relays from another chat in a group chat"
+    },
+    "stopRelayBotNames": "No mostrar pì i nomi dal bot ponte",
+    "@stopRelayBotNames": {
+        "description": "The action that shows a relay bot's messages as its own again"
+    },
+    "showNames": "Mostrar i nomi",
+    "@showNames": {
+        "description": "The button that starts showing the names a relay bot relays"
+    },
+    "noCalls": "Gnente ciamade recenti",
+    "@noCalls": {
+        "description": "Shown on the Calls tab when there are no calls"
+    },
+    "callsNotAvailable": "Łe ciamade łe pasa par el dispositivo a cui xe cołegà 'sto account, che deso no'l łe pol tor sù",
+    "@callsNotAvailable": {
+        "description": "Shown on the Calls tab of a linked account while its home device is offline, or doesn't connect calls to its devices"
+    },
+    "notImplemented": "Gnancora disponìbiłe",
+    "@notImplemented": {
+        "description": "Shown for a menu item that doesn't work yet"
+    },
+    "openLinkFailed": "Nisuna app ła pol vèrzar 'sto link",
+    "@openLinkFailed": {
+        "description": "Shown when tapping a link in a message opens nothing"
+    },
+    "reply": "Respóndar",
+    "@reply": {
+        "description": "Message menu item to reply to the message"
+    },
+    "forward": "Inoltrar",
+    "@forward": {
+        "description": "Message menu item to forward the message"
+    },
+    "chatDetails": "Detaji de ła chat",
+    "@chatDetails": {
+        "description": "The tooltip of a chat's title, which opens who the chat is with"
+    },
+    "chatMembers": "{count, plural, =1{1 menbro} other{{count} menbri}}",
+    "@chatMembers": {
+        "description": "The heading of the people in a group or conference, counting yourself",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "you": "Ti",
+    "@you": {
+        "description": "Yourself, among the people in a chat"
+    },
+    "muteChat": "Silensiar łe notìfiche",
+    "@muteChat": {
+        "description": "The action, and its dialog, that stops a chat's notifications for a while"
+    },
+    "unmuteChat": "Riativar łe notìfiche",
+    "@unmuteChat": {
+        "description": "The action that lets a muted chat notify again"
+    },
+    "muteForAnHour": "Par 1 ora",
+    "@muteForAnHour": {
+        "description": "How long to mute a chat for"
+    },
+    "muteForEightHours": "Par 8 ore",
+    "@muteForEightHours": {
+        "description": "How long to mute a chat for"
+    },
+    "muteForAWeek": "Par 1 setimana",
+    "@muteForAWeek": {
+        "description": "How long to mute a chat for"
+    },
+    "muteAlways": "Senpre",
+    "@muteAlways": {
+        "description": "Mutes a chat until it's unmuted"
+    },
+    "notifyMentions": "Notìficame ło steso łe mension",
+    "@notifyMentions": {
+        "description": "In the dialog muting a group chat: messages naming you still notify"
+    },
+    "mutedUntil": "Silensià fin {time}",
+    "@mutedUntil": {
+        "description": "How long a chat stays muted",
+        "placeholders": {
+            "time": {
+                "type": "String",
+                "example": "Thu 17:00"
+            }
+        }
+    },
+    "mutedAlways": "Silensià",
+    "@mutedAlways": {
+        "description": "A chat muted until it's unmuted"
+    },
+    "sendPicturesAsQoi": "Mandar łe foto come QOI",
+    "@sendPicturesAsQoi": {
+        "description": "A friend chat's setting: camera and gallery pictures sent as QOI"
+    },
+    "sendPicturesAsQoiHint": "Sensa perdite, ma pì grande, e mìa tute łe app łe mostra QOI",
+    "@sendPicturesAsQoiHint": {
+        "description": "Under the setting to send pictures as QOI"
+    },
+    "seenThrough": "Visti traverso {bot}",
+    "@seenThrough": {
+        "description": "Heading of the names a relay bot has relayed in the chat's history, under the bot among the people in a chat, though they may not be there now",
+        "placeholders": {
+            "bot": {
+                "type": "String",
+                "example": "EPiG-BrDG"
+            }
+        }
+    },
+    "showMoreSeen": "{count, plural, =1{Mostrar 1 altro} other{Mostrar altri {count}}}",
+    "@showMoreSeen": {
+        "description": "Shows the names a relay bot relayed longer ago",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "roleFounder": "Fondador",
+    "@roleFounder": {
+        "description": "The role of whoever created a group"
+    },
+    "roleModerator": "Moderador",
+    "@roleModerator": {
+        "description": "The role of someone who can moderate a group"
+    },
+    "roleObserver": "Osarvador",
+    "@roleObserver": {
+        "description": "The role of someone who can only read a group"
+    },
+    "statusAway": "Via",
+    "@statusAway": {
+        "description": "Someone's status when they're away"
+    },
+    "statusBusy": "Ocupà",
+    "@statusBusy": {
+        "description": "Someone's status when they're busy"
+    },
+    "membersWhileOnline": "Chi ghe xe se vede co el dispositivo de casa de l'account el xe in łinea",
+    "@membersWhileOnline": {
+        "description": "In place of a linked account's chat members, while its home device can't say who they are"
+    },
+    "publicKey": "Ciave pùblica",
+    "@publicKey": {
+        "description": "The heading of a friend's public key, which Tox knows them by"
+    },
+    "publicKeyCopied": "Ciave pùblica copiada",
+    "@publicKeyCopied": {
+        "description": "The message shown after copying a friend's public key"
+    },
+    "copy": "Copiar",
+    "@copy": {
+        "description": "Message menu item to copy the message's text"
+    },
+    "select": "Sełesionar",
+    "@select": {
+        "description": "Message menu item to select messages"
+    },
+    "forwardTo": "Inoltrar a",
+    "@forwardTo": {
+        "description": "The title of the page that picks a chat to forward messages to"
+    },
+    "messagesForwarded": "{count, plural, =1{Mesajo inoltrà} other{{count} mesaji inoltrài}}",
+    "@messagesForwarded": {
+        "description": "The message shown after forwarding messages",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "messageInfo": "Detaji del mesajo",
+    "@messageInfo": {
+        "description": "The title of the page a message's Info opens"
+    },
+    "messageSent": "Mandà",
+    "@messageSent": {
+        "description": "On a message's details, when ours was sent"
+    },
+    "messageSending": "Drio mandar",
+    "@messageSending": {
+        "description": "On a message's details, in place of messageSent while ours waits to go"
+    },
+    "messageDelivered": "Consegnà",
+    "@messageDelivered": {
+        "description": "On a message's details, when ours arrived"
+    },
+    "messageReceived": "Ricevesto",
+    "@messageReceived": {
+        "description": "On a message's details, when someone else's came"
+    },
+    "messageFrom": "Da",
+    "@messageFrom": {
+        "description": "On a message's details, the heading of who sent someone else's"
+    },
+    "messagesSelected": "{count, plural, one{{count} sełesionà} other{{count} sełesionài}}",
+    "@messagesSelected": {
+        "description": "The chat's title while messages are selected",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "messagesCopied": "{count, plural, =1{Mesajo copià} other{{count} mesaji copiài}}",
+    "@messagesCopied": {
+        "description": "The message shown after copying messages' text",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "info": "Info",
+    "@info": {
+        "description": "Message menu item to show the message's details"
+    },
+    "today": "Ancuò",
+    "@today": {
+        "description": "Above the messages of today in a chat"
+    },
+    "yesterday": "Jeri",
+    "@yesterday": {
+        "description": "Above the messages of yesterday in a chat"
+    },
+    "loadFailed": "Calcosa xe ndà storto",
+    "@loadFailed": {
+        "description": "Shown in place of a page that couldn't be loaded"
+    },
+    "locationMessage": "Posision",
+    "@locationMessage": {
+        "description": "A shared location, as the chat list shows it"
+    },
+    "emoji": "Emoji",
+    "@emoji": {
+        "description": "The button in the message box that opens the emoji picker"
+    },
+    "send": "Mandar",
+    "@send": {
+        "description": "The button that sends what is written in the message box"
+    },
+    "attach": "Ałegar",
+    "@attach": {
+        "description": "The button in the message box that opens what can be attached"
+    },
+    "cancelReply": "Anułar ła risposta",
+    "@cancelReply": {
+        "description": "The button that stops replying to a message"
+    },
+    "removeAttachment": "Cavar",
+    "@removeAttachment": {
+        "description": "The button on an attachment waiting to be sent that takes it away"
+    },
+    "attachFailed": "No se ga podùo ałegarlo",
+    "@attachFailed": {
+        "description": "Shown when a picture or file couldn't be picked or copied to send"
+    },
+    "dayAndTime": "{day} {time}",
+    "@dayAndTime": {
+        "description": "A day and a time on it, as in 'muted until Fri 14:00'",
+        "placeholders": {
+            "day": {
+                "type": "String",
+                "example": "Fri"
+            },
+            "time": {
+                "type": "String",
+                "example": "14:00"
+            }
+        }
+    },
+    "draftLabel": "Bosa:",
+    "@draftLabel": {
+        "description": "Before what is being written in a chat, as the chat list shows it"
+    },
+    "messageV3": "ID dei mesaji TRIfA",
+    "@messageV3": {
+        "description": "Setting to read the ID TRIfA adds to its messages"
+    },
+    "messageV3Hint": "Sconde l'ID che TRIfA el zonta ai mesaji, e el mostra na volta soła un mesajo che'l manda de novo",
+    "@messageV3Hint": {
+        "description": "What reading TRIfA's message IDs does"
+    },
+    "titleWithAccount": "bTox ({name})",
+    "@titleWithAccount": {
+        "description": "The title of the chat list, with the account it shows",
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Alice"
+            }
+        }
+    },
+    "deleteChatToo": "Butar via anca i to mesaji e file co łori, par senpre",
+    "@deleteChatToo": {
+        "description": "Option when deleting a contact to delete the chat with them too"
+    },
+    "profileDeleteFailed": "No se ga podùo butar via el profiło \"{name}\"",
+    "@profileDeleteFailed": {
+        "description": "Error when a profile couldn't be deleted",
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Alice"
+            }
+        }
+    },
+    "mergeChat": "Unir co n'altra chat",
+    "@mergeChat": {
+        "description": "Action on a group chat to show it together with another that a bot relays messages between"
+    },
+    "unmergeChat": "Mostrar łe chat separade",
+    "@unmergeChat": {
+        "description": "Action on merged chats to show them as separate chats again"
+    },
+    "mergeChatTitle": "Unir łe chat",
+    "@mergeChatTitle": {
+        "description": "Title of the page that merges two chats"
+    },
+    "mergeWith": "Unir co",
+    "@mergeWith": {
+        "description": "Heading of the chats one can merge with"
+    },
+    "relayBotIn": "Bot in {chat}",
+    "@relayBotIn": {
+        "description": "Heading of the members of a chat to pick the bot from that relays messages to the other chat",
+        "placeholders": {
+            "chat": {
+                "type": "String",
+                "example": "Tox"
+            }
+        }
+    },
+    "relayedMessages": "{relayed} de {count} mesaji ritrasmesi",
+    "@relayedMessages": {
+        "description": "How many of a chat member's messages look like a bot relayed them",
+        "placeholders": {
+            "relayed": {
+                "type": "int"
+            },
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "noChatsToMerge": "Gnente altre chat de grupo",
+    "@noChatsToMerge": {
+        "description": "Shown when there are no chats to merge with"
+    },
+    "merge": "Unir",
+    "@merge": {
+        "description": "Button that merges the chats"
+    },
+    "exported": "Dati esportài",
+    "@exported": {
+        "description": "Shown when the backup was saved"
+    },
+    "exportFailed": "No se ga podùo esportar i dati",
+    "@exportFailed": {
+        "description": "Error when the backup couldn't be made or saved"
+    },
+    "locationOff": "Ativa ła posision par condivìdar ndove che te si",
+    "@locationOff": {
+        "description": "Shown when sharing a location while location is off on the device"
+    },
+    "locationDenied": "bTox el ga bisogno del parmeso par doparar ła to posision",
+    "@locationDenied": {
+        "description": "Shown when sharing a location without the permission"
+    },
+    "locationFailed": "No se ga podùo catar ndove che te si",
+    "@locationFailed": {
+        "description": "Error when the location couldn't be found"
+    },
+    "openSettings": "Asestasion",
+    "@openSettings": {
+        "description": "Button opening the device's settings to fix a problem"
+    },
+    "ownToxIdError": "'Sta chi ła xe ła to Tox ID",
+    "@ownToxIdError": {
+        "description": "Error when adding your own Tox ID as a contact"
+    },
+    "addContactFailed": "No se ga podùo zontar el contato",
+    "@addContactFailed": {
+        "description": "Error when a contact couldn't be saved"
+    },
+    "chatClosed": "No te pol pì mandar mesaji a 'sta chat",
+    "@chatClosed": {
+        "description": "Shown in place of the message input for a deleted contact or a group left"
+    },
+    "friendRequest": "Domanda de amicisia",
+    "@friendRequest": {
+        "description": "Title of the notification for a friend request"
+    },
+    "inviteNotification": "Invido a na chat",
+    "@inviteNotification": {
+        "description": "Title of the notification for an invite to a group or conference"
+    },
+    "groupInvite": "{friend} el te ga invidà in {chat}",
+    "@groupInvite": {
+        "description": "An invite to a group, above the chats and in its notification",
+        "placeholders": {
+            "friend": {
+                "type": "String"
+            },
+            "chat": {
+                "type": "String"
+            }
+        }
+    },
+    "conferenceInvite": "{friend} el te ga invidà a na conferensa",
+    "@conferenceInvite": {
+        "description": "An invite to a conference, whose invite has no name, above the chats and in its notification",
+        "placeholders": {
+            "friend": {
+                "type": "String"
+            }
+        }
+    },
+    "joinInvite": "Entrar",
+    "@joinInvite": {
+        "description": "The button that joins the chat of an invite"
+    },
+    "declineInvite": "Refudar",
+    "@declineInvite": {
+        "description": "The button that declines an invite to a chat"
+    },
+    "joiningInvite": "Drio entrar…",
+    "@joiningInvite": {
+        "description": "Under an invite answered to join, until the account's home device joined"
+    },
+    "inviteNeedsPassword": "Ghe vol ła password del grupo. Domanda un invido novo.",
+    "@inviteNeedsPassword": {
+        "description": "Under an invite to a group that turned the account away for a missing or wrong password, which spent the invite"
+    },
+    "inviteSpent": "No se ga podùo entrar. Domanda un invido novo.",
+    "@inviteSpent": {
+        "description": "Under an invite whose chat turned the account away for another reason, which spent the invite"
+    },
+    "inviteFailed": "No se ga podùo entrar",
+    "@inviteFailed": {
+        "description": "Under an invite whose chat the account's home device couldn't join, which can be tried again"
+    },
+    "groupPasswordHelper": "Łasa vodo se el grupo no'l ghe ne ga",
+    "@groupPasswordHelper": {
+        "description": "Under the password field when joining a group from an invite"
+    },
+    "retryInvite": "Proar de novo",
+    "@retryInvite": {
+        "description": "The button that tries joining the chat of an invite again"
+    },
+    "chatInAccount": "{chat} · {account}",
+    "@chatInAccount": {
+        "description": "Title of a chat's notification while several accounts are signed in: the chat, then the account it's in",
+        "placeholders": {
+            "chat": {
+                "type": "String"
+            },
+            "account": {
+                "type": "String"
+            }
+        }
+    },
+    "newestMessages": "Mesaji pì novi",
+    "@newestMessages": {
+        "description": "Tooltip of the button that scrolls a chat to its newest messages"
+    },
+    "noChats": "Gnancora gnente chat",
+    "@noChats": {
+        "description": "Shown on the Chats tab when there are no chats"
+    },
+    "noChatsHint": "Zonta un contato col boton + par scuminsiar a ciacołar",
+    "@noChatsHint": {
+        "description": "How to start a first chat, under noChats"
     }
 }

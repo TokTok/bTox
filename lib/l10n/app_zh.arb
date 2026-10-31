@@ -1,3 +1,1069 @@
 {
-    "@@locale": "zh"
+    "@@locale": "zh",
+    "defaultContactName": "未知",
+    "@defaultContactName": {
+        "description": "The default name for a contact when the name is not yet known"
+    },
+    "addContact": "添加联系人",
+    "@addContact": {
+        "description": "The text for the button to add a contact"
+    },
+    "message": "消息",
+    "@message": {
+        "description": "The text for the message field"
+    },
+    "messageInput": "Tox 消息",
+    "@messageInput": {
+        "description": "The placeholder text for the message input field"
+    },
+    "re": "回复：{message}",
+    "@re": {
+        "description": "The prefix for a reply message",
+        "placeholders": {
+            "message": {
+                "type": "String",
+                "example": "Hello"
+            }
+        }
+    },
+    "toxId": "Tox ID",
+    "@toxId": {
+        "description": "The text for the Tox ID field"
+    },
+    "copyToxId": "复制 Tox ID",
+    "@copyToxId": {
+        "description": "The tooltip for copying your own Tox ID"
+    },
+    "toxIdCopied": "已复制 Tox ID",
+    "@toxIdCopied": {
+        "description": "The message shown after copying your own Tox ID"
+    },
+    "defaultAddContactMessage": "嗨，我是 {nick}，来 bTox 上和我聊天吧！",
+    "@defaultAddContactMessage": {
+        "description": "The default message to send when adding a contact",
+        "placeholders": {
+            "nick": {
+                "type": "String",
+                "example": "Alice"
+            }
+        }
+    },
+    "addContactMessageLengthError": "最多 {max} 个字符（{length} 个太长了）",
+    "@addContactMessageLengthError": {
+        "description": "The error message when the friend request message is too long",
+        "placeholders": {
+            "max": {
+                "type": "int",
+                "example": "256"
+            },
+            "length": {
+                "type": "int",
+                "example": "300"
+            }
+        }
+    },
+    "add": "添加",
+    "@add": {
+        "description": "The text for the button to add a contact"
+    },
+    "toxIdLengthError": "必须是 {length} 个十六进制字符",
+    "@toxIdLengthError": {
+        "description": "The error message when the Tox ID is not the right length or format",
+        "placeholders": {
+            "length": {
+                "type": "int",
+                "example": "76"
+            }
+        }
+    },
+    "toxIdChecksumError": "不是有效的 Tox ID，请检查是否有输入错误",
+    "@toxIdChecksumError": {
+        "description": "The error message when the Tox ID's checksum doesn't match, e.g. because of a typo"
+    },
+    "messageEmptyError": "消息不能为空",
+    "@messageEmptyError": {
+        "description": "The error message when the message is empty"
+    },
+    "menuProfile": "个人资料",
+    "@menuProfile": {
+        "description": "The text for the profile menu item"
+    },
+    "menuSettings": "设置",
+    "@menuSettings": {
+        "description": "The text for the settings menu item"
+    },
+    "nickLengthError": "昵称必须为 1 到 {max} 个字符",
+    "@nickLengthError": {
+        "description": "The error message when the nickname is too short or too long",
+        "placeholders": {
+            "max": {
+                "type": "int",
+                "example": "32"
+            }
+        }
+    },
+    "statusMessageLengthError": "状态消息不能超过 {max} 个字符",
+    "@statusMessageLengthError": {
+        "description": "The error message when the status message is longer than the supported maximum",
+        "placeholders": {
+            "max": {
+                "type": "int",
+                "example": "128"
+            }
+        }
+    },
+    "profileTextFieldNick": "昵称",
+    "@profileTextFieldNick": {
+        "description": "The text for the nickname field"
+    },
+    "profileTextFieldUserStatusMessage": "状态消息",
+    "@profileTextFieldUserStatusMessage": {
+        "description": "The text for the status message field"
+    },
+    "applyChanges": "应用更改",
+    "@applyChanges": {
+        "description": "The text for the button to apply changes"
+    },
+    "applied": "已应用",
+    "@applied": {
+        "description": "The text when changes have been applied"
+    },
+    "newProfile": "新建个人资料",
+    "@newProfile": {
+        "description": "The title text for the create profile dialog"
+    },
+    "create": "创建",
+    "@create": {
+        "description": "The text for the button create a new profile"
+    },
+    "logout": "退出登录",
+    "@logout": {
+        "description": "The text for the logout menu item"
+    },
+    "logoutMessage": "在你重新登录之前，{name} 将不再接收消息。",
+    "@logoutMessage": {
+        "description": "Asks whether to sign the current account out",
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Alice"
+            }
+        }
+    },
+    "deleteProfile": "删除个人资料",
+    "@deleteProfile": {
+        "description": "The text for the delete profile menu item"
+    },
+    "deleteProfileMessage": "确定要删除你的个人资料“{name}”吗？此操作无法撤销，将删除你的所有联系人和消息。请确保你已备份。",
+    "@deleteProfileMessage": {
+        "description": "The message to confirm the deletion of a profile",
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Alice"
+            }
+        }
+    },
+    "cancel": "取消",
+    "@cancel": {
+        "description": "The text for the cancel button"
+    },
+    "delete": "删除",
+    "@delete": {
+        "description": "The text for the delete button"
+    },
+    "acceptFriendRequest": "接受好友请求",
+    "@acceptFriendRequest": {
+        "description": "The tooltip for accepting an incoming friend request"
+    },
+    "rejectFriendRequest": "拒绝好友请求",
+    "@rejectFriendRequest": {
+        "description": "The tooltip for rejecting an incoming friend request"
+    },
+    "online": "在线",
+    "@online": {
+        "description": "A contact's connection state, for screen readers"
+    },
+    "offline": "离线",
+    "@offline": {
+        "description": "A contact's connection state, for screen readers"
+    },
+    "deleteContact": "删除联系人",
+    "@deleteContact": {
+        "description": "The title of the dialog for deleting a contact"
+    },
+    "deleteContactMessage": "要从联系人中删除“{name}”吗？",
+    "@deleteContactMessage": {
+        "description": "The message to confirm the deletion of a contact",
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Alice"
+            }
+        }
+    },
+    "contactDeleted": "已删除联系人“{name}”",
+    "@contactDeleted": {
+        "description": "The text when a contact has been deleted",
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Alice"
+            }
+        }
+    },
+    "import": "导入",
+    "@import": {
+        "description": "The button that confirms importing a profile"
+    },
+    "password": "密码",
+    "@password": {
+        "description": "The label for a password: an encrypted profile's, or a group's"
+    },
+    "wrongPassword": "密码错误",
+    "@wrongPassword": {
+        "description": "The error when an encrypted profile's password is wrong"
+    },
+    "profileImported": "已导入个人资料“{name}”",
+    "@profileImported": {
+        "description": "The text when a profile has been imported",
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Alice"
+            }
+        }
+    },
+    "profileAlreadyImported": "此个人资料已在 bTox 中",
+    "@profileAlreadyImported": {
+        "description": "The error when importing a profile that bTox already has"
+    },
+    "exportData": "导出数据",
+    "@exportData": {
+        "description": "Settings entry that saves all accounts and messages to a file"
+    },
+    "exportDataHint": "所有账户和消息，使用密码加密",
+    "@exportDataHint": {
+        "description": "Explanation below the export data setting"
+    },
+    "importData": "导入数据",
+    "@importData": {
+        "description": "The setting, button and dialog title for importing a bTox export or a .tox profile file"
+    },
+    "importDataHint": "bTox 导出文件，或来自其他客户端的 Tox 个人资料",
+    "@importDataHint": {
+        "description": "Explanation below the import data setting"
+    },
+    "export": "导出",
+    "@export": {
+        "description": "Button that exports data"
+    },
+    "accountsRestored": "{count, plural, =0{备份中没有新账户} other{已恢复 {count} 个账户}}",
+    "@accountsRestored": {
+        "description": "Shown after importing accounts from a bTox backup",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "notAToxProfile": "不是 Tox 个人资料",
+    "@notAToxProfile": {
+        "description": "The error when the chosen file isn't a Tox profile"
+    },
+    "stayOnline": "关闭后保持在线",
+    "@stayOnline": {
+        "description": "The setting to keep running in the background after closing the app"
+    },
+    "stayOnlineHint": "让所有已登录的账户保持在线",
+    "@stayOnlineHint": {
+        "description": "Explains that stay online applies to every signed-in account"
+    },
+    "accounts": "账户",
+    "@accounts": {
+        "description": "The menu item for signing in and managing accounts"
+    },
+    "appSettings": "应用",
+    "@appSettings": {
+        "description": "The heading of the settings for the whole app"
+    },
+    "accountSettings": "账户：{name}",
+    "@accountSettings": {
+        "description": "The heading of the settings for one account",
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Alice"
+            }
+        }
+    },
+    "autoAcceptFiles": "自动接收文件的大小上限",
+    "@autoAcceptFiles": {
+        "description": "The setting for the largest incoming file accepted without asking"
+    },
+    "never": "从不",
+    "@never": {
+        "description": "Auto-accepting no files at all"
+    },
+    "acceptFile": "接收",
+    "@acceptFile": {
+        "description": "The button to receive an offered file"
+    },
+    "declineFile": "拒绝",
+    "@declineFile": {
+        "description": "The button to refuse an offered file"
+    },
+    "downloadFile": "下载",
+    "@downloadFile": {
+        "description": "The button to fetch a file the account's home device holds"
+    },
+    "fileCancelled": "已取消",
+    "@fileCancelled": {
+        "description": "A file transfer that was declined or stopped"
+    },
+    "filePaused": "已暂停，等待对方重新上线",
+    "@filePaused": {
+        "description": "An incoming file that stopped part way, which goes on when the sender sends it again"
+    },
+    "udpEnabled": "使用 UDP",
+    "@udpEnabled": {
+        "description": "The setting for Tox's UDP transport"
+    },
+    "udpEnabledHint": "关闭后仅通过 TCP 中继连接",
+    "@udpEnabledHint": {
+        "description": "Explains turning off UDP"
+    },
+    "ipv6Enabled": "使用 IPv6",
+    "@ipv6Enabled": {
+        "description": "The setting for connecting over IPv6"
+    },
+    "localDiscoveryEnabled": "本地发现",
+    "@localDiscoveryEnabled": {
+        "description": "The setting for finding friends on the local network"
+    },
+    "localDiscoveryEnabledHint": "直接发现同一网络中的好友",
+    "@localDiscoveryEnabledHint": {
+        "description": "Explains local discovery"
+    },
+    "offWithProxy": "使用代理时关闭，代理仅支持 TCP",
+    "@offWithProxy": {
+        "description": "Why UDP and local discovery are off when a proxy is set"
+    },
+    "proxy": "代理",
+    "@proxy": {
+        "description": "The proxy setting and dialog title"
+    },
+    "proxyNone": "无",
+    "@proxyNone": {
+        "description": "No proxy"
+    },
+    "proxyHost": "主机",
+    "@proxyHost": {
+        "description": "The label for the proxy host field"
+    },
+    "proxyPort": "端口",
+    "@proxyPort": {
+        "description": "The label for the proxy port field"
+    },
+    "invalidProxyHost": "请输入主机",
+    "@invalidProxyHost": {
+        "description": "The error when the proxy host is empty"
+    },
+    "invalidProxyPort": "请输入 1 到 65535 之间的端口",
+    "@invalidProxyPort": {
+        "description": "The error when the proxy port is out of range"
+    },
+    "save": "保存",
+    "@save": {
+        "description": "The text for the save button"
+    },
+    "profileDeleted": "已删除个人资料“{name}”",
+    "@profileDeleted": {
+        "description": "The text when a profile has been deleted",
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Alice"
+            }
+        }
+    },
+    "attachCamera": "相机",
+    "@attachCamera": {
+        "description": "Button to take a photo to send"
+    },
+    "attachGallery": "相册",
+    "@attachGallery": {
+        "description": "Button to choose images to send"
+    },
+    "attachFile": "文件",
+    "@attachFile": {
+        "description": "Button to choose files to send"
+    },
+    "attachLocation": "位置",
+    "@attachLocation": {
+        "description": "Button to send the current location"
+    },
+    "linkAccount": "关联账户",
+    "@linkAccount": {
+        "description": "Action to use an account that runs on another device"
+    },
+    "pairingLink": "配对链接",
+    "@pairingLink": {
+        "description": "Label of the field for another device's pairing link"
+    },
+    "pairingLinkHelp": "粘贴运行该账户的设备上的配对链接。",
+    "@pairingLinkHelp": {
+        "description": "Explains where the pairing link comes from"
+    },
+    "invalidPairingLink": "这不是配对链接",
+    "@invalidPairingLink": {
+        "description": "Error when the pasted text isn't a pairing link"
+    },
+    "link": "关联",
+    "@link": {
+        "description": "Button that links an account"
+    },
+    "linkedAccount": "已关联账户",
+    "@linkedAccount": {
+        "description": "Name of a linked account until its name has synced"
+    },
+    "linkedAccountName": "{name}（已关联）",
+    "@linkedAccountName": {
+        "description": "A linked account where accounts are listed to choose from",
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "sendFailed": "无法发送消息",
+    "@sendFailed": {
+        "description": "Error when a message couldn't be saved for sending"
+    },
+    "saveFailed": "无法保存",
+    "@saveFailed": {
+        "description": "Error when something the user did couldn't be saved"
+    },
+    "importFailed": "无法导入此文件",
+    "@importFailed": {
+        "description": "Error when a profile or backup file couldn't be imported"
+    },
+    "linkFailed": "无法关联账户",
+    "@linkFailed": {
+        "description": "Error when a linked account couldn't be added"
+    },
+    "chats": "聊天",
+    "@chats": {
+        "description": "The tab of the main page listing chats"
+    },
+    "calls": "通话",
+    "@calls": {
+        "description": "The tab of the main page listing calls"
+    },
+    "voiceCall": "语音通话",
+    "@voiceCall": {
+        "description": "A call button's tooltip, and a call still going on in a chat"
+    },
+    "videoCall": "视频通话",
+    "@videoCall": {
+        "description": "A video call button's tooltip, and a video call still going on in a chat"
+    },
+    "outgoingVideoCall": "呼出视频通话",
+    "@outgoingVideoCall": {
+        "description": "A video call we made, in a chat"
+    },
+    "incomingVideoCall": "视频来电",
+    "@incomingVideoCall": {
+        "description": "A video call the friend made, in a chat and while it rings"
+    },
+    "missedVideoCall": "未接视频通话",
+    "@missedVideoCall": {
+        "description": "A video call that rang here and wasn't answered"
+    },
+    "callCamera": "相机",
+    "@callCamera": {
+        "description": "The button that turns the camera on or off in a call"
+    },
+    "flipCamera": "切换相机",
+    "@flipCamera": {
+        "description": "The button that switches between the front and back camera in a call"
+    },
+    "cameraNeeded": "bTox 无法使用相机，通话将在没有视频的情况下继续",
+    "@cameraNeeded": {
+        "description": "Shown when bTox may not use the camera for a video call, which goes on without video"
+    },
+    "outgoingCall": "呼出语音通话",
+    "@outgoingCall": {
+        "description": "A call we made, in a chat"
+    },
+    "incomingCall": "语音来电",
+    "@incomingCall": {
+        "description": "A call the friend made, in a chat and while it rings"
+    },
+    "missedCall": "未接语音通话",
+    "@missedCall": {
+        "description": "A call that rang here and wasn't answered"
+    },
+    "callWithDuration": "{call} · {duration}",
+    "@callWithDuration": {
+        "description": "A call in a chat, with how long it was",
+        "placeholders": {
+            "call": {
+                "type": "String"
+            },
+            "duration": {
+                "type": "String"
+            }
+        }
+    },
+    "incomingCalls": "来电",
+    "@incomingCalls": {
+        "description": "The notification channel that rings"
+    },
+    "missedCalls": "未接来电",
+    "@missedCalls": {
+        "description": "The notification channel for missed calls"
+    },
+    "callOngoing": "通话中",
+    "@callOngoing": {
+        "description": "The notification while a call goes on"
+    },
+    "calling": "正在呼叫…",
+    "@calling": {
+        "description": "Our call, while it rings at the friend's"
+    },
+    "connecting": "正在连接…",
+    "@connecting": {
+        "description": "A call answered here, until it's connected"
+    },
+    "answerCall": "接听",
+    "@answerCall": {
+        "description": "The button that answers a call"
+    },
+    "declineCall": "拒绝",
+    "@declineCall": {
+        "description": "The button that declines a call"
+    },
+    "hangUp": "挂断",
+    "@hangUp": {
+        "description": "The button that ends a call"
+    },
+    "muteCall": "静音",
+    "@muteCall": {
+        "description": "The button that mutes the microphone in a call"
+    },
+    "callSpeaker": "扬声器",
+    "@callSpeaker": {
+        "description": "The button that puts a call on the loudspeaker"
+    },
+    "callEarpiece": "听筒",
+    "@callEarpiece": {
+        "description": "Where a call's audio can go: the phone's earpiece"
+    },
+    "callWired": "耳机",
+    "@callWired": {
+        "description": "Where a call's audio can go: wired headphones"
+    },
+    "callBluetooth": "蓝牙",
+    "@callBluetooth": {
+        "description": "Where a call's audio can go: a Bluetooth headset"
+    },
+    "hideCall": "隐藏通话",
+    "@hideCall": {
+        "description": "The button that shows the chats during a call"
+    },
+    "returnToCall": "返回通话",
+    "@returnToCall": {
+        "description": "The banner over the chats during a call"
+    },
+    "microphoneNeeded": "通话需要使用麦克风",
+    "@microphoneNeeded": {
+        "description": "Shown when bTox may not use the microphone"
+    },
+    "ringOverLockScreen": "来电无法在锁屏上响铃",
+    "@ringOverLockScreen": {
+        "description": "Shown on the Calls tab while Android doesn't let bTox show incoming calls full screen"
+    },
+    "allowRingOverLockScreen": "允许",
+    "@allowRingOverLockScreen": {
+        "description": "The button that opens the setting letting calls ring full screen"
+    },
+    "relayBotNames": "来自中继机器人的名称",
+    "@relayBotNames": {
+        "description": "The action, and its page, that shows the names a bot relays from another chat in a group chat"
+    },
+    "stopRelayBotNames": "不再显示来自中继机器人的名称",
+    "@stopRelayBotNames": {
+        "description": "The action that shows a relay bot's messages as its own again"
+    },
+    "showNames": "显示名称",
+    "@showNames": {
+        "description": "The button that starts showing the names a relay bot relays"
+    },
+    "noCalls": "没有最近通话",
+    "@noCalls": {
+        "description": "Shown on the Calls tab when there are no calls"
+    },
+    "callsNotAvailable": "通话需经过此账户关联的设备，该设备目前无法接通",
+    "@callsNotAvailable": {
+        "description": "Shown on the Calls tab of a linked account while its home device is offline, or doesn't connect calls to its devices"
+    },
+    "notImplemented": "暂不可用",
+    "@notImplemented": {
+        "description": "Shown for a menu item that doesn't work yet"
+    },
+    "openLinkFailed": "没有应用可以打开此链接",
+    "@openLinkFailed": {
+        "description": "Shown when tapping a link in a message opens nothing"
+    },
+    "reply": "回复",
+    "@reply": {
+        "description": "Message menu item to reply to the message"
+    },
+    "forward": "转发",
+    "@forward": {
+        "description": "Message menu item to forward the message"
+    },
+    "chatDetails": "聊天详情",
+    "@chatDetails": {
+        "description": "The tooltip of a chat's title, which opens who the chat is with"
+    },
+    "chatMembers": "{count, plural, other{{count} 位成员}}",
+    "@chatMembers": {
+        "description": "The heading of the people in a group or conference, counting yourself",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "you": "你",
+    "@you": {
+        "description": "Yourself, among the people in a chat"
+    },
+    "muteChat": "通知静音",
+    "@muteChat": {
+        "description": "The action, and its dialog, that stops a chat's notifications for a while"
+    },
+    "unmuteChat": "取消通知静音",
+    "@unmuteChat": {
+        "description": "The action that lets a muted chat notify again"
+    },
+    "muteForAnHour": "1 小时",
+    "@muteForAnHour": {
+        "description": "How long to mute a chat for"
+    },
+    "muteForEightHours": "8 小时",
+    "@muteForEightHours": {
+        "description": "How long to mute a chat for"
+    },
+    "muteForAWeek": "1 周",
+    "@muteForAWeek": {
+        "description": "How long to mute a chat for"
+    },
+    "muteAlways": "始终",
+    "@muteAlways": {
+        "description": "Mutes a chat until it's unmuted"
+    },
+    "notifyMentions": "仍通知提及我的消息",
+    "@notifyMentions": {
+        "description": "In the dialog muting a group chat: messages naming you still notify"
+    },
+    "mutedUntil": "静音至 {time}",
+    "@mutedUntil": {
+        "description": "How long a chat stays muted",
+        "placeholders": {
+            "time": {
+                "type": "String",
+                "example": "Thu 17:00"
+            }
+        }
+    },
+    "mutedAlways": "已静音",
+    "@mutedAlways": {
+        "description": "A chat muted until it's unmuted"
+    },
+    "sendPicturesAsQoi": "以 QOI 格式发送图片",
+    "@sendPicturesAsQoi": {
+        "description": "A friend chat's setting: camera and gallery pictures sent as QOI"
+    },
+    "sendPicturesAsQoiHint": "无损，但文件更大，且并非所有应用都能显示 QOI",
+    "@sendPicturesAsQoiHint": {
+        "description": "Under the setting to send pictures as QOI"
+    },
+    "seenThrough": "经 {bot} 中继",
+    "@seenThrough": {
+        "description": "Heading of the names a relay bot has relayed in the chat's history, under the bot among the people in a chat, though they may not be there now",
+        "placeholders": {
+            "bot": {
+                "type": "String",
+                "example": "EPiG-BrDG"
+            }
+        }
+    },
+    "showMoreSeen": "{count, plural, other{再显示 {count} 个}}",
+    "@showMoreSeen": {
+        "description": "Shows the names a relay bot relayed longer ago",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "roleFounder": "创建者",
+    "@roleFounder": {
+        "description": "The role of whoever created a group"
+    },
+    "roleModerator": "管理员",
+    "@roleModerator": {
+        "description": "The role of someone who can moderate a group"
+    },
+    "roleObserver": "观察者",
+    "@roleObserver": {
+        "description": "The role of someone who can only read a group"
+    },
+    "statusAway": "离开",
+    "@statusAway": {
+        "description": "Someone's status when they're away"
+    },
+    "statusBusy": "忙碌",
+    "@statusBusy": {
+        "description": "Someone's status when they're busy"
+    },
+    "membersWhileOnline": "账户的主设备在线时才会显示成员",
+    "@membersWhileOnline": {
+        "description": "In place of a linked account's chat members, while its home device can't say who they are"
+    },
+    "publicKey": "公钥",
+    "@publicKey": {
+        "description": "The heading of a friend's public key, which Tox knows them by"
+    },
+    "publicKeyCopied": "已复制公钥",
+    "@publicKeyCopied": {
+        "description": "The message shown after copying a friend's public key"
+    },
+    "copy": "复制",
+    "@copy": {
+        "description": "Message menu item to copy the message's text"
+    },
+    "select": "选择",
+    "@select": {
+        "description": "Message menu item to select messages"
+    },
+    "forwardTo": "转发给",
+    "@forwardTo": {
+        "description": "The title of the page that picks a chat to forward messages to"
+    },
+    "messagesForwarded": "{count, plural, =1{已转发消息} other{已转发 {count} 条消息}}",
+    "@messagesForwarded": {
+        "description": "The message shown after forwarding messages",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "messageInfo": "消息详情",
+    "@messageInfo": {
+        "description": "The title of the page a message's Info opens"
+    },
+    "messageSent": "已发送",
+    "@messageSent": {
+        "description": "On a message's details, when ours was sent"
+    },
+    "messageSending": "正在发送",
+    "@messageSending": {
+        "description": "On a message's details, in place of messageSent while ours waits to go"
+    },
+    "messageDelivered": "已送达",
+    "@messageDelivered": {
+        "description": "On a message's details, when ours arrived"
+    },
+    "messageReceived": "已接收",
+    "@messageReceived": {
+        "description": "On a message's details, when someone else's came"
+    },
+    "messageFrom": "发送者",
+    "@messageFrom": {
+        "description": "On a message's details, the heading of who sent someone else's"
+    },
+    "messagesSelected": "已选择 {count} 条",
+    "@messagesSelected": {
+        "description": "The chat's title while messages are selected",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "messagesCopied": "{count, plural, =1{已复制消息} other{已复制 {count} 条消息}}",
+    "@messagesCopied": {
+        "description": "The message shown after copying messages' text",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "info": "详情",
+    "@info": {
+        "description": "Message menu item to show the message's details"
+    },
+    "today": "今天",
+    "@today": {
+        "description": "Above the messages of today in a chat"
+    },
+    "yesterday": "昨天",
+    "@yesterday": {
+        "description": "Above the messages of yesterday in a chat"
+    },
+    "loadFailed": "出了点问题",
+    "@loadFailed": {
+        "description": "Shown in place of a page that couldn't be loaded"
+    },
+    "locationMessage": "位置",
+    "@locationMessage": {
+        "description": "A shared location, as the chat list shows it"
+    },
+    "emoji": "表情",
+    "@emoji": {
+        "description": "The button in the message box that opens the emoji picker"
+    },
+    "send": "发送",
+    "@send": {
+        "description": "The button that sends what is written in the message box"
+    },
+    "attach": "附件",
+    "@attach": {
+        "description": "The button in the message box that opens what can be attached"
+    },
+    "cancelReply": "取消回复",
+    "@cancelReply": {
+        "description": "The button that stops replying to a message"
+    },
+    "removeAttachment": "移除",
+    "@removeAttachment": {
+        "description": "The button on an attachment waiting to be sent that takes it away"
+    },
+    "attachFailed": "无法添加附件",
+    "@attachFailed": {
+        "description": "Shown when a picture or file couldn't be picked or copied to send"
+    },
+    "dayAndTime": "{day} {time}",
+    "@dayAndTime": {
+        "description": "A day and a time on it, as in 'muted until Fri 14:00'",
+        "placeholders": {
+            "day": {
+                "type": "String",
+                "example": "Fri"
+            },
+            "time": {
+                "type": "String",
+                "example": "14:00"
+            }
+        }
+    },
+    "draftLabel": "草稿：",
+    "@draftLabel": {
+        "description": "Before what is being written in a chat, as the chat list shows it"
+    },
+    "messageV3": "TRIfA 消息 ID",
+    "@messageV3": {
+        "description": "Setting to read the ID TRIfA adds to its messages"
+    },
+    "messageV3Hint": "隐藏 TRIfA 添加到消息中的 ID，并且它重发的消息只显示一次",
+    "@messageV3Hint": {
+        "description": "What reading TRIfA's message IDs does"
+    },
+    "titleWithAccount": "bTox（{name}）",
+    "@titleWithAccount": {
+        "description": "The title of the chat list, with the account it shows",
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Alice"
+            }
+        }
+    },
+    "deleteChatToo": "同时永久删除与对方的消息和文件",
+    "@deleteChatToo": {
+        "description": "Option when deleting a contact to delete the chat with them too"
+    },
+    "profileDeleteFailed": "无法删除个人资料“{name}”",
+    "@profileDeleteFailed": {
+        "description": "Error when a profile couldn't be deleted",
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Alice"
+            }
+        }
+    },
+    "mergeChat": "与其他聊天合并",
+    "@mergeChat": {
+        "description": "Action on a group chat to show it together with another that a bot relays messages between"
+    },
+    "unmergeChat": "分开显示聊天",
+    "@unmergeChat": {
+        "description": "Action on merged chats to show them as separate chats again"
+    },
+    "mergeChatTitle": "合并聊天",
+    "@mergeChatTitle": {
+        "description": "Title of the page that merges two chats"
+    },
+    "mergeWith": "合并到",
+    "@mergeWith": {
+        "description": "Heading of the chats one can merge with"
+    },
+    "relayBotIn": "{chat} 中的机器人",
+    "@relayBotIn": {
+        "description": "Heading of the members of a chat to pick the bot from that relays messages to the other chat",
+        "placeholders": {
+            "chat": {
+                "type": "String",
+                "example": "Tox"
+            }
+        }
+    },
+    "relayedMessages": "{count} 条消息中有 {relayed} 条经中继",
+    "@relayedMessages": {
+        "description": "How many of a chat member's messages look like a bot relayed them",
+        "placeholders": {
+            "relayed": {
+                "type": "int"
+            },
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "noChatsToMerge": "没有其他群聊",
+    "@noChatsToMerge": {
+        "description": "Shown when there are no chats to merge with"
+    },
+    "merge": "合并",
+    "@merge": {
+        "description": "Button that merges the chats"
+    },
+    "exported": "数据已导出",
+    "@exported": {
+        "description": "Shown when the backup was saved"
+    },
+    "exportFailed": "无法导出数据",
+    "@exportFailed": {
+        "description": "Error when the backup couldn't be made or saved"
+    },
+    "locationOff": "请开启定位以分享你的位置",
+    "@locationOff": {
+        "description": "Shown when sharing a location while location is off on the device"
+    },
+    "locationDenied": "bTox 需要位置权限",
+    "@locationDenied": {
+        "description": "Shown when sharing a location without the permission"
+    },
+    "locationFailed": "无法获取你的位置",
+    "@locationFailed": {
+        "description": "Error when the location couldn't be found"
+    },
+    "openSettings": "设置",
+    "@openSettings": {
+        "description": "Button opening the device's settings to fix a problem"
+    },
+    "ownToxIdError": "这是你自己的 Tox ID",
+    "@ownToxIdError": {
+        "description": "Error when adding your own Tox ID as a contact"
+    },
+    "addContactFailed": "无法添加联系人",
+    "@addContactFailed": {
+        "description": "Error when a contact couldn't be saved"
+    },
+    "chatClosed": "你无法再向此聊天发送消息",
+    "@chatClosed": {
+        "description": "Shown in place of the message input for a deleted contact or a group left"
+    },
+    "friendRequest": "好友请求",
+    "@friendRequest": {
+        "description": "Title of the notification for a friend request"
+    },
+    "inviteNotification": "聊天邀请",
+    "@inviteNotification": {
+        "description": "Title of the notification for an invite to a group or conference"
+    },
+    "groupInvite": "{friend} 邀请你加入 {chat}",
+    "@groupInvite": {
+        "description": "An invite to a group, above the chats and in its notification",
+        "placeholders": {
+            "friend": {
+                "type": "String"
+            },
+            "chat": {
+                "type": "String"
+            }
+        }
+    },
+    "conferenceInvite": "{friend} 邀请你加入会议",
+    "@conferenceInvite": {
+        "description": "An invite to a conference, whose invite has no name, above the chats and in its notification",
+        "placeholders": {
+            "friend": {
+                "type": "String"
+            }
+        }
+    },
+    "joinInvite": "加入",
+    "@joinInvite": {
+        "description": "The button that joins the chat of an invite"
+    },
+    "declineInvite": "拒绝",
+    "@declineInvite": {
+        "description": "The button that declines an invite to a chat"
+    },
+    "joiningInvite": "正在加入…",
+    "@joiningInvite": {
+        "description": "Under an invite answered to join, until the account's home device joined"
+    },
+    "inviteNeedsPassword": "需要群组密码。请重新索取邀请。",
+    "@inviteNeedsPassword": {
+        "description": "Under an invite to a group that turned the account away for a missing or wrong password, which spent the invite"
+    },
+    "inviteSpent": "无法加入。请重新索取邀请。",
+    "@inviteSpent": {
+        "description": "Under an invite whose chat turned the account away for another reason, which spent the invite"
+    },
+    "inviteFailed": "无法加入",
+    "@inviteFailed": {
+        "description": "Under an invite whose chat the account's home device couldn't join, which can be tried again"
+    },
+    "groupPasswordHelper": "如果群组没有密码，请留空",
+    "@groupPasswordHelper": {
+        "description": "Under the password field when joining a group from an invite"
+    },
+    "retryInvite": "重试",
+    "@retryInvite": {
+        "description": "The button that tries joining the chat of an invite again"
+    },
+    "chatInAccount": "{chat} · {account}",
+    "@chatInAccount": {
+        "description": "Title of a chat's notification while several accounts are signed in: the chat, then the account it's in",
+        "placeholders": {
+            "chat": {
+                "type": "String"
+            },
+            "account": {
+                "type": "String"
+            }
+        }
+    },
+    "newestMessages": "最新消息",
+    "@newestMessages": {
+        "description": "Tooltip of the button that scrolls a chat to its newest messages"
+    },
+    "noChats": "还没有聊天",
+    "@noChats": {
+        "description": "Shown on the Chats tab when there are no chats"
+    },
+    "noChatsHint": "点击 + 按钮添加联系人，开始聊天",
+    "@noChatsHint": {
+        "description": "How to start a first chat, under noChats"
+    }
 }

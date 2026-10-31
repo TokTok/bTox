@@ -3,7 +3,7 @@
   "@newProfile": {
     "description": "The title text for the create profile dialog"
   },
-  "defaultContactName": "Nezināma persona",
+  "defaultContactName": "Nezināms",
   "@defaultContactName": {
     "description": "The default name for a contact when the name is not yet known"
   },
@@ -109,7 +109,7 @@
   "@cancel": {
     "description": "The text for the cancel button"
   },
-  "logout": "Atteikties",
+  "logout": "Izrakstīties",
   "@logout": {
     "description": "The text for the logout menu item"
   },
@@ -117,7 +117,7 @@
   "@messageEmptyError": {
     "description": "The error message when the message is empty"
   },
-  "defaultAddContactMessage": "Sveiki, es esmu {nick}, nāc tērzēt ar mani bTox!",
+  "defaultAddContactMessage": "Čau, es esmu {nick}, nāc tērzēt ar mani bTox lietotnē!",
   "@defaultAddContactMessage": {
     "description": "The default message to send when adding a contact",
     "placeholders": {
@@ -158,5 +158,911 @@
   "delete": "Dzēst",
   "@delete": {
     "description": "The text for the delete button"
+  },
+  "copyToxId": "Kopēt Tox-ID",
+  "@copyToxId": {
+    "description": "The tooltip for copying your own Tox ID"
+  },
+  "toxIdCopied": "Tox-ID nokopēts",
+  "@toxIdCopied": {
+    "description": "The message shown after copying your own Tox ID"
+  },
+  "toxIdChecksumError": "Nederīgs Tox-ID, pārbaudiet, vai nav drukas kļūdu",
+  "@toxIdChecksumError": {
+    "description": "The error message when the Tox ID's checksum doesn't match, e.g. because of a typo"
+  },
+  "logoutMessage": "{name} nesaņems ziņojumus, līdz jūs tajā atkal pierakstīsieties.",
+  "@logoutMessage": {
+    "description": "Asks whether to sign the current account out",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Alice"
+      }
+    }
+  },
+  "acceptFriendRequest": "Pieņemt drauga pieprasījumu",
+  "@acceptFriendRequest": {
+    "description": "The tooltip for accepting an incoming friend request"
+  },
+  "rejectFriendRequest": "Noraidīt drauga pieprasījumu",
+  "@rejectFriendRequest": {
+    "description": "The tooltip for rejecting an incoming friend request"
+  },
+  "online": "Tiešsaistē",
+  "@online": {
+    "description": "A contact's connection state, for screen readers"
+  },
+  "offline": "Bezsaistē",
+  "@offline": {
+    "description": "A contact's connection state, for screen readers"
+  },
+  "deleteContact": "Dzēst kontaktpersonu",
+  "@deleteContact": {
+    "description": "The title of the dialog for deleting a contact"
+  },
+  "deleteContactMessage": "Dzēst \"{name}\" no jūsu kontaktpersonām?",
+  "@deleteContactMessage": {
+    "description": "The message to confirm the deletion of a contact",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Alice"
+      }
+    }
+  },
+  "contactDeleted": "Kontaktpersona \"{name}\" dzēsta",
+  "@contactDeleted": {
+    "description": "The text when a contact has been deleted",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Alice"
+      }
+    }
+  },
+  "import": "Importēt",
+  "@import": {
+    "description": "The button that confirms importing a profile"
+  },
+  "password": "Parole",
+  "@password": {
+    "description": "The label for a password: an encrypted profile's, or a group's"
+  },
+  "wrongPassword": "Nepareiza parole",
+  "@wrongPassword": {
+    "description": "The error when an encrypted profile's password is wrong"
+  },
+  "profileImported": "Profils \"{name}\" importēts",
+  "@profileImported": {
+    "description": "The text when a profile has been imported",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Alice"
+      }
+    }
+  },
+  "profileAlreadyImported": "Šis profils jau ir bTox lietotnē",
+  "@profileAlreadyImported": {
+    "description": "The error when importing a profile that bTox already has"
+  },
+  "exportData": "Eksportēt datus",
+  "@exportData": {
+    "description": "Settings entry that saves all accounts and messages to a file"
+  },
+  "exportDataHint": "Visi konti un ziņojumi, šifrēti ar paroli",
+  "@exportDataHint": {
+    "description": "Explanation below the export data setting"
+  },
+  "importData": "Importēt datus",
+  "@importData": {
+    "description": "The setting, button and dialog title for importing a bTox export or a .tox profile file"
+  },
+  "importDataHint": "bTox eksports vai Tox profils no cita klienta",
+  "@importDataHint": {
+    "description": "Explanation below the import data setting"
+  },
+  "export": "Eksportēt",
+  "@export": {
+    "description": "Button that exports data"
+  },
+  "accountsRestored": "{count, plural, =0{Rezerves kopijā nav jaunu kontu} one{Atjaunots {count} konts} other{Atjaunoti {count} konti}}",
+  "@accountsRestored": {
+    "description": "Shown after importing accounts from a bTox backup",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "notAToxProfile": "Tas nav Tox profils",
+  "@notAToxProfile": {
+    "description": "The error when the chosen file isn't a Tox profile"
+  },
+  "stayOnline": "Palikt tiešsaistē pēc aizvēršanas",
+  "@stayOnline": {
+    "description": "The setting to keep running in the background after closing the app"
+  },
+  "stayOnlineHint": "Uztur tiešsaistē visus pierakstītos kontus",
+  "@stayOnlineHint": {
+    "description": "Explains that stay online applies to every signed-in account"
+  },
+  "accounts": "Konti",
+  "@accounts": {
+    "description": "The menu item for signing in and managing accounts"
+  },
+  "appSettings": "Lietotne",
+  "@appSettings": {
+    "description": "The heading of the settings for the whole app"
+  },
+  "accountSettings": "Konts: {name}",
+  "@accountSettings": {
+    "description": "The heading of the settings for one account",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Alice"
+      }
+    }
+  },
+  "autoAcceptFiles": "Automātiski pieņemt failus līdz",
+  "@autoAcceptFiles": {
+    "description": "The setting for the largest incoming file accepted without asking"
+  },
+  "never": "Nekad",
+  "@never": {
+    "description": "Auto-accepting no files at all"
+  },
+  "acceptFile": "Pieņemt",
+  "@acceptFile": {
+    "description": "The button to receive an offered file"
+  },
+  "declineFile": "Noraidīt",
+  "@declineFile": {
+    "description": "The button to refuse an offered file"
+  },
+  "downloadFile": "Lejupielādēt",
+  "@downloadFile": {
+    "description": "The button to fetch a file the account's home device holds"
+  },
+  "fileCancelled": "Atcelts",
+  "@fileCancelled": {
+    "description": "A file transfer that was declined or stopped"
+  },
+  "filePaused": "Apturēts, līdz sūtītājs atkal būs tiešsaistē",
+  "@filePaused": {
+    "description": "An incoming file that stopped part way, which goes on when the sender sends it again"
+  },
+  "udpEnabled": "Izmantot UDP",
+  "@udpEnabled": {
+    "description": "The setting for Tox's UDP transport"
+  },
+  "udpEnabledHint": "Ja izslēgts, savienoties tikai caur TCP retranslatoriem",
+  "@udpEnabledHint": {
+    "description": "Explains turning off UDP"
+  },
+  "ipv6Enabled": "Izmantot IPv6",
+  "@ipv6Enabled": {
+    "description": "The setting for connecting over IPv6"
+  },
+  "localDiscoveryEnabled": "Lokālā atklāšana",
+  "@localDiscoveryEnabled": {
+    "description": "The setting for finding friends on the local network"
+  },
+  "localDiscoveryEnabledHint": "Atrast draugus tieši tajā pašā tīklā",
+  "@localDiscoveryEnabledHint": {
+    "description": "Explains local discovery"
+  },
+  "offWithProxy": "Izslēgts, kamēr tiek izmantots starpniekserveris, kas pārraida tikai TCP",
+  "@offWithProxy": {
+    "description": "Why UDP and local discovery are off when a proxy is set"
+  },
+  "proxy": "Starpniekserveris",
+  "@proxy": {
+    "description": "The proxy setting and dialog title"
+  },
+  "proxyNone": "Nav",
+  "@proxyNone": {
+    "description": "No proxy"
+  },
+  "proxyHost": "Resursdators",
+  "@proxyHost": {
+    "description": "The label for the proxy host field"
+  },
+  "proxyPort": "Ports",
+  "@proxyPort": {
+    "description": "The label for the proxy port field"
+  },
+  "invalidProxyHost": "Ievadiet resursdatoru",
+  "@invalidProxyHost": {
+    "description": "The error when the proxy host is empty"
+  },
+  "invalidProxyPort": "Ievadiet portu no 1 līdz 65535",
+  "@invalidProxyPort": {
+    "description": "The error when the proxy port is out of range"
+  },
+  "save": "Saglabāt",
+  "@save": {
+    "description": "The text for the save button"
+  },
+  "attachCamera": "Kamera",
+  "@attachCamera": {
+    "description": "Button to take a photo to send"
+  },
+  "attachGallery": "Galerija",
+  "@attachGallery": {
+    "description": "Button to choose images to send"
+  },
+  "attachFile": "Fails",
+  "@attachFile": {
+    "description": "Button to choose files to send"
+  },
+  "attachLocation": "Atrašanās vieta",
+  "@attachLocation": {
+    "description": "Button to send the current location"
+  },
+  "linkAccount": "Piesaistīt kontu",
+  "@linkAccount": {
+    "description": "Action to use an account that runs on another device"
+  },
+  "pairingLink": "Savienošanas saite",
+  "@pairingLink": {
+    "description": "Label of the field for another device's pairing link"
+  },
+  "pairingLinkHelp": "Ielīmējiet savienošanas saiti no ierīces, kurā darbojas konts.",
+  "@pairingLinkHelp": {
+    "description": "Explains where the pairing link comes from"
+  },
+  "invalidPairingLink": "Šī nav savienošanas saite",
+  "@invalidPairingLink": {
+    "description": "Error when the pasted text isn't a pairing link"
+  },
+  "link": "Piesaistīt",
+  "@link": {
+    "description": "Button that links an account"
+  },
+  "linkedAccount": "Piesaistīts konts",
+  "@linkedAccount": {
+    "description": "Name of a linked account until its name has synced"
+  },
+  "linkedAccountName": "{name} (piesaistīts)",
+  "@linkedAccountName": {
+    "description": "A linked account where accounts are listed to choose from",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "sendFailed": "Neizdevās nosūtīt ziņojumu",
+  "@sendFailed": {
+    "description": "Error when a message couldn't be saved for sending"
+  },
+  "saveFailed": "Neizdevās saglabāt",
+  "@saveFailed": {
+    "description": "Error when something the user did couldn't be saved"
+  },
+  "importFailed": "Neizdevās importēt šo failu",
+  "@importFailed": {
+    "description": "Error when a profile or backup file couldn't be imported"
+  },
+  "linkFailed": "Neizdevās piesaistīt kontu",
+  "@linkFailed": {
+    "description": "Error when a linked account couldn't be added"
+  },
+  "chats": "Sarunas",
+  "@chats": {
+    "description": "The tab of the main page listing chats"
+  },
+  "calls": "Zvani",
+  "@calls": {
+    "description": "The tab of the main page listing calls"
+  },
+  "voiceCall": "Balss zvans",
+  "@voiceCall": {
+    "description": "A call button's tooltip, and a call still going on in a chat"
+  },
+  "videoCall": "Videozvans",
+  "@videoCall": {
+    "description": "A video call button's tooltip, and a video call still going on in a chat"
+  },
+  "outgoingVideoCall": "Izejošs videozvans",
+  "@outgoingVideoCall": {
+    "description": "A video call we made, in a chat"
+  },
+  "incomingVideoCall": "Ienākošs videozvans",
+  "@incomingVideoCall": {
+    "description": "A video call the friend made, in a chat and while it rings"
+  },
+  "missedVideoCall": "Neatbildēts videozvans",
+  "@missedVideoCall": {
+    "description": "A video call that rang here and wasn't answered"
+  },
+  "callCamera": "Kamera",
+  "@callCamera": {
+    "description": "The button that turns the camera on or off in a call"
+  },
+  "flipCamera": "Pārslēgt kameru",
+  "@flipCamera": {
+    "description": "The button that switches between the front and back camera in a call"
+  },
+  "cameraNeeded": "bTox nedrīkst izmantot kameru, tāpēc zvans turpinās bez tās",
+  "@cameraNeeded": {
+    "description": "Shown when bTox may not use the camera for a video call, which goes on without video"
+  },
+  "outgoingCall": "Izejošs balss zvans",
+  "@outgoingCall": {
+    "description": "A call we made, in a chat"
+  },
+  "incomingCall": "Ienākošs balss zvans",
+  "@incomingCall": {
+    "description": "A call the friend made, in a chat and while it rings"
+  },
+  "missedCall": "Neatbildēts balss zvans",
+  "@missedCall": {
+    "description": "A call that rang here and wasn't answered"
+  },
+  "callWithDuration": "{call} · {duration}",
+  "@callWithDuration": {
+    "description": "A call in a chat, with how long it was",
+    "placeholders": {
+      "call": {
+        "type": "String"
+      },
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "incomingCalls": "Ienākošie zvani",
+  "@incomingCalls": {
+    "description": "The notification channel that rings"
+  },
+  "missedCalls": "Neatbildētie zvani",
+  "@missedCalls": {
+    "description": "The notification channel for missed calls"
+  },
+  "callOngoing": "Notiek zvans",
+  "@callOngoing": {
+    "description": "The notification while a call goes on"
+  },
+  "calling": "Zvana…",
+  "@calling": {
+    "description": "Our call, while it rings at the friend's"
+  },
+  "connecting": "Savienojas…",
+  "@connecting": {
+    "description": "A call answered here, until it's connected"
+  },
+  "answerCall": "Atbildēt",
+  "@answerCall": {
+    "description": "The button that answers a call"
+  },
+  "declineCall": "Noraidīt",
+  "@declineCall": {
+    "description": "The button that declines a call"
+  },
+  "hangUp": "Beigt zvanu",
+  "@hangUp": {
+    "description": "The button that ends a call"
+  },
+  "muteCall": "Apklusināt",
+  "@muteCall": {
+    "description": "The button that mutes the microphone in a call"
+  },
+  "callSpeaker": "Skaļrunis",
+  "@callSpeaker": {
+    "description": "The button that puts a call on the loudspeaker"
+  },
+  "callEarpiece": "Tālrunis",
+  "@callEarpiece": {
+    "description": "Where a call's audio can go: the phone's earpiece"
+  },
+  "callWired": "Austiņas",
+  "@callWired": {
+    "description": "Where a call's audio can go: wired headphones"
+  },
+  "callBluetooth": "Bluetooth",
+  "@callBluetooth": {
+    "description": "Where a call's audio can go: a Bluetooth headset"
+  },
+  "hideCall": "Paslēpt zvanu",
+  "@hideCall": {
+    "description": "The button that shows the chats during a call"
+  },
+  "returnToCall": "Atgriezties zvanā",
+  "@returnToCall": {
+    "description": "The banner over the chats during a call"
+  },
+  "microphoneNeeded": "Zvaniem nepieciešams mikrofons",
+  "@microphoneNeeded": {
+    "description": "Shown when bTox may not use the microphone"
+  },
+  "ringOverLockScreen": "Zvani nevar parādīties bloķēšanas ekrānā",
+  "@ringOverLockScreen": {
+    "description": "Shown on the Calls tab while Android doesn't let bTox show incoming calls full screen"
+  },
+  "allowRingOverLockScreen": "Atļaut",
+  "@allowRingOverLockScreen": {
+    "description": "The button that opens the setting letting calls ring full screen"
+  },
+  "relayBotNames": "Vārdi no retranslācijas bota",
+  "@relayBotNames": {
+    "description": "The action, and its page, that shows the names a bot relays from another chat in a group chat"
+  },
+  "stopRelayBotNames": "Nerādīt vārdus no retranslācijas bota",
+  "@stopRelayBotNames": {
+    "description": "The action that shows a relay bot's messages as its own again"
+  },
+  "showNames": "Rādīt vārdus",
+  "@showNames": {
+    "description": "The button that starts showing the names a relay bot relays"
+  },
+  "noCalls": "Nav nesenu zvanu",
+  "@noCalls": {
+    "description": "Shown on the Calls tab when there are no calls"
+  },
+  "callsNotAvailable": "Zvani notiek caur ierīci, kurai šis konts ir piesaistīts, un tā pašlaik tos nevar pieņemt",
+  "@callsNotAvailable": {
+    "description": "Shown on the Calls tab of a linked account while its home device is offline, or doesn't connect calls to its devices"
+  },
+  "notImplemented": "Vēl nav pieejams",
+  "@notImplemented": {
+    "description": "Shown for a menu item that doesn't work yet"
+  },
+  "openLinkFailed": "Neviena lietotne nevar atvērt šo saiti",
+  "@openLinkFailed": {
+    "description": "Shown when tapping a link in a message opens nothing"
+  },
+  "reply": "Atbildēt",
+  "@reply": {
+    "description": "Message menu item to reply to the message"
+  },
+  "forward": "Pārsūtīt",
+  "@forward": {
+    "description": "Message menu item to forward the message"
+  },
+  "chatDetails": "Sarunas informācija",
+  "@chatDetails": {
+    "description": "The tooltip of a chat's title, which opens who the chat is with"
+  },
+  "chatMembers": "{count, plural, one{{count} dalībnieks} other{{count} dalībnieki}}",
+  "@chatMembers": {
+    "description": "The heading of the people in a group or conference, counting yourself",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "you": "Jūs",
+  "@you": {
+    "description": "Yourself, among the people in a chat"
+  },
+  "muteChat": "Izslēgt paziņojumus",
+  "@muteChat": {
+    "description": "The action, and its dialog, that stops a chat's notifications for a while"
+  },
+  "unmuteChat": "Ieslēgt paziņojumus",
+  "@unmuteChat": {
+    "description": "The action that lets a muted chat notify again"
+  },
+  "muteForAnHour": "Uz 1 stundu",
+  "@muteForAnHour": {
+    "description": "How long to mute a chat for"
+  },
+  "muteForEightHours": "Uz 8 stundām",
+  "@muteForEightHours": {
+    "description": "How long to mute a chat for"
+  },
+  "muteForAWeek": "Uz 1 nedēļu",
+  "@muteForAWeek": {
+    "description": "How long to mute a chat for"
+  },
+  "muteAlways": "Vienmēr",
+  "@muteAlways": {
+    "description": "Mutes a chat until it's unmuted"
+  },
+  "notifyMentions": "Tomēr paziņot par pieminējumiem",
+  "@notifyMentions": {
+    "description": "In the dialog muting a group chat: messages naming you still notify"
+  },
+  "mutedUntil": "Paziņojumi izslēgti līdz {time}",
+  "@mutedUntil": {
+    "description": "How long a chat stays muted",
+    "placeholders": {
+      "time": {
+        "type": "String",
+        "example": "Thu 17:00"
+      }
+    }
+  },
+  "mutedAlways": "Paziņojumi izslēgti",
+  "@mutedAlways": {
+    "description": "A chat muted until it's unmuted"
+  },
+  "sendPicturesAsQoi": "Sūtīt attēlus kā QOI",
+  "@sendPicturesAsQoi": {
+    "description": "A friend chat's setting: camera and gallery pictures sent as QOI"
+  },
+  "sendPicturesAsQoiHint": "Bez kvalitātes zuduma, bet lielāki, un ne visas lietotnes rāda QOI",
+  "@sendPicturesAsQoiHint": {
+    "description": "Under the setting to send pictures as QOI"
+  },
+  "seenThrough": "Redzēti caur {bot}",
+  "@seenThrough": {
+    "description": "Heading of the names a relay bot has relayed in the chat's history, under the bot among the people in a chat, though they may not be there now",
+    "placeholders": {
+      "bot": {
+        "type": "String",
+        "example": "EPiG-BrDG"
+      }
+    }
+  },
+  "showMoreSeen": "{count, plural, =1{Rādīt vēl 1} other{Rādīt vēl {count}}}",
+  "@showMoreSeen": {
+    "description": "Shows the names a relay bot relayed longer ago",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "roleFounder": "Dibinātājs",
+  "@roleFounder": {
+    "description": "The role of whoever created a group"
+  },
+  "roleModerator": "Moderators",
+  "@roleModerator": {
+    "description": "The role of someone who can moderate a group"
+  },
+  "roleObserver": "Novērotājs",
+  "@roleObserver": {
+    "description": "The role of someone who can only read a group"
+  },
+  "statusAway": "Prom",
+  "@statusAway": {
+    "description": "Someone's status when they're away"
+  },
+  "statusBusy": "Aizņemts",
+  "@statusBusy": {
+    "description": "Someone's status when they're busy"
+  },
+  "membersWhileOnline": "Dalībnieki tiek rādīti, kamēr konta galvenā ierīce ir tiešsaistē",
+  "@membersWhileOnline": {
+    "description": "In place of a linked account's chat members, while its home device can't say who they are"
+  },
+  "publicKey": "Publiskā atslēga",
+  "@publicKey": {
+    "description": "The heading of a friend's public key, which Tox knows them by"
+  },
+  "publicKeyCopied": "Publiskā atslēga nokopēta",
+  "@publicKeyCopied": {
+    "description": "The message shown after copying a friend's public key"
+  },
+  "copy": "Kopēt",
+  "@copy": {
+    "description": "Message menu item to copy the message's text"
+  },
+  "select": "Atlasīt",
+  "@select": {
+    "description": "Message menu item to select messages"
+  },
+  "forwardTo": "Pārsūtīt uz",
+  "@forwardTo": {
+    "description": "The title of the page that picks a chat to forward messages to"
+  },
+  "messagesForwarded": "{count, plural, one{{count} ziņojums pārsūtīts} other{{count} ziņojumi pārsūtīti}}",
+  "@messagesForwarded": {
+    "description": "The message shown after forwarding messages",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "messageInfo": "Ziņojuma informācija",
+  "@messageInfo": {
+    "description": "The title of the page a message's Info opens"
+  },
+  "messageSent": "Nosūtīts",
+  "@messageSent": {
+    "description": "On a message's details, when ours was sent"
+  },
+  "messageSending": "Tiek sūtīts",
+  "@messageSending": {
+    "description": "On a message's details, in place of messageSent while ours waits to go"
+  },
+  "messageDelivered": "Piegādāts",
+  "@messageDelivered": {
+    "description": "On a message's details, when ours arrived"
+  },
+  "messageReceived": "Saņemts",
+  "@messageReceived": {
+    "description": "On a message's details, when someone else's came"
+  },
+  "messageFrom": "No",
+  "@messageFrom": {
+    "description": "On a message's details, the heading of who sent someone else's"
+  },
+  "messagesSelected": "Atlasīti: {count}",
+  "@messagesSelected": {
+    "description": "The chat's title while messages are selected",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "messagesCopied": "{count, plural, one{{count} ziņojums nokopēts} other{{count} ziņojumi nokopēti}}",
+  "@messagesCopied": {
+    "description": "The message shown after copying messages' text",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "info": "Informācija",
+  "@info": {
+    "description": "Message menu item to show the message's details"
+  },
+  "today": "Šodien",
+  "@today": {
+    "description": "Above the messages of today in a chat"
+  },
+  "yesterday": "Vakar",
+  "@yesterday": {
+    "description": "Above the messages of yesterday in a chat"
+  },
+  "loadFailed": "Kaut kas nogāja greizi",
+  "@loadFailed": {
+    "description": "Shown in place of a page that couldn't be loaded"
+  },
+  "locationMessage": "Atrašanās vieta",
+  "@locationMessage": {
+    "description": "A shared location, as the chat list shows it"
+  },
+  "emoji": "Emocijzīmes",
+  "@emoji": {
+    "description": "The button in the message box that opens the emoji picker"
+  },
+  "send": "Sūtīt",
+  "@send": {
+    "description": "The button that sends what is written in the message box"
+  },
+  "attach": "Pievienot",
+  "@attach": {
+    "description": "The button in the message box that opens what can be attached"
+  },
+  "cancelReply": "Atcelt atbildi",
+  "@cancelReply": {
+    "description": "The button that stops replying to a message"
+  },
+  "removeAttachment": "Noņemt",
+  "@removeAttachment": {
+    "description": "The button on an attachment waiting to be sent that takes it away"
+  },
+  "attachFailed": "Neizdevās pievienot",
+  "@attachFailed": {
+    "description": "Shown when a picture or file couldn't be picked or copied to send"
+  },
+  "dayAndTime": "{day} {time}",
+  "@dayAndTime": {
+    "description": "A day and a time on it, as in 'muted until Fri 14:00'",
+    "placeholders": {
+      "day": {
+        "type": "String",
+        "example": "Fri"
+      },
+      "time": {
+        "type": "String",
+        "example": "14:00"
+      }
+    }
+  },
+  "draftLabel": "Melnraksts:",
+  "@draftLabel": {
+    "description": "Before what is being written in a chat, as the chat list shows it"
+  },
+  "messageV3": "TRIfA ziņojumu ID",
+  "@messageV3": {
+    "description": "Setting to read the ID TRIfA adds to its messages"
+  },
+  "messageV3Hint": "Paslēpj ID, ko TRIfA pievieno ziņojumiem, un atkārtoti sūtītu ziņojumu rāda tikai vienreiz",
+  "@messageV3Hint": {
+    "description": "What reading TRIfA's message IDs does"
+  },
+  "titleWithAccount": "bTox ({name})",
+  "@titleWithAccount": {
+    "description": "The title of the chat list, with the account it shows",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Alice"
+      }
+    }
+  },
+  "deleteChatToo": "Neatgriezeniski dzēst arī jūsu ziņojumus un failus ar šo kontaktpersonu",
+  "@deleteChatToo": {
+    "description": "Option when deleting a contact to delete the chat with them too"
+  },
+  "profileDeleteFailed": "Neizdevās dzēst profilu \"{name}\"",
+  "@profileDeleteFailed": {
+    "description": "Error when a profile couldn't be deleted",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Alice"
+      }
+    }
+  },
+  "mergeChat": "Apvienot ar citu sarunu",
+  "@mergeChat": {
+    "description": "Action on a group chat to show it together with another that a bot relays messages between"
+  },
+  "unmergeChat": "Rādīt sarunas atsevišķi",
+  "@unmergeChat": {
+    "description": "Action on merged chats to show them as separate chats again"
+  },
+  "mergeChatTitle": "Apvienot sarunas",
+  "@mergeChatTitle": {
+    "description": "Title of the page that merges two chats"
+  },
+  "mergeWith": "Apvienot ar",
+  "@mergeWith": {
+    "description": "Heading of the chats one can merge with"
+  },
+  "relayBotIn": "Bots sarunā {chat}",
+  "@relayBotIn": {
+    "description": "Heading of the members of a chat to pick the bot from that relays messages to the other chat",
+    "placeholders": {
+      "chat": {
+        "type": "String",
+        "example": "Tox"
+      }
+    }
+  },
+  "relayedMessages": "Retranslēti {relayed} no {count} ziņojumiem",
+  "@relayedMessages": {
+    "description": "How many of a chat member's messages look like a bot relayed them",
+    "placeholders": {
+      "relayed": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "noChatsToMerge": "Nav citu grupas sarunu",
+  "@noChatsToMerge": {
+    "description": "Shown when there are no chats to merge with"
+  },
+  "merge": "Apvienot",
+  "@merge": {
+    "description": "Button that merges the chats"
+  },
+  "exported": "Dati eksportēti",
+  "@exported": {
+    "description": "Shown when the backup was saved"
+  },
+  "exportFailed": "Neizdevās eksportēt datus",
+  "@exportFailed": {
+    "description": "Error when the backup couldn't be made or saved"
+  },
+  "locationOff": "Ieslēdziet atrašanās vietu, lai kopīgotu, kur atrodaties",
+  "@locationOff": {
+    "description": "Shown when sharing a location while location is off on the device"
+  },
+  "locationDenied": "bTox nepieciešama atļauja izmantot jūsu atrašanās vietu",
+  "@locationDenied": {
+    "description": "Shown when sharing a location without the permission"
+  },
+  "locationFailed": "Neizdevās noteikt jūsu atrašanās vietu",
+  "@locationFailed": {
+    "description": "Error when the location couldn't be found"
+  },
+  "openSettings": "Iestatījumi",
+  "@openSettings": {
+    "description": "Button opening the device's settings to fix a problem"
+  },
+  "ownToxIdError": "Šis ir jūsu paša Tox-ID",
+  "@ownToxIdError": {
+    "description": "Error when adding your own Tox ID as a contact"
+  },
+  "addContactFailed": "Neizdevās pievienot kontaktpersonu",
+  "@addContactFailed": {
+    "description": "Error when a contact couldn't be saved"
+  },
+  "chatClosed": "Jūs vairs nevarat sūtīt ziņojumus šajā sarunā",
+  "@chatClosed": {
+    "description": "Shown in place of the message input for a deleted contact or a group left"
+  },
+  "friendRequest": "Drauga pieprasījums",
+  "@friendRequest": {
+    "description": "Title of the notification for a friend request"
+  },
+  "inviteNotification": "Uzaicinājums uz sarunu",
+  "@inviteNotification": {
+    "description": "Title of the notification for an invite to a group or conference"
+  },
+  "groupInvite": "{friend} uzaicināja jūs uz {chat}",
+  "@groupInvite": {
+    "description": "An invite to a group, above the chats and in its notification",
+    "placeholders": {
+      "friend": {
+        "type": "String"
+      },
+      "chat": {
+        "type": "String"
+      }
+    }
+  },
+  "conferenceInvite": "{friend} uzaicināja jūs uz konferenci",
+  "@conferenceInvite": {
+    "description": "An invite to a conference, whose invite has no name, above the chats and in its notification",
+    "placeholders": {
+      "friend": {
+        "type": "String"
+      }
+    }
+  },
+  "joinInvite": "Pievienoties",
+  "@joinInvite": {
+    "description": "The button that joins the chat of an invite"
+  },
+  "declineInvite": "Noraidīt",
+  "@declineInvite": {
+    "description": "The button that declines an invite to a chat"
+  },
+  "joiningInvite": "Pievienojas…",
+  "@joiningInvite": {
+    "description": "Under an invite answered to join, until the account's home device joined"
+  },
+  "inviteNeedsPassword": "Nepieciešama grupas parole. Palūdziet jaunu uzaicinājumu.",
+  "@inviteNeedsPassword": {
+    "description": "Under an invite to a group that turned the account away for a missing or wrong password, which spent the invite"
+  },
+  "inviteSpent": "Neizdevās pievienoties. Palūdziet jaunu uzaicinājumu.",
+  "@inviteSpent": {
+    "description": "Under an invite whose chat turned the account away for another reason, which spent the invite"
+  },
+  "inviteFailed": "Neizdevās pievienoties",
+  "@inviteFailed": {
+    "description": "Under an invite whose chat the account's home device couldn't join, which can be tried again"
+  },
+  "groupPasswordHelper": "Atstājiet tukšu, ja grupai tādas nav",
+  "@groupPasswordHelper": {
+    "description": "Under the password field when joining a group from an invite"
+  },
+  "retryInvite": "Mēģināt vēlreiz",
+  "@retryInvite": {
+    "description": "The button that tries joining the chat of an invite again"
+  },
+  "chatInAccount": "{chat} · {account}",
+  "@chatInAccount": {
+    "description": "Title of a chat's notification while several accounts are signed in: the chat, then the account it's in",
+    "placeholders": {
+      "chat": {
+        "type": "String"
+      },
+      "account": {
+        "type": "String"
+      }
+    }
+  },
+  "newestMessages": "Jaunākie ziņojumi",
+  "@newestMessages": {
+    "description": "Tooltip of the button that scrolls a chat to its newest messages"
+  },
+  "noChats": "Vēl nav sarunu",
+  "@noChats": {
+    "description": "Shown on the Chats tab when there are no chats"
+  },
+  "noChatsHint": "Pievienojiet kontaktpersonu ar pogu +, lai sāktu sarunu",
+  "@noChatsHint": {
+    "description": "How to start a first chat, under noChats"
   }
 }
