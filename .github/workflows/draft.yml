@@ -12,11 +12,20 @@ concurrency:
   group: draft-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   release:
     uses: TokTok/ci-tools/.github/workflows/release-drafter.yml@master
+    permissions:
+      contents: write
+      pull-requests: write
 
   netlify:
     uses: TokTok/ci-tools/.github/workflows/netlify.yml@master
+    permissions:
+      contents: read
+      pull-requests: write
     secrets:
       NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
