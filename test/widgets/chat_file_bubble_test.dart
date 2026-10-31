@@ -11,6 +11,7 @@ import 'package:btox/models/persistence.dart';
 import 'package:btox/models/profile_settings.dart';
 import 'package:btox/providers/attachments.dart';
 import 'package:btox/providers/database.dart';
+import 'package:btox/sync/event.dart';
 import 'package:btox/widgets/chat_file_bubble.dart';
 import 'package:btox/widgets/chat_item.dart';
 import 'package:btox/widgets/chat_text_bubble.dart';
@@ -19,6 +20,8 @@ import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+
+import '../mocks/test_app.dart';
 
 final _event = EventId(Uint8List(32));
 final _chat = ChatRef(
@@ -59,28 +62,25 @@ void main() {
         )..where((t) => t.id.equals(id.value))).getSingle(),
       );
       await tester.pumpWidget(
-        ProviderScope(
-          overrides: [databaseProvider.overrideWith((ref) => db)],
-          child: MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            home: ChatFileBubble(
-              corners: bubbleCorners(mine: false),
-              chat: _chat,
-              entry: ChatEntry(
-                event: _event,
-                mine: false,
-                content: FileContent(name: transfer!.name, size: transfer.size),
-                timestamp: DateTime(2026),
-                file: FileProgress(
-                  state: transfer.state,
-                  transferred: transfer.transferred,
-                  transfer: transfer.id,
-                ),
+        testApp(
+          ChatFileBubble(
+            corners: bubbleCorners(mine: false),
+            chat: _chat,
+            entry: ChatEntry(
+              event: _event,
+              mine: false,
+              content: FileContent(name: transfer!.name, size: transfer.size),
+              timestamp: DateTime(2026),
+              file: FileProgress(
+                state: transfer.state,
+                transferred: transfer.transferred,
+                transfer: transfer.id,
               ),
-              color: Colors.white,
-              textStyle: const TextStyle(),
             ),
+            color: Colors.white,
+            textStyle: const TextStyle(),
           ),
+          overrides: [databaseProvider.overrideWith((ref) => db)],
         ),
       );
       await tester.pumpAndSettle();
@@ -215,37 +215,34 @@ void main() {
     ))!;
     final chat = ChatRef(profile, _chat.graph);
     await tester.pumpWidget(
-      ProviderScope(
-        overrides: [databaseProvider.overrideWith((ref) => db)],
-        child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          home: Scaffold(
-            body: ChatFileBubble(
-              corners: bubbleCorners(mine: false),
-              chat: chat,
-              entry: ChatEntry(
-                event: _event,
-                mine: false,
-                content: const FileContent(name: 'cat.png', size: 5000000),
-                timestamp: DateTime(2026),
-                file: const FileProgress(state: FileState.offered),
-              ),
-              color: Colors.white,
-              textStyle: const TextStyle(),
+      testApp(
+        Scaffold(
+          body: ChatFileBubble(
+            corners: bubbleCorners(mine: false),
+            chat: chat,
+            entry: ChatEntry(
+              event: _event,
+              mine: false,
+              content: const FileContent(name: 'cat.png', size: 5000000),
+              timestamp: DateTime(2026),
+              file: const FileProgress(state: FileState.offered),
             ),
+            color: Colors.white,
+            textStyle: const TextStyle(),
           ),
         ),
+        overrides: [databaseProvider.overrideWith((ref) => db)],
       ),
     );
 
     await tester.tap(find.text('Accept'));
     await tester.runAsync(pumpEventQueue);
     final answer = (await tester.runAsync(
-      () => db.watchFileAnswers(profile).first,
+      () => db.watchIntents(profile).first,
     ))!.single;
     expect(
-      (answer.graph, answer.file, answer.accepted),
-      (chat.graph, _event, true),
+      (answer.graph, answer.content),
+      (chat.graph, FileAnswered(file: _event, accepted: true)),
     );
 
     await tester.pumpWidget(const SizedBox());
@@ -267,29 +264,26 @@ void main() {
     final chat = ChatRef(profile, _chat.graph);
     final blob = BlobId(Uint8List(32)..[0] = 7);
     await tester.pumpWidget(
-      ProviderScope(
+      testApp(
+        Scaffold(
+          body: ChatFileBubble(
+            corners: bubbleCorners(mine: false),
+            chat: chat,
+            entry: ChatEntry(
+              event: _event,
+              mine: false,
+              content: const FileContent(name: 'cat.png', size: 5000000),
+              timestamp: DateTime(2026),
+              file: FileProgress(state: FileState.done, blob: blob),
+            ),
+            color: Colors.white,
+            textStyle: const TextStyle(),
+          ),
+        ),
         overrides: [
           databaseProvider.overrideWith((ref) => db),
           attachmentsDirectoryProvider.overrideWith((ref) => '/files'),
         ],
-        child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          home: Scaffold(
-            body: ChatFileBubble(
-              corners: bubbleCorners(mine: false),
-              chat: chat,
-              entry: ChatEntry(
-                event: _event,
-                mine: false,
-                content: const FileContent(name: 'cat.png', size: 5000000),
-                timestamp: DateTime(2026),
-                file: FileProgress(state: FileState.done, blob: blob),
-              ),
-              color: Colors.white,
-              textStyle: const TextStyle(),
-            ),
-          ),
-        ),
       ),
     );
 

@@ -1,4 +1,3 @@
-import 'package:btox/l10n/generated/app_localizations.dart';
 import 'package:btox/models/content.dart';
 import 'package:btox/models/id.dart';
 import 'package:btox/providers/drafts.dart';
@@ -8,9 +7,9 @@ import 'package:btox/widgets/chat_location_bubble.dart';
 import 'package:btox/widgets/message_input.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../mocks/fake_tile_provider.dart';
+import '../mocks/test_app.dart';
 
 void main() {
   late List<Content> sent;
@@ -23,31 +22,28 @@ void main() {
     draft = ChatDraft();
     draft.replyingTo.value = replyingTo;
     await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          mapTileProvider.overrideWith((ref, _) => FakeTileProvider()),
-        ],
-        child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          home: Scaffold(
-            resizeToAvoidBottomInset: false,
-            body: Align(
-              alignment: Alignment.bottomCenter,
-              child: MessageInput(
-                profile: const Id(1),
-                hintText: '',
-                draft: draft,
-                recentEmojis: false,
-                onSend: (content) async {
-                  if (sending) {
-                    sent.add(content);
-                  }
-                  return sending;
-                },
-              ),
+      testApp(
+        Scaffold(
+          resizeToAvoidBottomInset: false,
+          body: Align(
+            alignment: Alignment.bottomCenter,
+            child: MessageInput(
+              profile: const Id(1),
+              hintText: '',
+              draft: draft,
+              recentEmojis: false,
+              onSend: (content) async {
+                if (sending) {
+                  sent.add(content);
+                }
+                return sending;
+              },
             ),
           ),
         ),
+        overrides: [
+          mapTileProvider.overrideWith((ref, _) => FakeTileProvider()),
+        ],
       ),
     );
   }

@@ -2,8 +2,8 @@ import 'package:btox/l10n/generated/app_localizations.dart';
 import 'package:btox/logger.dart';
 import 'package:btox/pages/create_profile_page.dart';
 import 'package:btox/providers/chats.dart';
-import 'package:btox/providers/database.dart';
 import 'package:btox/providers/profiles.dart';
+import 'package:btox/widgets/database_write.dart';
 import 'package:btox/widgets/delete_profile.dart';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -33,9 +33,8 @@ final class SelectProfilePage extends ConsumerWidget {
                 : null,
             onTap: () async {
               _logger.d('Signing in profile: ${profile.id}');
-              final db = await ref.read(databaseProvider.future);
-              await db.signIn(profile.id);
-              if (context.mounted) {
+              if (await ref.write(context, (db) => db.signIn(profile.id)) &&
+                  context.mounted) {
                 Navigator.popUntil(context, (route) => route.isFirst);
               }
             },

@@ -1,14 +1,13 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:btox/db/database.dart';
-import 'package:btox/ffi/toxcore.dart' show Tox_Message_Type;
 import 'package:btox/logger.dart';
 import 'package:btox/models/crypto.dart';
 import 'package:btox/models/id.dart';
 import 'package:btox/models/persistence.dart';
 import 'package:btox/sync/account.dart';
 import 'package:btox/sync/event.dart';
+import 'package:btox/sync/setting.dart';
 import 'package:clock/clock.dart';
 
 const _logger = Logger(['EventWriter']);
@@ -63,26 +62,50 @@ final class EventWriter {
     }
   }
 
-  /// Writes what the chat pages send, as [senderIn] each chat.
-  Future<void> sends(
-    List<ChatSend> sends,
-    String Function(GraphId chat) senderIn,
-  ) async {
-    for (final send in sends) {
+  /// Writes the pages' intents, in [account] where they name no chat, as
+  /// [senderIn] each chat. One naming a chat that [canWrite] says no to
+  /// waits for it. [save] stores the event in place of its intent.
+  Future<void> intents(
+    List<StoredIntent> intents,
+    GraphId account,
+    String Function(GraphId chat) senderIn, {
+    bool Function(GraphId graph)? canWrite,
+    Future<void> Function(StoredIntent intent, NewEvent event)? save,
+  }) async {
+    for (final intent in intents) {
+      if (canWrite != null && !(_chatsOf(intent)?.every(canWrite) ?? false)) {
+        continue;
+      }
+      final graph = intent.graph ?? account;
       await once(
-        send.id,
+        intent.id,
         () => write(
-          send.graph,
-          () => Send(
-            sender: senderIn(send.graph),
-            message: utf8.encode(send.message),
-            kind: Tox_Message_Type.TOX_MESSAGE_TYPE_NORMAL,
-          ),
-          save: (event) => _db.writeSend(send, event),
+          graph,
+          () => switch (intent.content) {
+            final Send send => send.copyWith(sender: senderIn(graph)),
+            final content => content,
+          },
+          save: (event) async => save == null
+              ? _db.writeIntent(intent, event)
+              : save(intent, event),
         ),
       );
     }
   }
+
+  // The chats [intent] writes about, or null where none can write it.
+  static List<GraphId>? _chatsOf(StoredIntent intent) =>
+      switch (intent.content) {
+        MergeChat(:final chat, :final into) => [chat.graph, into.graph],
+        RelayBot(:final chat) => [chat.graph],
+        SettingContent(:final scope) ||
+        ClearSetting(:final scope) => switch (scope) {
+          AccountScope() => [],
+          ConversationScope(:final graph) => [graph],
+          UnknownScope() => null,
+        },
+        _ => [?intent.graph],
+      };
 
   /// Writes the files the chat pages send, as [senderIn] each chat.
   Future<void> files(
@@ -119,113 +142,6 @@ final class EventWriter {
           );
         });
       }
-    }
-  }
-
-  /// Writes the chat pages' answers to files offered to the home device.
-  Future<void> answers(List<FileAnswer> answers) async {
-    for (final answer in answers) {
-      await once(
-        answer.id,
-        () => write(
-          answer.graph,
-          () => FileAnswered(file: answer.file, accepted: answer.accepted),
-          save: (event) => _db.writeFileAnswer(answer, event),
-        ),
-      );
-    }
-  }
-
-  Future<void> inviteAnswers(
-    GraphId account,
-    List<InviteAnswer> answers,
-  ) async {
-    for (final answer in answers) {
-      await once(
-        answer.id,
-        () => write(
-          account,
-          () => AnswerInvite(
-            invite: answer.invite,
-            join: answer.accepted,
-            password: answer.password,
-          ),
-          save: (event) => _db.writeInviteAnswer(answer, event),
-        ),
-      );
-    }
-  }
-
-  /// Writes in [account] the chats merged and shown apart, of those
-  /// [chatOf] knows.
-  Future<void> merges(
-    GraphId account,
-    List<MergeChange> merges,
-    ChatId? Function(GraphId graph) chatOf,
-  ) async {
-    for (final merge in merges) {
-      await once(
-        merge.id,
-        () => write(
-          account,
-          () => switch ((chatOf(merge.chat), chatOf(merge.into))) {
-            (final chat?, final into?) => MergeChat(
-              chat: chat,
-              bot: merge.bot,
-              into: into,
-              intoBot: merge.intoBot,
-              merged: merge.merged,
-            ),
-            _ => null,
-          },
-          save: (event) => _db.writeChatMerge(merge, event),
-        ),
-      );
-    }
-  }
-
-  /// Writes in [account] the chats in which to show relay bots' names, or no
-  /// more, of those [chatOf] knows.
-  Future<void> relayBots(
-    GraphId account,
-    List<RelayBotChange> changes,
-    ChatId? Function(GraphId graph) chatOf,
-  ) async {
-    for (final change in changes) {
-      await once(
-        change.id,
-        () => write(
-          account,
-          () => switch (chatOf(change.chat)) {
-            final chat? => RelayBot(
-              chat: chat,
-              bot: change.bot,
-              relays: change.relays,
-            ),
-            null => null,
-          },
-          save: (event) => _db.writeRelayBot(change, event),
-        ),
-      );
-    }
-  }
-
-  Future<void> settings(GraphId account, List<SettingChange> changes) async {
-    for (final change in changes) {
-      await once(
-        change.id,
-        () => write(
-          account,
-          () => switch (change.setting) {
-            final setting? => SettingContent(
-              scope: change.scope,
-              setting: setting,
-            ),
-            null => ClearSetting(scope: change.scope, kind: change.kind),
-          },
-          save: (event) => _db.writeSetting(change, event),
-        ),
-      );
     }
   }
 

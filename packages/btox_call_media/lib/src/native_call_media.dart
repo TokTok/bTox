@@ -28,14 +28,14 @@ final DynamicLibrary _library = switch (Platform.operatingSystem) {
 
 final _audioStart = _library
     .lookupFunction<
-      Bool Function(
+      Pointer<Utf8> Function(
         Int32,
         Int32,
         Bool,
         Pointer<NativeFunction<_AudioFrame>>,
         Pointer<NativeFunction<_Routes>>,
       ),
-      bool Function(
+      Pointer<Utf8> Function(
         int,
         int,
         bool,
@@ -162,14 +162,15 @@ final class NativeCallMedia implements BtoxCallMedia {
     required String channel,
   }) async {
     await stop();
-    if (!_audioStart(
+    final failed = _audioStart(
       sampleRate,
       frameSamples,
       speaker,
       _onFrame.nativeFunction,
       _onRoutes.nativeFunction,
-    )) {
-      throw const CallMediaException('No call audio');
+    );
+    if (failed != nullptr) {
+      throw CallMediaException('No call audio: ${failed.toDartString()}');
     }
     _audioOn = true;
   }

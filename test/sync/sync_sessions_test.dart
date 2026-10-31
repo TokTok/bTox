@@ -156,7 +156,7 @@ void main() {
     sentTo(_home);
     await db.addSend(profileId, chat, 'hello');
     await _settle();
-    expect(await db.select(db.chatSends).get(), isEmpty);
+    expect(await db.select(db.intents).get(), isEmpty);
     final [Events(events: [sent])] = sentTo(_home).cast<Events>();
     expect(
       SyncEvent.decode(sent),
@@ -189,9 +189,13 @@ void main() {
 
     // So does an answer to a file the home device was offered.
     final file = EventId(Uint8List(32)..[0] = 9);
-    await db.addFileAnswer(profileId, chat, file, accepted: true);
+    await db.addIntent(
+      profileId,
+      FileAnswered(file: file, accepted: true),
+      graph: chat,
+    );
     await _settle();
-    expect(await db.select(db.fileAnswers).get(), isEmpty);
+    expect(await db.select(db.intents).get(), isEmpty);
     final [Events(events: [answer])] = sentTo(_home).cast<Events>();
     expect(
       SyncEvent.decode(answer).content,
@@ -710,7 +714,7 @@ void main() {
             .merges,
       );
       await _settle();
-      expect(await db.select(db.chatMerges).get(), isEmpty);
+      expect(await db.select(db.intents).get(), isEmpty);
       final [Events(events: [merge])] = sentTo(_home).cast<Events>();
       expect(
         SyncEvent.decode(merge).content,
@@ -777,14 +781,12 @@ void main() {
       ]);
 
       sentTo(_home);
-      await db.addRelayBot(
+      await db.addIntent(
         profileId,
-        chat: conference.graph,
-        bot: bot,
-        relays: false,
+        RelayBot(chat: conference, bot: bot, relays: false),
       );
       await _settle();
-      expect(await db.select(db.relayBots).get(), isEmpty);
+      expect(await db.select(db.intents).get(), isEmpty);
       final [Events(events: [stop])] = sentTo(_home).cast<Events>();
       expect(
         SyncEvent.decode(stop).content,
@@ -860,13 +862,15 @@ void main() {
 
     sentTo(_home);
     final until = DateTime.fromMillisecondsSinceEpoch(1800000000000);
-    await db.setSetting(
+    await db.addIntent(
       profileId,
-      scope,
-      Kept(Setting.mute(until: until, mentions: false)),
+      SettingContent(
+        scope: scope,
+        setting: Kept(Setting.mute(until: until, mentions: false)),
+      ),
     );
     await _settle();
-    expect(await db.select(db.settingChanges).get(), isEmpty);
+    expect(await db.select(db.intents).get(), isEmpty);
     final [Events(events: [muted])] = sentTo(_home).cast<Events>();
     expect(
       SyncEvent.decode(muted).content,
@@ -877,9 +881,12 @@ void main() {
     );
 
     // Clearing it goes the same way.
-    await db.clearSetting(profileId, scope, Setting.muteKind);
+    await db.addIntent(
+      profileId,
+      ClearSetting(scope: scope, kind: Setting.muteKind),
+    );
     await _settle();
-    expect(await db.select(db.settingChanges).get(), isEmpty);
+    expect(await db.select(db.intents).get(), isEmpty);
     final [Events(events: [cleared])] = sentTo(_home).cast<Events>();
     expect(
       SyncEvent.decode(cleared).content,
@@ -936,14 +943,12 @@ void main() {
     expect(invited, [(here, 'Bob'), (elsewhere, 'Bob')]);
 
     sentTo(_home);
-    await db.addInviteAnswer(
+    await db.addIntent(
       profileId,
-      here,
-      accepted: true,
-      password: 'secret',
+      AnswerInvite(invite: here, join: true, password: 'secret'),
     );
     await _settle();
-    expect(await db.select(db.inviteAnswers).get(), isEmpty);
+    expect(await db.select(db.intents).get(), isEmpty);
     final [Events(events: [answer])] = sentTo(_home).cast<Events>();
     expect(
       SyncEvent.decode(answer).content,

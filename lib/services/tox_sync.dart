@@ -339,27 +339,18 @@ final class ToxSync {
           );
         }
       case final ToxEventFileRecvChunk e:
-        if (_syncSessions.files case final files?) {
-          files.chunk(e.friendNumber, e.fileNumber, e.position, e.data);
-        } else {
-          _files.received(e.friendNumber, e.fileNumber, e.position, e.data);
-        }
+        _toxFiles.chunk(e.friendNumber, e.fileNumber, e.position, e.data);
       case final ToxEventFileChunkRequest e:
-        if (_syncSessions.files case final files?) {
-          files.requested(e.friendNumber, e.fileNumber, e.position, e.length);
-        } else {
-          _files.requested(e.friendNumber, e.fileNumber, e.position, e.length);
-        }
+        _toxFiles.requested(e.friendNumber, e.fileNumber, e.position, e.length);
       case final ToxEventFileRecvControl e:
-        if (_syncSessions.files case final files?) {
-          files.controlled(e.friendNumber, e.fileNumber, e.control);
-        } else {
-          _files.controlled(e.friendNumber, e.fileNumber, e.control);
-        }
+        _toxFiles.controlled(e.friendNumber, e.fileNumber, e.control);
       default:
         break;
     }
   }
+
+  // A linked account's files come from its home device.
+  ToxFiles get _toxFiles => _syncSessions.files ?? _files;
 
   PublicKey? _publicKeyOf(int friendNumber) => _friendNumbers.entries
       .where((entry) => entry.value == friendNumber)
@@ -436,27 +427,8 @@ final class ToxSync {
     }
     if (profile.home case final home?) {
       _subscriptions
-        ..add(_db.watchSends(_profileId).listen(_syncSessions.sendsChanged))
+        ..add(_db.watchIntents(_profileId).listen(_syncSessions.intentsChanged))
         ..add(_db.watchReads(_profileId).listen(_syncSessions.readsChanged))
-        ..add(
-          _db.watchFileAnswers(_profileId).listen(_syncSessions.answersChanged),
-        )
-        ..add(
-          _db
-              .watchInviteAnswers(_profileId)
-              .listen(_syncSessions.inviteAnswersChanged),
-        )
-        ..add(
-          _db.watchChatMerges(_profileId).listen(_syncSessions.mergesChanged),
-        )
-        ..add(
-          _db.watchRelayBots(_profileId).listen(_syncSessions.relayBotsChanged),
-        )
-        ..add(
-          _db
-              .watchSettingChanges(_profileId)
-              .listen(_syncSessions.settingsChanged),
-        )
         ..add(
           _db.watchTransfers(_profileId).listen(_syncSessions.transfersChanged),
         );
@@ -507,35 +479,9 @@ final class ToxSync {
       return;
     }
     _home = home;
-    // Toxcore forgets unfinished incoming files when it stops.
-    for (final transfer in await _db.watchTransfers(_profileId).first) {
-      if (_disposed) {
-        return;
-      }
-      if (transfer case Transfer(
-        incoming: true,
-        :final event?,
-        state: FileState.offered || FileState.active,
-      )) {
-        await _db.setTransferState(transfer.id, FileState.paused);
-        await home.record(transfer.graph, FileEnded(file: event, ok: false));
-      }
-    }
-    // And calls, which ended unrecorded.
-    for (final graph in home.store.graphs) {
-      final events = home.store.eventsIn(graph);
-      final ended = {
-        for (final (_, event) in events)
-          if (event.content case CallEnded(:final call)) call,
-      };
-      for (final (id, event) in events) {
-        if (_disposed) {
-          return;
-        }
-        if (event.content is Call && !ended.contains(id)) {
-          await home.record(graph, CallEnded(call: id));
-        }
-      }
+    await home.endInterrupted(stopped: () => _disposed);
+    if (_disposed) {
+      return;
     }
     _notifier?.calls?.stopRinging(_profileId);
     await home.profileChanged(profile.settings);
@@ -562,33 +508,24 @@ final class ToxSync {
       CallHost.instance.add(_profileId, calls);
     }
     _subscriptions
-      ..add(_db.watchFriendChanges(_profileId).listen(_friendChanges))
-      ..add(_db.watchSends(_profileId).listen(_sends))
+      ..add(_db.watchIntents(_profileId).listen(_intents))
       ..add(_db.watchReads(_profileId).listen(_reads))
-      ..add(_db.watchSettingChanges(_profileId).listen(_settings))
       ..add(_db.watchTransfers(_profileId).listen(_transfersChanged));
   }
 
-  void _friendChanges(List<FriendChange> changes) => _logger.unawaited(
-    'write friend changes',
-    _home!.friendChanges(changes).then((files) {
+  void _intents(List<StoredIntent> intents) => _logger.unawaited(
+    'write intents',
+    _home!.intents(intents, _nickname).then((files) {
       for (final file in files) {
         _logger.unawaited('delete $file', deleteAttachment(file));
       }
       _updateFriends();
+      _sendMessages();
     }),
-  );
-
-  void _sends(List<ChatSend> sends) => _logger.unawaited(
-    'write sends',
-    _home!.sends(sends, _nickname).then((_) => _sendMessages()),
   );
 
   void _reads(List<ChatRead> reads) =>
       _logger.unawaited('write read marks', _home!.reads(reads));
-
-  void _settings(List<SettingChange> changes) =>
-      _logger.unawaited('write settings', _home!.settings(changes));
 
   void _transfersChanged(List<Transfer> transfers) {
     _transfers = transfers;

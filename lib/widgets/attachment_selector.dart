@@ -34,7 +34,7 @@ final class AttachmentSelector extends HookConsumerWidget {
     final locating = useState(false);
 
     Future<void> shareLocation() async {
-      final messenger = ScaffoldMessenger.of(context);
+      final messenger = ScaffoldMessenger.of(context)..hideCurrentSnackBar();
       locating.value = true;
       try {
         final location = await geolocation();

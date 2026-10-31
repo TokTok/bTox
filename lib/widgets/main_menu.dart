@@ -7,10 +7,10 @@ import 'package:btox/pages/settings_page.dart';
 import 'package:btox/pages/user_profile_page.dart';
 import 'package:btox/providers/chats.dart';
 import 'package:btox/providers/connection_status.dart';
-import 'package:btox/providers/database.dart';
 import 'package:btox/providers/profiles.dart';
 import 'package:btox/widgets/circle_identicon.dart';
 import 'package:btox/widgets/confirm_dialog.dart';
+import 'package:btox/widgets/database_write.dart';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
@@ -79,17 +79,13 @@ final class MainMenu extends ConsumerWidget {
               final unread => Badge(label: Text('$unread')),
             },
             onTap: () {
-              Navigator.pop(context); // close drawer before switching
-              _logger.unawaited(
-                'switch accounts',
-                ref
-                    .read(databaseProvider.future)
-                    .then(
-                      (db) => db.updateAppSettings(
-                        AppSettingsCompanion(currentProfile: Value(other.id)),
-                      ),
-                    ),
+              ref.write(
+                context,
+                (db) => db.updateAppSettings(
+                  AppSettingsCompanion(currentProfile: Value(other.id)),
+                ),
               );
+              Navigator.pop(context); // close drawer before switching
             },
           ),
         if (others.isNotEmpty) const Divider(),
@@ -107,7 +103,6 @@ final class MainMenu extends ConsumerWidget {
           leading: const Icon(Icons.logout),
           title: Text(l10n.logout),
           onTap: () async {
-            final db = ref.read(databaseProvider.future);
             if (!await confirm(
               context,
               title: l10n.logout,
@@ -116,11 +111,16 @@ final class MainMenu extends ConsumerWidget {
             )) {
               return;
             }
-            if (context.mounted) {
-              Navigator.pop(context); // close drawer before navigating away
+            if (!context.mounted) {
+              return;
             }
             _logger.d('Signing out profile ${profile.id}');
-            await (await db).signOut(profile.id);
+            final signedOut = ref.write(
+              context,
+              (db) => db.signOut(profile.id),
+            );
+            Navigator.pop(context); // close drawer before navigating away
+            await signedOut;
           },
         ),
       ],

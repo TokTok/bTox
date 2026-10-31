@@ -1,12 +1,11 @@
 import 'package:btox/db/database.dart';
 import 'package:btox/l10n/generated/app_localizations.dart';
-import 'package:btox/logger.dart';
 import 'package:btox/models/crypto.dart';
 import 'package:btox/models/id.dart';
 import 'package:btox/models/persistence.dart';
 import 'package:btox/providers/chats.dart';
-import 'package:btox/providers/database.dart';
 import 'package:btox/providers/profiles.dart';
+import 'package:btox/widgets/database_write.dart';
 import 'package:btox/widgets/load_failed.dart';
 import 'package:btox/widgets/nickname_field.dart';
 import 'package:btox/widgets/status_message_field.dart';
@@ -14,8 +13,6 @@ import 'package:btox/widgets/tox_id_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-
-const _logger = Logger(['UserProfilePage']);
 
 final class UserProfilePage extends ConsumerWidget {
   final Id<Profiles> profileId;
@@ -63,19 +60,12 @@ final class _ProfileForm extends HookConsumerWidget {
         applyButtonPressed.value = true;
         final nickname = nickInputController.text;
         final statusMessage = statusMessageInputController.text;
-        _logger.unawaited(
-          'save the profile',
-          ref
-              .read(databaseProvider.future)
-              .then(
-                (db) => db.updateProfileSettings(
-                  profile.id,
-                  (s) => s.copyWith(
-                    nickname: nickname,
-                    statusMessage: statusMessage,
-                  ),
-                ),
-              ),
+        ref.write(
+          context,
+          (db) => db.updateProfileSettings(
+            profile.id,
+            (s) => s.copyWith(nickname: nickname, statusMessage: statusMessage),
+          ),
         );
       }
     }

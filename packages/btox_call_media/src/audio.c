@@ -1,4 +1,5 @@
 #include <math.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -157,10 +158,25 @@ static void free_call(void) {
   memset(&call, 0, sizeof(call));
 }
 
-bool btox_audio_start(int32_t sample_rate, int32_t frame_samples, bool speaker,
-                      btox_audio_frame_cb *on_frame,
-                      btox_routes_cb *on_routes) {
+/* The first error the sound system told of, which is the most specific. */
+static char logged_error[256];
+
+static void on_log(void *user_data, ma_uint32 level, const char *message) {
+  (void)user_data;
+  if (level == MA_LOG_LEVEL_ERROR && logged_error[0] == '\0') {
+    snprintf(logged_error, sizeof(logged_error), "%.*s",
+             (int)strcspn(message, "\n"), message);
+  }
+}
+
+const char *btox_audio_start(int32_t sample_rate, int32_t frame_samples,
+                             bool speaker, btox_audio_frame_cb *on_frame,
+                             btox_routes_cb *on_routes) {
+  static char error[512];
+  const char *failed;
+  ma_result result = MA_OUT_OF_MEMORY;
   btox_audio_stop();
+  logged_error[0] = '\0';
   call.sample_rate = (uint32_t)sample_rate;
   call.block = (uint32_t)sample_rate * BLOCK_MS / 1000;
   call.frame_samples = (uint32_t)frame_samples;
@@ -174,6 +190,7 @@ bool btox_audio_start(int32_t sample_rate, int32_t frame_samples, bool speaker,
   call.preprocess = speex_preprocess_state_init((int)call.block, sample_rate);
   if (call.heard == NULL || call.played == NULL || call.clean == NULL ||
       call.frame == NULL || call.echo == NULL || call.preprocess == NULL) {
+    failed = "echo canceller";
     goto no_playback;
   }
   speex_echo_ctl(call.echo, SPEEX_ECHO_SET_SAMPLING_RATE, &sample_rate);
@@ -183,21 +200,28 @@ bool btox_audio_start(int32_t sample_rate, int32_t frame_samples, bool speaker,
   speex_preprocess_ctl(call.preprocess, SPEEX_PREPROCESS_SET_DENOISE, &on);
   speex_preprocess_ctl(call.preprocess, SPEEX_PREPROCESS_SET_AGC, &on);
 
-  if (ma_pcm_rb_init(ma_format_s16, 1,
-                     (ma_uint32)sample_rate * PLAYBACK_MS / 1000, NULL, NULL,
-                     &call.playback) != MA_SUCCESS) {
+  result = ma_pcm_rb_init(ma_format_s16, 1,
+                          (ma_uint32)sample_rate * PLAYBACK_MS / 1000, NULL,
+                          NULL, &call.playback);
+  if (result != MA_SUCCESS) {
+    failed = "playback buffer";
     goto no_playback;
   }
   if (!btox_session_start(speaker, on_routes)) {
+    failed = "audio session";
     goto no_session;
   }
   ma_context_config context_config = ma_context_config_init();
   /* The session set it up. */
   context_config.coreaudio.sessionCategory = ma_ios_session_category_none;
   context_config.coreaudio.noAudioSessionActivate = MA_TRUE;
-  if (ma_context_init(NULL, 0, &context_config, &call.context) != MA_SUCCESS) {
+  result = ma_context_init(NULL, 0, &context_config, &call.context);
+  if (result != MA_SUCCESS) {
+    failed = "audio context";
     goto no_context;
   }
+  ma_log_register_callback(ma_context_get_log(&call.context),
+                           ma_log_callback_init(on_log, NULL));
   ma_device_config config = ma_device_config_init(ma_device_type_duplex);
   config.sampleRate = (ma_uint32)sample_rate;
   config.capture.format = ma_format_s16;
@@ -206,14 +230,18 @@ bool btox_audio_start(int32_t sample_rate, int32_t frame_samples, bool speaker,
   config.playback.channels = 1;
   config.periodSizeInMilliseconds = BLOCK_MS;
   config.dataCallback = on_call_audio;
-  if (ma_device_init(&call.context, &config, &call.device) != MA_SUCCESS) {
+  result = ma_device_init(&call.context, &config, &call.device);
+  if (result != MA_SUCCESS) {
+    failed = "opening the audio device";
     goto no_device;
   }
-  if (ma_device_start(&call.device) != MA_SUCCESS) {
+  result = ma_device_start(&call.device);
+  if (result != MA_SUCCESS) {
+    failed = "starting the audio device";
     goto not_started;
   }
   call.running = true;
-  return true;
+  return NULL;
 
 not_started:
   ma_device_uninit(&call.device);
@@ -225,7 +253,13 @@ no_session:
   ma_pcm_rb_uninit(&call.playback);
 no_playback:
   free_call();
-  return false;
+  if (result == MA_SUCCESS) {
+    return failed;
+  }
+  snprintf(error, sizeof(error), "%s: %s%s%s", failed,
+           ma_result_description(result), logged_error[0] ? ": " : "",
+           logged_error);
+  return error;
 }
 
 void btox_audio_play(const int16_t *pcm, int32_t samples) {

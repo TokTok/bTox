@@ -11,6 +11,9 @@ enum CallPhase {
 
   /// The friend's, ringing here.
   ringing,
+
+  /// Answered here, until the protocol says it's connected.
+  connecting,
   active,
 }
 

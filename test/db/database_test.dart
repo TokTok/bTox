@@ -129,13 +129,16 @@ void main() {
       final text = 'é' * 40000;
       await db.addSend(id, GraphId.account(PublicKey(Uint8List(32))), text);
 
-      final sends = await db.watchSends(id).first;
+      final sends = [
+        for (final intent in await db.watchIntents(id).first)
+          (intent.content as Send).message,
+      ];
       expect(sends.length, greaterThan(1));
       expect(
-        sends.map((s) => utf8.encode(s.message).length),
+        sends.map((s) => s.length),
         everyElement(lessThanOrEqualTo(maxSendBytes)),
       );
-      expect(sends.map((s) => s.message).join(), text);
+      expect(utf8.decode([for (final s in sends) ...s]), text);
     });
 
     test('deleteProfile cleans up everything of the profile', () async {
@@ -158,7 +161,7 @@ void main() {
           value: FactValue.name('Profile'),
         ),
       );
-      await db.addFriendChange(pId, PublicKey(Uint8List(32)), wanted: true);
+      await db.addIntent(pId, WantFriend(pk: PublicKey(Uint8List(32))));
       await db.addSend(pId, GraphId.account(PublicKey(Uint8List(32))), 'hi');
       await db.addTransfer(
         TransfersCompanion.insert(

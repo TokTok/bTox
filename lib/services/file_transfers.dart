@@ -48,7 +48,7 @@ final class _Transfer {
 
 /// Moves files between one profile's Tox and its attachments directory. Each
 /// starts with an event in its chat, and its end is one too.
-final class FileTransfers {
+final class FileTransfers implements ToxFiles {
   final Database _db;
   final Tox _tox;
   final Id<Profiles> _profileId;
@@ -193,12 +193,8 @@ final class FileTransfers {
     }
   }
 
-  void received(
-    int friendNumber,
-    int fileNumber,
-    int position,
-    Uint8List data,
-  ) {
+  @override
+  void chunk(int friendNumber, int fileNumber, int position, Uint8List data) {
     final key = (friendNumber, fileNumber);
     final transfer = _incoming[key];
     if (transfer == null) {
@@ -213,6 +209,7 @@ final class FileTransfers {
     _progress(transfer, position + data.length);
   }
 
+  @override
   void requested(int friendNumber, int fileNumber, int position, int length) {
     final key = (friendNumber, fileNumber);
     final transfer = _outgoing[key];
@@ -262,6 +259,7 @@ final class FileTransfers {
     }
   }
 
+  @override
   void controlled(int friendNumber, int fileNumber, Tox_File_Control control) {
     if (control != Tox_File_Control.TOX_FILE_CONTROL_CANCEL) {
       return;
