@@ -250,7 +250,7 @@
     "@importData": {
         "description": "The setting, button and dialog title for importing a bTox export or a .tox profile file"
     },
-    "importDataHint": "Експорт bTox або профіль Tox з іншого клієнта",
+    "importDataHint": "Файл експорту bTox або профіль Tox з іншого клієнта",
     "@importDataHint": {
         "description": "Explanation below the import data setting"
     },
