@@ -1,8 +1,6 @@
 import 'dart:collection';
-import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:btox/ffi/toxcore.dart' show Tox_Message_Type;
 import 'package:btox/models/crypto.dart';
 import 'package:btox/sync/event.dart';
 import 'package:btox/sync/fact.dart';
@@ -91,75 +89,6 @@ int _converse(EventStore home, Replica replica, List<SessionMessage> start) {
 }
 
 void main() {
-  test('keeps the account whole and conversations from their latest', () {
-    final home = EventStore();
-    for (final name in ['Bo', 'Bob']) {
-      _write(
-        home,
-        _account,
-        FactContent(subject: Subject.friend(_bob), value: FactValue.name(name)),
-      );
-    }
-    _write(home, _chat, const Notice(text: 'Bob joined'));
-    final replica = Replica(device: _device, home: _home);
-
-    // Nothing before the home's Hello.
-    expect(replica.received(session.summary(home)).replies, isEmpty);
-
-    _converse(home, replica, [Replica.hello, session.summary(home)]);
-    expect(replica.state.friends[_bob]!.name, 'Bob');
-    expect(replica.store.eventsIn(_chat), hasLength(1));
-
-    // A conversation's latest page is asked for once per session.
-    final later = _write(home, _chat, const Notice(text: 'Bob left'));
-    final asked = replica.received(Events([later])).replies;
-    expect(asked, isEmpty);
-    replica.offline();
-    replica.received(Replica.hello);
-    expect(replica.received(Events([later])).replies, isEmpty);
-    final newer = _write(home, _chat, const Notice(text: 'Bob is back'));
-    expect(replica.received(Events([newer])).replies, [
-      History(graph: _chat, before: [EventId.of(newer)], limit: historyPage),
-    ]);
-  });
-
-  test('gets a parent further back than History goes', () {
-    final home = EventStore();
-    final early = EventStore();
-    final other = PublicKey(Uint8List(32)..fillRange(0, 32, 4));
-    for (var i = 0; i < 600; i++) {
-      final bytes = _write(
-        home,
-        _account,
-        FactContent(subject: Subject.friend(_bob), value: FactValue.name('$i')),
-      );
-      if (i < 10) {
-        early.insert(bytes);
-      }
-    }
-    final replica = Replica(device: _device, home: _home);
-    _converse(home, replica, [Replica.hello, session.summary(home)]);
-
-    // Another device, offline long, writes after the home's 10th event.
-    final (missed, _, bytes) = early.author(
-      _account,
-      other,
-      DateTime.fromMillisecondsSinceEpoch(0),
-      const FactContent(
-        subject: Subject.account(),
-        value: FactValue.name('Me'),
-      ),
-    );
-    home.insert(bytes);
-    final joined = _write(home, _account, const Notice(text: 'merged'));
-    _converse(home, replica, [
-      Events([joined]),
-    ]);
-
-    expect(replica.store.contains(missed), isTrue);
-    expect(replica.state.name, 'Me');
-  });
-
   test('goes by its nickname in chats that give it one', () {
     final home = EventStore();
     final group = GroupChatId(Uint8List(32));
@@ -185,45 +114,6 @@ void main() {
     expect(replica.selfNameIn(_chat), 'Me');
   });
 
-  test('fills the gap left while offline, however long', () {
-    final home = EventStore();
-    _write(home, _chat, const Notice(text: '0'));
-    final replica = Replica(device: _device, home: _home);
-    _converse(home, replica, [Replica.hello, session.summary(home)]);
-
-    replica.offline();
-    for (var i = 1; i <= 120; i++) {
-      _write(home, _chat, Notice(text: '$i'));
-    }
-    _converse(home, replica, [Replica.hello, session.summary(home)]);
-    expect(replica.store.eventsIn(_chat), hasLength(121));
-    expect(replica.store.headsOf(_chat), home.headsOf(_chat));
-  });
-
-  test('catches up on a new Hello without going offline', () {
-    final home = EventStore();
-    _write(home, _chat, const Notice(text: '0'));
-    final replica = Replica(device: _device, home: _home);
-    _converse(home, replica, [Replica.hello, session.summary(home)]);
-
-    // Written while this device wasn't allowed, so never pushed to it.
-    for (var i = 1; i <= 3; i++) {
-      _write(home, _chat, Notice(text: '$i'));
-    }
-    _converse(home, replica, [Replica.hello, session.summary(home)]);
-    expect(replica.store.eventsIn(_chat), hasLength(4));
-  });
-
-  test('a new conversation starts from its latest page', () {
-    final home = EventStore();
-    for (var i = 0; i < 120; i++) {
-      _write(home, _chat, Notice(text: '$i'));
-    }
-    final replica = Replica(device: _device, home: _home);
-    _converse(home, replica, [Replica.hello, session.summary(home)]);
-    expect(replica.store.eventsIn(_chat), hasLength(1 + historyPage));
-  });
-
   test('gets a long account in a few round trips', () {
     final home = EventStore();
     for (var i = 0; i < 1200; i++) {
@@ -241,43 +131,5 @@ void main() {
     expect(replica.store.eventsIn(_account), hasLength(1200));
     expect(replica.state.friends[_bob]!.name, '1199');
     expect(rounds, lessThan(10));
-  });
-
-  test("this device's events reach the home", () {
-    final home = EventStore();
-    final hello = _write(home, _chat, const Notice(text: 'hi'));
-    final replica = Replica(device: _device, home: _home);
-    _converse(home, replica, [Replica.hello, session.summary(home)]);
-
-    final send = Send(
-      sender: 'Me',
-      message: utf8.encode('live'),
-      kind: Tox_Message_Type.TOX_MESSAGE_TYPE_NORMAL,
-    );
-    final live = replica.author(
-      _chat,
-      DateTime.fromMillisecondsSinceEpoch(1),
-      send,
-    );
-    expect(live.$2.author, _device);
-    expect(live.$2.parents, [EventId.of(hello)]);
-    final push = replica.written(live);
-    expect(push, [
-      Events([live.$3]),
-    ]);
-    home.insert(live.$3);
-
-    // Outside a session, the next one's summaries carry it.
-    replica.offline();
-    final offline = replica.author(
-      _chat,
-      DateTime.fromMillisecondsSinceEpoch(2),
-      send,
-    );
-    expect(replica.written(offline), isEmpty);
-    expect(offline.$2.parents, [live.$1]);
-    _converse(home, replica, [Replica.hello, session.summary(home)]);
-    expect(home.contains(live.$1), isTrue);
-    expect(home.contains(offline.$1), isTrue);
   });
 }

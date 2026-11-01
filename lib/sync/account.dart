@@ -85,17 +85,6 @@ abstract class AccountState with _$AccountState {
       .whereType<T>()
       .firstOrNull;
 
-  /// The setting of [scope] that is a [T] as [change] makes it, to write:
-  /// the fields of it this version doesn't know stay as they came.
-  Kept<Setting>? edit<T extends Setting>(Scope scope, T Function(T) change) {
-    for (final kept in settings[scope]?.values ?? const <Kept<Setting>>[]) {
-      if (kept.value case final T value) {
-        return kept.withSetting(change(value));
-      }
-    }
-    return null;
-  }
-
   /// What [events] add up to, in rank order, so the last writer wins.
   factory AccountState.of(Iterable<(EventId, SyncEvent)> events) =>
       AccountFold().update([...events]);

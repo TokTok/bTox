@@ -37,6 +37,21 @@ jobs:
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
+  sync-conformance:
+    name: Sync conformance cases
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6
+        with:
+          repository: TokTok/rs-toxcore-c
+          path: rs-toxcore-c
+      - name: Check the cases are rs-toxcore-c's
+        run: |
+          tools/update-sync-conformance rs-toxcore-c
+          git add --intent-to-add test/sync/conformance
+          git diff --exit-code test/sync/conformance
+
   calls:
     name: Calls (${{ matrix.device }})
     strategy:

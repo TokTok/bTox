@@ -16,7 +16,7 @@ const _logger = Logger(['Replica']);
 const historyPage = 50;
 
 /// The most History answers hold, as the home device caps them.
-const _maxHistory = 500;
+const maxHistory = 500;
 
 /// A copy of an account kept from its home device. It only decides, and the
 /// caller stores and sends.
@@ -157,7 +157,7 @@ final class Replica {
       if (_gap(graph) case final gap?) {
         replies.addAll(
           grew
-              ? [History(graph: graph, before: gap, limit: _maxHistory)]
+              ? [History(graph: graph, before: gap, limit: maxHistory)]
               // History brought nothing new: the missing parents are further
               // back than it goes.
               : session.want({
