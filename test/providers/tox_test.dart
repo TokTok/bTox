@@ -88,7 +88,11 @@ void main() {
   });
 
   group('runTox', () {
-    List<Event> run(FakeToxcore tox, void Function(Event) handle) {
+    List<Event> run(
+      FakeToxcore tox,
+      void Function(Event) handle, {
+      Duration rebootstrapInterval = const Duration(minutes: 1),
+    }) {
       final container = ProviderContainer(
         overrides: [
           bootstrapNodesProvider.overrideWith(fakeBootstrapNodesProvider),
@@ -104,7 +108,7 @@ void main() {
           (ref) => runTox(ref, tox, const NetworkSettings(), (event) {
             events.add(event);
             handle(event);
-          }),
+          }, rebootstrapInterval: rebootstrapInterval),
         ),
         (_, _) {},
       );
@@ -147,6 +151,22 @@ void main() {
 
       await Future.delayed(const Duration(milliseconds: 50));
       expect(events, [connected]);
+    });
+
+    test('gets relays again while offline', () async {
+      final tox = FakeToxcore();
+      run(tox, (_) {}, rebootstrapInterval: const Duration(milliseconds: 50));
+      await Future.delayed(const Duration(milliseconds: 10));
+      expect(tox.tcpRelaysAdded, 1);
+
+      await Future.delayed(const Duration(milliseconds: 200));
+      expect(tox.tcpRelaysAdded, greaterThan(2));
+
+      tox.pushEvent(connected);
+      await Future.delayed(const Duration(milliseconds: 50));
+      final online = tox.tcpRelaysAdded;
+      await Future.delayed(const Duration(milliseconds: 200));
+      expect(tox.tcpRelaysAdded, online);
     });
 
     test('starts from nodes the list reached, not always the same', () {

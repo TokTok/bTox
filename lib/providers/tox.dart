@@ -66,20 +66,38 @@ Future<(SecretKey, PublicKey)> newKeyPair(Ref ref) async {
   }
 }
 
+// Toxcore drops relays it can't reach, so after a network drop it has none
+// left and stays offline until it gets new ones.
+const _rebootstrapInterval = Duration(seconds: 30);
+
 /// Bootstraps [tox] and gives [handle] its events in order, until Tox is
-/// killed or [ref] is disposed.
+/// killed or [ref] is disposed. While Tox is offline, it bootstraps again
+/// every [rebootstrapInterval].
 void runTox(
   Ref ref,
   Tox tox,
   NetworkSettings network,
-  void Function(Event) handle,
-) {
+  void Function(Event) handle, {
+  Duration rebootstrapInterval = _rebootstrapInterval,
+}) {
   var disposed = false;
   ref.onDispose(() => disposed = true);
 
+  List<BootstrapNode>? nodes;
+  final sinceBootstrap = Stopwatch();
+  void bootstrap() {
+    if (nodes case final nodes?) {
+      _bootstrap(tox, nodes, network);
+      sinceBootstrap
+        ..reset()
+        ..start();
+    }
+  }
+
   ref.listen(bootstrapNodesProvider(network), (_, next) {
     if (next.value case final list?) {
-      _bootstrap(tox, list.nodes, network);
+      nodes = list.nodes;
+      bootstrap();
     }
   }, fireImmediately: true);
 
@@ -104,6 +122,12 @@ void runTox(
         } on Object catch (e, stackTrace) {
           _logger.e('Failed to handle $event: $e', stackTrace);
         }
+      }
+      if (tox.isAlive &&
+          tox.selfGetConnectionStatus() ==
+              ffi.Tox_Connection.TOX_CONNECTION_NONE &&
+          sinceBootstrap.elapsed >= rebootstrapInterval) {
+        bootstrap();
       }
       await Future.delayed(Duration(milliseconds: tox.iterationInterval()));
     }

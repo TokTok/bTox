@@ -120,11 +120,14 @@ final class FakeToxcore extends api.Tox {
     return friends.length - 1;
   }
 
+  int tcpRelaysAdded = 0;
+
   @override
   void addTcpRelay(String host, int port, PublicKey publicKey) {
     if (throwOnBootstrap) {
       throw api.ApiException(ffi.Tox_Err_Bootstrap.TOX_ERR_BOOTSTRAP_BAD_HOST);
     }
+    tcpRelaysAdded++;
   }
 
   @override
