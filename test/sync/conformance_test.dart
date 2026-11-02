@@ -1,6 +1,6 @@
-// Runs the cases in test/sync/conformance, rs-toxcore-c's sync/conformance
-// as tools/update-sync-conformance copies them, so bTox encodes, decodes and
-// syncs as every other implementation does.
+// Runs the cases in rs-toxcore-c's sync/conformance, from its master or the
+// checkout $RS_TOXCORE_C names, so bTox encodes, decodes and syncs as every
+// other implementation does.
 
 import 'dart:collection';
 import 'dart:convert';
@@ -27,23 +27,52 @@ import 'package:btox/sync/store.dart';
 import 'package:convert/convert.dart';
 import 'package:crypto/crypto.dart' show sha256;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
 
 /// More than any session takes.
 const _maxRounds = 1000;
 
-void main() {
-  _cases('codec', _codec);
-  _cases('state', _state);
-  _cases('store', _store);
-  _cases('session', _session);
+Future<void> main() async {
+  for (final (file, of) in [
+    ('codec', _codec),
+    ('state', _state),
+    ('store', _store),
+    ('session', _session),
+  ]) {
+    _cases(file, await _load(file), of);
+  }
 }
 
 typedef _Case = void Function(_Check check);
 
-void _cases(String file, Map<String, _Case> Function(Map<String, Object?>) of) {
-  final json = jsonDecode(
-    File('test/sync/conformance/$file.json').readAsStringSync(),
-  ) as Map<String, Object?>;
+Future<Map<String, Object?>> _load(String file) async {
+  final path = 'sync/conformance/$file.json';
+  final String text;
+  if (Platform.environment['RS_TOXCORE_C'] case final checkout?) {
+    text = await File('$checkout/$path').readAsString();
+  } else {
+    final response = await http.get(
+      Uri.https(
+        'raw.githubusercontent.com',
+        'TokTok/rs-toxcore-c/master/$path',
+      ),
+    );
+    if (response.statusCode != 200) {
+      throw http.ClientException(
+        'HTTP ${response.statusCode}',
+        response.request?.url,
+      );
+    }
+    text = utf8.decode(response.bodyBytes);
+  }
+  return jsonDecode(text) as Map<String, Object?>;
+}
+
+void _cases(
+  String file,
+  Map<String, Object?> json,
+  Map<String, _Case> Function(Map<String, Object?>) of,
+) {
   group(file, () {
     for (final MapEntry(key: name, value: run) in of(json).entries) {
       test(name, () {
