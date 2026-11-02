@@ -1,5 +1,5 @@
-// What only bTox does; test/sync/conformance holds what every implementation
-// does.
+// What only bTox does; rs-toxcore-c's sync/conformance holds what every
+// implementation does.
 
 import 'dart:typed_data';
 
