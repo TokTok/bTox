@@ -17,6 +17,7 @@ import 'package:btox/models/crypto.dart';
 import 'package:btox/models/id.dart';
 import 'package:btox/models/persistence.dart';
 import 'package:btox/sync/account.dart';
+import 'package:btox/sync/avatar_files.dart';
 import 'package:btox/sync/event.dart';
 import 'package:btox/sync/fact.dart';
 import 'package:btox/sync/frames.dart';
@@ -37,6 +38,7 @@ const _retryDelay = Duration(milliseconds: 50);
 final class SyncSessions {
   final Database _db;
   final Tox _tox;
+  final AvatarFiles _avatars;
   final Id<Profiles> _profileId;
   final Future<String> Function() _directory;
   final _incoming = <int, Reassembler>{};
@@ -101,6 +103,7 @@ final class SyncSessions {
   SyncSessions(
     this._db,
     this._tox,
+    this._avatars,
     this._profileId, {
     Future<String> Function()? directory,
     void Function(ChatRef, String?, List<NotifiedMessage>, String?)? notify,
@@ -153,6 +156,7 @@ final class SyncSessions {
         : (LinkedFiles(
               _db,
               _tox,
+              _avatars,
               _profileId,
               device,
               _directory,
@@ -206,7 +210,18 @@ final class SyncSessions {
             ...replica.store.eventsIn(graph),
         ]),
       );
+      _fetchAvatars(replica);
     }
+  }
+
+  void _fetchAvatars(Replica replica) {
+    final facts = replica.state.facts;
+    _logger.unawaited(
+      'fetch avatars',
+      _files!.avatarsNamed({
+        for (final subject in facts.subjects) ?facts.avatarOf(subject),
+      }),
+    );
   }
 
   void intentsChanged(List<StoredIntent> intents) {
@@ -342,6 +357,7 @@ final class SyncSessions {
           for (final (id, e, _) in added) (id, e),
         ]),
       );
+      _fetchAvatars(replica);
     }
     _toHome(replies);
   }

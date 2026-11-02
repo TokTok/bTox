@@ -46,6 +46,7 @@ jobs:
         with:
           repository: TokTok/rs-toxcore-c
           path: rs-toxcore-c
+          ref: 55e0f4704ce715be81c14e7fb21f07e076b0f3a9
       - name: Check the cases are rs-toxcore-c's
         run: |
           tools/update-sync-conformance rs-toxcore-c

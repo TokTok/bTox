@@ -189,6 +189,7 @@ typedef ProfileIdentity = ({
   String? name,
   String statusMessage,
   ToxAddress address,
+  BlobId? avatar,
 });
 
 /// A linked profile shows its account's identity, not this device's key.
@@ -200,12 +201,14 @@ ProfileIdentity profileIdentity(Ref ref, Profile profile) {
       name: account?.name,
       statusMessage: account?.statusMessage ?? '',
       address: home,
+      avatar: account?.facts.avatarOf(const Subject.account()),
     );
   }
   return (
     name: profile.settings.nickname,
     statusMessage: profile.settings.statusMessage,
     address: ToxAddress.of(profile.publicKey, profile.nospam),
+    avatar: profile.settings.avatar,
   );
 }
 
@@ -483,6 +486,7 @@ List<ChatSummary> _chats(
           ref: ChatRef(profile, GraphId.friend(home, pk)),
           name: friend.name,
           key: pk,
+          avatar: account.facts.avatarOf(Subject.friend(pk)),
           online: isOnline(live, pk),
           unread: unread(GraphId.friend(home, pk)),
           mute: muteOf(GraphId.friend(home, pk)),

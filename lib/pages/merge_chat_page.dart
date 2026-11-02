@@ -89,7 +89,7 @@ final class MergeChatPage extends HookConsumerWidget {
                   for (final c in others)
                     RadioListTile(
                       value: c.ref.graph,
-                      secondary: ChatAvatar(bytes: c.key),
+                      secondary: ChatAvatar.of(c),
                       title: Text(nameOf(c)),
                     ),
                 ],

@@ -61,13 +61,7 @@ final class _Details extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 16),
       children: [
         const SizedBox(height: 8),
-        Center(
-          child: ChatAvatar(
-            bytes: summary.key,
-            online: summary.online,
-            size: 80,
-          ),
-        ),
+        Center(child: ChatAvatar.of(summary, online: summary.online, size: 80)),
         const SizedBox(height: 16),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),

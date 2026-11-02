@@ -472,6 +472,76 @@ void main() {
     await db.watchTransfers(profileId).firstWhere((t) => t.any(givenUp));
   });
 
+  test("keeps the avatars the account's facts name", () async {
+    final home = numberOf(_home);
+    sync.handleEvent(
+      ToxEventFriendConnectionStatus(
+        friendNumber: home,
+        connectionStatus: Tox_Connection.TOX_CONNECTION_UDP,
+      ),
+    );
+    from(_home, const Hello(features: Features.accountSync));
+    final bytes = utf8.encode('face');
+    final blob = BlobId(Uint8List.fromList(sha256.convert(bytes).bytes));
+    final named = SyncEvent(
+      graph: GraphId.account(_home),
+      author: _home,
+      parents: const [],
+      rank: 0,
+      time: 0,
+      content: FactContent(
+        subject: Subject.friend(_bob),
+        value: FactValue.avatar(blob),
+      ),
+    ).encode();
+    from(_home, Events([named]));
+    await _settle();
+    expect(sentTo(_home), contains(WantBlob(blob)));
+
+    tox.fileIds[(home, 0)] = blob.bytes;
+    sync.handleEvent(
+      ToxEventFileRecv(
+        friendNumber: home,
+        fileNumber: 0,
+        kind: blobFileKind,
+        fileSize: bytes.length,
+        filename: Uint8List(0),
+      ),
+    );
+    for (final (position, data) in [(0, bytes), (bytes.length, Uint8List(0))]) {
+      sync.handleEvent(
+        ToxEventFileRecvChunk(
+          friendNumber: home,
+          fileNumber: 0,
+          position: position,
+          data: data,
+        ),
+      );
+    }
+    expect(
+      await db.watchAvatar(profileId, blob).firstWhere((a) => a != null),
+      bytes,
+    );
+
+    from(
+      _home,
+      Events([
+        SyncEvent(
+          graph: GraphId.account(_home),
+          author: _home,
+          parents: [EventId.of(named)],
+          rank: 1,
+          time: 1,
+          content: FactContent(
+            subject: Subject.friend(_bob),
+            value: const FactValue.avatar(null),
+          ),
+        ).encode(),
+      ]),
+    );
+    await db.watchAvatar(profileId, blob).firstWhere((a) => a == null);
+  });
+
   test("drops events it can't read, which then sync again", () async {
     sync.dispose();
     // An event in an older encoding, and how far it was read.

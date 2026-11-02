@@ -40,6 +40,8 @@ abstract class ChatSummary with _$ChatSummary {
     String? name,
     // Drawn as the identicon.
     required CryptoBytes key,
+    // Friends only. The image is in `avatars`.
+    BlobId? avatar,
     // Null where online doesn't apply, as for groups.
     bool? online,
     @Default(0) int unread,

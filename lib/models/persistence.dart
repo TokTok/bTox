@@ -189,3 +189,14 @@ abstract class ChatDrafts extends Table {
   @override
   Set<Column> get primaryKey => {profileId, graph};
 }
+
+@DataClassName('StoredAvatar')
+abstract class Avatars extends Table {
+  IntColumn get profileId =>
+      integer().references(Profiles, #id).map(const IdConverter<Profiles>())();
+  TextColumn get blobId => text().map(const HexConverter(BlobId.fromJson))();
+  BlobColumn get bytes => blob()();
+
+  @override
+  Set<Column> get primaryKey => {profileId, blobId};
+}

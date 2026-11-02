@@ -8,7 +8,7 @@ import 'package:btox/pages/user_profile_page.dart';
 import 'package:btox/providers/chats.dart';
 import 'package:btox/providers/connection_status.dart';
 import 'package:btox/providers/profiles.dart';
-import 'package:btox/widgets/circle_identicon.dart';
+import 'package:btox/widgets/avatar.dart';
 import 'package:btox/widgets/confirm_dialog.dart';
 import 'package:btox/widgets/database_write.dart';
 import 'package:flutter/material.dart';
@@ -46,7 +46,11 @@ final class MainMenu extends ConsumerWidget {
               me.statusMessage,
               style: Theme.of(context).textTheme.bodyMedium,
             ),
-            trailing: CircleIdenticon(bytes: me.address.publicKey),
+            trailing: Avatar(
+              profile: profile.id,
+              blob: me.avatar,
+              bytes: me.address.publicKey,
+            ),
             onTap: () => open(UserProfilePage(profileId: profile.id)),
           ),
         ),
@@ -54,7 +58,9 @@ final class MainMenu extends ConsumerWidget {
           ListTile(
             leading: SizedBox.square(
               dimension: 32,
-              child: CircleIdenticon(
+              child: Avatar(
+                profile: other.id,
+                blob: ref.watch(profileIdentityProvider(other)).avatar,
                 bytes: ref
                     .watch(profileIdentityProvider(other))
                     .address

@@ -1,10 +1,15 @@
 import 'package:btox/l10n/generated/app_localizations.dart';
+import 'package:btox/models/chat_view.dart';
 import 'package:btox/models/crypto.dart';
-import 'package:btox/widgets/circle_identicon.dart';
+import 'package:btox/models/id.dart';
+import 'package:btox/models/persistence.dart';
+import 'package:btox/widgets/avatar.dart';
 import 'package:flutter/material.dart';
 
 final class ChatAvatar extends StatelessWidget {
   final CryptoBytes bytes;
+  final Id<Profiles>? profile;
+  final BlobId? avatar;
   final bool? online;
   final double size;
 
@@ -13,12 +18,23 @@ final class ChatAvatar extends StatelessWidget {
     required this.bytes,
     this.online,
     this.size = 40,
-  });
+  }) : profile = null,
+       avatar = null;
+
+  ChatAvatar.of(ChatSummary chat, {super.key, this.online, this.size = 40})
+    : bytes = chat.key,
+      profile = chat.ref.profile,
+      avatar = chat.avatar;
 
   @override
   Widget build(BuildContext context) {
-    final online = this.online;
-    final avatar = CircleIdenticon(bytes: bytes, radius: size / 2);
+    final (bytes, online) = (this.bytes, this.online);
+    final avatar = Avatar(
+      profile: profile,
+      blob: this.avatar,
+      bytes: bytes,
+      radius: size / 2,
+    );
     if (online == null) {
       return avatar;
     }

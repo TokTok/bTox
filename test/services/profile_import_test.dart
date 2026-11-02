@@ -31,6 +31,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../mocks/fake_bootstrap_nodes.dart';
+import '../mocks/fake_file_picker.dart';
 import '../mocks/fake_toxcore.dart';
 import '../mocks/settle.dart';
 import '../mocks/test_app.dart';
@@ -84,44 +85,6 @@ _exportFromOtherClient() {
   return result;
 }
 
-final class _FakeFilePicker extends FilePicker {
-  Uint8List? bytes;
-
-  _FakeFilePicker([this.bytes]);
-
-  @override
-  Future<FilePickerResult?> pickFiles({
-    String? dialogTitle,
-    String? initialDirectory,
-    FileType type = FileType.any,
-    List<String>? allowedExtensions,
-    Function(FilePickerStatus)? onFileLoading,
-    bool allowCompression = false,
-    int compressionQuality = 0,
-    bool allowMultiple = false,
-    bool withData = false,
-    bool withReadStream = false,
-    bool lockParentWindow = false,
-    bool readSequential = false,
-  }) async => FilePickerResult([
-    PlatformFile(name: 'alice.tox', size: bytes!.length, bytes: bytes),
-  ]);
-
-  @override
-  Future<String?> saveFile({
-    String? dialogTitle,
-    String? fileName,
-    String? initialDirectory,
-    FileType type = FileType.any,
-    List<String>? allowedExtensions,
-    Uint8List? bytes,
-    bool lockParentWindow = false,
-  }) async {
-    this.bytes = bytes;
-    return null;
-  }
-}
-
 void main() {
   test('reads and imports a save from another client', () async {
     final export = _exportFromOtherClient();
@@ -164,7 +127,7 @@ void main() {
   });
 
   testWidgets('New profile imports an encrypted profile', (tester) async {
-    FilePicker.platform = _FakeFilePicker(_exportFromOtherClient().save);
+    FilePicker.platform = FakeFilePicker(_exportFromOtherClient().save);
     final db = Database(NativeDatabase.memory());
     final tox = FakeToxcore();
     // Drift doesn't progress in the test's fake async zone.
@@ -233,7 +196,7 @@ void main() {
   testWidgets('a backup from Settings restores the chosen accounts', (
     tester,
   ) async {
-    final picker = _FakeFilePicker();
+    final picker = FakeFilePicker();
     FilePicker.platform = picker;
     ProfilesCompanion profile(String name, int key) => ProfilesCompanion.insert(
       settings: ProfileSettings(nickname: name, statusMessage: ''),

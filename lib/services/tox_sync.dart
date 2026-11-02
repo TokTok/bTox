@@ -14,7 +14,8 @@ import 'package:btox/calls/plugin_call_media.dart';
 import 'package:btox/calls/relay_protocol.dart';
 import 'package:btox/calls/toxav_protocol.dart';
 import 'package:btox/db/database.dart';
-import 'package:btox/ffi/toxcore.dart' show Tox_Connection, Tox_Message_Type;
+import 'package:btox/ffi/toxcore.dart'
+    show Tox_Connection, Tox_File_Kind, Tox_Message_Type;
 import 'package:btox/logger.dart';
 import 'package:btox/messages/split_message.dart';
 import 'package:btox/messages/formats.dart';
@@ -33,6 +34,7 @@ import 'package:btox/providers/profiles.dart';
 import 'package:btox/providers/tox.dart';
 import 'package:btox/services/file_transfers.dart';
 import 'package:btox/services/message_notifier.dart';
+import 'package:btox/sync/avatar_files.dart';
 import 'package:btox/sync/event.dart';
 import 'package:btox/sync/fact.dart';
 import 'package:btox/sync/frames.dart';
@@ -129,7 +131,8 @@ final class ToxSync {
   var _transfers = const <Transfer>[];
 
   late final FileTransfers _files;
-  final SyncSessions _syncSessions;
+  final AvatarFiles _avatars;
+  late final SyncSessions _syncSessions;
 
   // Where calls can be made, and once the account runs.
   final CallAudio? _callAudio;
@@ -153,19 +156,21 @@ final class ToxSync {
        _retryDelay = retryDelay,
        _notifier = notifier,
        _knownFormats = knownFormats,
-       _syncSessions = SyncSessions(
-         _db,
-         _tox,
-         _profileId,
-         directory: attachmentsDirectory,
-         notify: notifier?.notify,
-         read: notifier?.read,
-         invited: notifier == null
-             ? null
-             : (id, invite, from, account) =>
-                   notifier.invited(_profileId, id, invite, from, account),
-         uninvited: notifier?.uninvited,
-       ) {
+       _avatars = AvatarFiles(_db, _tox, _profileId) {
+    _syncSessions = SyncSessions(
+      _db,
+      _tox,
+      _avatars,
+      _profileId,
+      directory: attachmentsDirectory,
+      notify: notifier?.notify,
+      read: notifier?.read,
+      invited: notifier == null
+          ? null
+          : (id, invite, from, account) =>
+                notifier.invited(_profileId, id, invite, from, account),
+      uninvited: notifier?.uninvited,
+    );
     _files = FileTransfers(
       _db,
       _tox,
@@ -240,6 +245,7 @@ final class ToxSync {
         if (!online) {
           _onlineFriends.remove(friendNumber);
           _files.friendOffline(friendNumber);
+          _avatars.friendOffline(friendNumber);
           if (publicKey != null) {
             _calls?.friendOffline(publicKey);
           }
@@ -257,6 +263,9 @@ final class ToxSync {
             _accepted(publicKey);
           }
           _sendMessages();
+          if (_home != null) {
+            _logger.unawaited('send our avatar', _sendAvatar(friendNumber));
+          }
         }
       case ToxEventFriendLosslessPacket(:final friendNumber, :final data)
           when data.isNotEmpty && data[0] == syncPacketId:
@@ -324,6 +333,12 @@ final class ToxSync {
           } else {
             _files.decline(friendNumber, fileNumber);
           }
+        } else if (_publicKeyOf(friendNumber) case final pk?
+            when kind == Tox_File_Kind.TOX_FILE_KIND_AVATAR.value) {
+          _logger.unawaited(
+            'receive an avatar',
+            _avatarOffered(home, pk, friendNumber, fileNumber, fileSize),
+          );
         } else if (_publicKeyOf(friendNumber) case final pk?) {
           _logger.unawaited(
             'receive file',
@@ -339,11 +354,20 @@ final class ToxSync {
           );
         }
       case final ToxEventFileRecvChunk e:
-        _toxFiles.chunk(e.friendNumber, e.fileNumber, e.position, e.data);
+        _filesOf(
+          e.friendNumber,
+          e.fileNumber,
+        ).chunk(e.friendNumber, e.fileNumber, e.position, e.data);
       case final ToxEventFileChunkRequest e:
-        _toxFiles.requested(e.friendNumber, e.fileNumber, e.position, e.length);
+        _filesOf(
+          e.friendNumber,
+          e.fileNumber,
+        ).requested(e.friendNumber, e.fileNumber, e.position, e.length);
       case final ToxEventFileRecvControl e:
-        _toxFiles.controlled(e.friendNumber, e.fileNumber, e.control);
+        _filesOf(
+          e.friendNumber,
+          e.fileNumber,
+        ).controlled(e.friendNumber, e.fileNumber, e.control);
       default:
         break;
     }
@@ -351,6 +375,50 @@ final class ToxSync {
 
   // A linked account's files come from its home device.
   ToxFiles get _toxFiles => _syncSessions.files ?? _files;
+
+  ToxFiles _filesOf(int friendNumber, int fileNumber) =>
+      _avatars.moves(friendNumber, fileNumber) ? _avatars : _toxFiles;
+
+  /// Its file ID is its blob ID. An empty file says there's none.
+  Future<void> _avatarOffered(
+    Home home,
+    PublicKey pk,
+    int friendNumber,
+    int fileNumber,
+    int size,
+  ) async {
+    if (size == 0 || size > maxAvatarSize) {
+      _avatars.decline(friendNumber, fileNumber);
+      if (size == 0) {
+        await home.avatarOf(pk, null);
+      }
+      return;
+    }
+    final blob = BlobId(_tox.fileGetFileId(friendNumber, fileNumber));
+    if (await _db.getAvatar(_profileId, blob) != null) {
+      _avatars.decline(friendNumber, fileNumber);
+      await home.avatarOf(pk, blob);
+      return;
+    }
+    _avatars.receive(
+      friendNumber,
+      fileNumber,
+      blob,
+      size,
+      () => home.avatarOf(pk, blob),
+    );
+  }
+
+  /// An empty file says the account has none.
+  Future<void> _sendAvatar(int friendNumber) async {
+    final blob = _profile?.settings.avatar;
+    final bytes = blob == null
+        ? Uint8List(0)
+        : await _db.getAvatar(_profileId, blob);
+    if (bytes != null && _onlineFriends.contains(friendNumber)) {
+      _avatars.send(friendNumber, blob, bytes);
+    }
+  }
 
   PublicKey? _publicKeyOf(int friendNumber) => _friendNumbers.entries
       .where((entry) => entry.value == friendNumber)
@@ -407,6 +475,8 @@ final class ToxSync {
   void _updateProfile(Profile profile) {
     final first = _profile == null;
     final settings = profile.settings;
+    final avatarChanged =
+        !first && settings.avatar != _profile?.settings.avatar;
     try {
       if (settings.nickname != _profile?.settings.nickname) {
         _tox.selfSetName(utf8.encode(settings.nickname));
@@ -423,6 +493,11 @@ final class ToxSync {
       ..link(profile.publicKey, profile.home?.publicKey);
     if (!first) {
       _home?.profileChanged(settings);
+      if (avatarChanged && _home != null) {
+        for (final friendNumber in _onlineFriends) {
+          _logger.unawaited('send our avatar', _sendAvatar(friendNumber));
+        }
+      }
       return;
     }
     if (profile.home case final home?) {

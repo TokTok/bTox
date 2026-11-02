@@ -167,6 +167,7 @@ FactValue _value(Object? j) {
     }),
     'call_relay' => FactValue.callRelay(v! as bool),
     'self_key' => FactValue.selfKey(_pk(v)),
+    'avatar' => FactValue.avatar(_opt(v, (b) => BlobId(_bytes(b)))),
     _ => throw ArgumentError('Not a value: $kind'),
   };
 }
@@ -199,6 +200,7 @@ Object? _valueJson(FactValue value) => switch (value) {
   },
   CallRelayValue(:final relays) => {'call_relay': relays},
   SelfKeyValue(:final key) => {'self_key': _hex(key.bytes)},
+  AvatarValue(:final blob) => {'avatar': _opt(blob, (b) => _hex(b.bytes))},
   UnknownValue(:final kind) => {'unknown': kind},
 };
 

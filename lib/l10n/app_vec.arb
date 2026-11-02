@@ -108,6 +108,18 @@
     "@profileTextFieldUserStatusMessage": {
         "description": "The text for the status message field"
     },
+    "avatarChoose": "Sernir na foto",
+    "@avatarChoose": {
+        "description": "The button that picks a picture to make the account's avatar"
+    },
+    "avatarRemove": "Cavar ła foto",
+    "@avatarRemove": {
+        "description": "The button that removes the account's avatar"
+    },
+    "avatarUnusable": "Sta foto no ła se pol doparar",
+    "@avatarUnusable": {
+        "description": "Shown when a picked picture can't be made the account's avatar"
+    },
     "applyChanges": "Aplicar łe muanse",
     "@applyChanges": {
         "description": "The text for the button to apply changes"

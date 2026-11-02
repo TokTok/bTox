@@ -10,6 +10,7 @@ import 'package:btox/models/content.dart';
 import 'package:btox/models/crypto.dart';
 import 'package:btox/models/id.dart';
 import 'package:btox/models/persistence.dart';
+import 'package:btox/sync/avatar_files.dart';
 import 'package:btox/sync/event.dart';
 import 'package:btox/sync/session_message.dart';
 import 'package:btox/sync/store.dart';
@@ -52,10 +53,13 @@ final class LinkedFiles implements ToxFiles {
   final _endsWaiting = <EventId, (SyncEvent, BlobId)>{};
   final _incoming = <_Key, _Moving>{};
   final _outgoing = <_Key, _Moving>{};
+  final AvatarFiles _avatars;
+  var _missingAvatars = <BlobId>{};
 
   LinkedFiles(
     this._db,
     this._tox,
+    this._avatars,
     this._profileId,
     this._device,
     this._directory,
@@ -94,9 +98,23 @@ final class LinkedFiles implements ToxFiles {
     _outgoing.clear();
   }
 
+  /// Fetches the avatars [blobs] that this device doesn't have, and forgets
+  /// the others.
+  Future<void> avatarsNamed(Set<BlobId> blobs) async {
+    final held = await _db.avatarsHeld(_profileId);
+    await _db.deleteAvatars(_profileId, held.difference(blobs));
+    _missingAvatars = blobs.difference(held);
+    _fetch();
+  }
+
   void _fetch() {
     if (_home == null) {
       return;
+    }
+    for (final blob in _missingAvatars) {
+      if (_wanted.add(blob)) {
+        _toHome(WantBlob(blob));
+      }
     }
     for (final row in _transfers) {
       if (row
@@ -234,9 +252,23 @@ final class LinkedFiles implements ToxFiles {
   /// cancels any other.
   void offered(int friendNumber, int fileNumber, int kind, int size) {
     final key = (friendNumber, fileNumber);
-    final row = friendNumber == _home && kind == blobFileKind
-        ? _fetchOf(BlobId(_tox.fileGetFileId(friendNumber, fileNumber)))
+    final blob = friendNumber == _home && kind == blobFileKind
+        ? BlobId(_tox.fileGetFileId(friendNumber, fileNumber))
         : null;
+    if (blob != null &&
+        _wanted.contains(blob) &&
+        _missingAvatars.contains(blob) &&
+        size <= maxAvatarSize) {
+      _avatars.receive(
+        friendNumber,
+        fileNumber,
+        blob,
+        size,
+        () async => _missingAvatars.remove(blob),
+      );
+      return;
+    }
+    final row = blob == null ? null : _fetchOf(blob);
     if (row == null) {
       _control(key, Tox_File_Control.TOX_FILE_CONTROL_CANCEL);
       return;

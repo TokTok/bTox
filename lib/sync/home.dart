@@ -131,6 +131,25 @@ final class Home {
       const Subject.account(),
       FactValue.statusMessage(settings.statusMessage),
     );
+    await _avatar(const Subject.account(), settings.avatar);
+  }
+
+  /// Records [friend]'s avatar, null for none.
+  Future<void> avatarOf(PublicKey friend, BlobId? blob) =>
+      _avatar(Subject.friend(friend), blob);
+
+  /// None is only recorded for a subject that had one. The picture it
+  /// replaces goes once nothing names it.
+  Future<void> _avatar(Subject subject, BlobId? blob) async {
+    final old = state.facts.avatarOf(subject);
+    if (blob == null && old == null) {
+      return;
+    }
+    await _fact(subject, FactValue.avatar(blob));
+    final facts = state.facts;
+    if (old != null && facts.subjects.every((s) => facts.avatarOf(s) != old)) {
+      await _db.deleteAvatars(_profileId, {old});
+    }
   }
 
   /// Records what Tox says, unless the account knows it already.

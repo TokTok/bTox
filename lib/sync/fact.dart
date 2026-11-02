@@ -31,6 +31,7 @@ const _kindAddress = 15;
 const _kindCall = 16;
 const _kindCallRelay = 17;
 const _kindSelfKey = 18;
+const _kindAvatar = 19;
 
 const _callNone = 0;
 const _callRinging = 1;
@@ -97,6 +98,9 @@ sealed class FactValue with _$FactValue {
   /// Our key in a group, which is its own.
   const factory FactValue.selfKey(PublicKey key) = SelfKeyValue;
 
+  /// Null for none.
+  const factory FactValue.avatar(BlobId? blob) = AvatarValue;
+
   /// From a newer version, or a value this one doesn't know: shows nothing.
   const factory FactValue.unknown(int kind) = UnknownValue;
 
@@ -122,6 +126,7 @@ sealed class FactValue with _$FactValue {
     CallValue() => _kindCall,
     CallRelayValue() => _kindCallRelay,
     SelfKeyValue() => _kindSelfKey,
+    AvatarValue() => _kindAvatar,
     UnknownValue(:final kind) => kind,
   };
 }
@@ -139,6 +144,9 @@ final class Facts {
 
   Iterable<FactValue> of(Subject subject) =>
       _facts[subject]?.values ?? const [];
+
+  BlobId? avatarOf(Subject subject) =>
+      of(subject).whereType<AvatarValue>().firstOrNull?.blob;
 
   @override
   bool operator ==(Object other) =>
@@ -227,6 +235,7 @@ ArrayWriter _encodeValue(FactValue value) {
     },
     CallRelayValue(:final relays) => f.flag(relays),
     SelfKeyValue(:final key) => f.bin(key.bytes),
+    AvatarValue(:final blob) => f.optBin(blob?.bytes),
     // Never re-encoded: stores keep the bytes they received.
     UnknownValue() => throw StateError('Unknown values are not written'),
   };
@@ -296,6 +305,10 @@ FactValue readValue(Fields f) => f.variant<FactValue>(
     },
     _kindCallRelay => FactValue.callRelay(v.flag()),
     _kindSelfKey => FactValue.selfKey(PublicKey(v.bin())),
+    _kindAvatar => FactValue.avatar(switch (v.optBin()) {
+      final blob? => BlobId(blob),
+      null => null,
+    }),
     _ => null,
   },
   FactValue.unknown,

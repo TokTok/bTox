@@ -32,7 +32,7 @@ final class ForwardPage extends ConsumerWidget {
             for (final chat in chats)
               if (!chat.closed && (!files || chat.key is PublicKey))
                 ListTile(
-                  leading: ChatAvatar(bytes: chat.key, online: chat.online),
+                  leading: ChatAvatar.of(chat, online: chat.online),
                   title: Text(chat.name ?? l10n.defaultContactName),
                   onTap: () => Navigator.pop(context, chat.ref),
                 ),

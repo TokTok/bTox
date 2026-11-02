@@ -230,8 +230,8 @@ final class ChatPage extends HookConsumerWidget {
                           if (MediaQuery.of(context).size.width > 150)
                             Padding(
                               padding: const EdgeInsets.only(right: 16),
-                              child: ChatAvatar(
-                                bytes: summary.key,
+                              child: ChatAvatar.of(
+                                summary,
                                 online: summary.online,
                               ),
                             ),

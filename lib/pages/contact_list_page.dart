@@ -464,7 +464,7 @@ final class _Calls extends ConsumerWidget {
           final call = entry.content as CallContent;
           final color = call.missed ? theme.colorScheme.error : null;
           return ListTile(
-            leading: ChatAvatar(bytes: chat.key),
+            leading: ChatAvatar.of(chat),
             title: Text(
               chat.name ?? l10n.defaultContactName,
               style: TextStyle(color: color),

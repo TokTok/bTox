@@ -119,6 +119,18 @@
     "@profileTextFieldUserStatusMessage": {
         "description": "The text for the status message field"
     },
+    "avatarChoose": "Tria una imatge",
+    "@avatarChoose": {
+        "description": "The button that picks a picture to make the account's avatar"
+    },
+    "avatarRemove": "Elimina la imatge",
+    "@avatarRemove": {
+        "description": "The button that removes the account's avatar"
+    },
+    "avatarUnusable": "Aquesta imatge no es pot fer servir",
+    "@avatarUnusable": {
+        "description": "Shown when a picked picture can't be made the account's avatar"
+    },
     "applyChanges": "Aplica els canvis",
     "@applyChanges": {
         "description": "The text for the button to apply changes"

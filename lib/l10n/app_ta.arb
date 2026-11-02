@@ -83,6 +83,18 @@
   "@profileTextFieldUserStatusMessage": {
     "description": "The text for the status message field"
   },
+  "avatarChoose": "படத்தைத் தேர்ந்தெடு",
+  "@avatarChoose": {
+    "description": "The button that picks a picture to make the account's avatar"
+  },
+  "avatarRemove": "படத்தை அகற்று",
+  "@avatarRemove": {
+    "description": "The button that removes the account's avatar"
+  },
+  "avatarUnusable": "இந்தப் படத்தைப் பயன்படுத்த முடியாது",
+  "@avatarUnusable": {
+    "description": "Shown when a picked picture can't be made the account's avatar"
+  },
   "applyChanges": "மாற்றங்களைப் பயன்படுத்துங்கள்",
   "@applyChanges": {
     "description": "The text for the button to apply changes"

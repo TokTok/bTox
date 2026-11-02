@@ -98,6 +98,18 @@
     "@profileTextFieldNick": {
         "description": "The text for the nickname field"
     },
+    "avatarChoose": "Bild auswählen",
+    "@avatarChoose": {
+        "description": "The button that picks a picture to make the account's avatar"
+    },
+    "avatarRemove": "Bild entfernen",
+    "@avatarRemove": {
+        "description": "The button that removes the account's avatar"
+    },
+    "avatarUnusable": "Dieses Bild kann nicht verwendet werden",
+    "@avatarUnusable": {
+        "description": "Shown when a picked picture can't be made the account's avatar"
+    },
     "applyChanges": "Änderungen übernehmen",
     "@applyChanges": {
         "description": "The text for the button to apply changes"

@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:btox/models/crypto.dart';
 import 'package:drift/drift.dart' hide JsonKey;
 import 'package:freezed_annotation/freezed_annotation.dart';
 
@@ -36,6 +37,8 @@ abstract class ProfileSettings with _$ProfileSettings {
     required String statusMessage,
     @Default(NetworkSettings()) NetworkSettings network,
     @Default([]) List<String> messageFormatsOff,
+    // The image is in `avatars`.
+    BlobId? avatar,
   }) = _ProfileSettings;
 
   factory ProfileSettings.fromJson(Map<String, dynamic> json) =>

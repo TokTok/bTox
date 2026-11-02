@@ -65,6 +65,18 @@
     "@menuSettings": {
         "description": "The text for the settings menu item"
     },
+    "avatarChoose": "Choisir une photo",
+    "@avatarChoose": {
+        "description": "The button that picks a picture to make the account's avatar"
+    },
+    "avatarRemove": "Retirer la photo",
+    "@avatarRemove": {
+        "description": "The button that removes the account's avatar"
+    },
+    "avatarUnusable": "Cette photo ne peut pas être utilisée",
+    "@avatarUnusable": {
+        "description": "Shown when a picked picture can't be made the account's avatar"
+    },
     "applyChanges": "Appliquer les modifications",
     "@applyChanges": {
         "description": "The text for the button to apply changes"

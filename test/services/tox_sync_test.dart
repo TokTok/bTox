@@ -19,6 +19,7 @@ import 'package:btox/sync/event.dart';
 import 'package:btox/sync/fact.dart';
 import 'package:btox/sync/setting.dart';
 import 'package:btox/sync/store.dart';
+import 'package:crypto/crypto.dart' show sha256;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -496,7 +497,7 @@ void main() {
     expect(requested, ['it is me, Bob']);
   });
 
-  test('announces files, refuses avatars and cancels declined files', () async {
+  test('announces files and cancels declined files', () async {
     await want();
     sync.start();
     await _until(() => tox.friends.isNotEmpty);
@@ -514,7 +515,7 @@ void main() {
         filename: utf8.encode('a.txt'),
       ),
     );
-    offer(0, Tox_File_Kind.TOX_FILE_KIND_AVATAR);
+    offer(0, Tox_File_Kind.TOX_FILE_KIND_STICKER);
     offer(1, Tox_File_Kind.TOX_FILE_KIND_DATA);
     final offered = await db
         .watchTransfers(profileId)
@@ -543,6 +544,147 @@ void main() {
       isA<FileStarted>(),
       isA<FileEnded>().having((e) => e.ok, 'ok', false),
     ]);
+  });
+
+  test("keeps a friend's avatar until they send an empty one", () async {
+    await want();
+    sync.start();
+    await _until(() => tox.friends.isNotEmpty);
+    final bytes = Uint8List.fromList([1, 2, 3]);
+    final blob = BlobId(Uint8List.fromList(sha256.convert(bytes).bytes));
+    tox.fileIds[(0, 0)] = blob.bytes;
+    void offer(int fileNumber, int size) => sync.handleEvent(
+      ToxEventFileRecv(
+        friendNumber: 0,
+        fileNumber: fileNumber,
+        kind: Tox_File_Kind.TOX_FILE_KIND_AVATAR.value,
+        fileSize: size,
+        filename: Uint8List(0),
+      ),
+    );
+    BlobId? avatar(AccountState state) => state.facts
+        .of(Subject.friend(_friend))
+        .whereType<AvatarValue>()
+        .firstOrNull
+        ?.blob;
+
+    offer(0, bytes.length);
+    await _until(() => tox.fileControls.isNotEmpty);
+    expect(tox.fileControls.single, (
+      0,
+      0,
+      Tox_File_Control.TOX_FILE_CONTROL_RESUME,
+    ));
+    for (final data in [bytes, Uint8List(0)]) {
+      sync.handleEvent(
+        ToxEventFileRecvChunk(
+          friendNumber: 0,
+          fileNumber: 0,
+          position: 0,
+          data: data,
+        ),
+      );
+    }
+    await _settle();
+    expect(await db.getAvatar(profileId, blob), bytes);
+    expect(avatar(await account()), blob);
+
+    offer(1, 0);
+    await _settle();
+    expect(avatar(await account()), isNull);
+    expect(await db.getAvatar(profileId, blob), isNull);
+    expect(tox.fileControls.last, (
+      0,
+      1,
+      Tox_File_Control.TOX_FILE_CONTROL_CANCEL,
+    ));
+  });
+
+  test('keeps no avatar but the one offered', () async {
+    await want();
+    sync.start();
+    await _until(() => tox.friends.isNotEmpty);
+    final bytes = Uint8List.fromList([1, 2, 3]);
+    final blob = BlobId(Uint8List.fromList(sha256.convert(bytes).bytes));
+    void offer(int fileNumber) {
+      tox.fileIds[(0, fileNumber)] = blob.bytes;
+      sync.handleEvent(
+        ToxEventFileRecv(
+          friendNumber: 0,
+          fileNumber: fileNumber,
+          kind: Tox_File_Kind.TOX_FILE_KIND_AVATAR.value,
+          fileSize: bytes.length,
+          filename: Uint8List(0),
+        ),
+      );
+    }
+
+    void chunk(int fileNumber, int position, List<int> data) =>
+        sync.handleEvent(
+          ToxEventFileRecvChunk(
+            friendNumber: 0,
+            fileNumber: fileNumber,
+            position: position,
+            data: Uint8List.fromList(data),
+          ),
+        );
+
+    offer(0);
+    await _until(() => tox.fileControls.length == 1);
+    chunk(0, 0, [3, 2, 1]);
+    chunk(0, 3, []);
+    offer(1);
+    await _until(() => tox.fileControls.length == 2);
+    chunk(1, 1, bytes);
+    await _settle();
+    expect(tox.fileControls.last, (
+      0,
+      1,
+      Tox_File_Control.TOX_FILE_CONTROL_CANCEL,
+    ));
+    expect(await db.getAvatar(profileId, blob), isNull);
+  });
+
+  test("sends friends coming online the account's avatar", () async {
+    final bytes = Uint8List.fromList([1, 2, 3]);
+    final blob = BlobId(Uint8List.fromList(sha256.convert(bytes).bytes));
+    await db.setAvatar(profileId, blob, bytes);
+    await db.updateProfileSettings(profileId, (s) => s.copyWith(avatar: blob));
+    await want();
+    sync.start();
+    await _until(() => tox.friends.isNotEmpty);
+    setOnline(0, true);
+    await _until(() => tox.fileSends.isNotEmpty);
+    expect(tox.fileSends.single, (0, bytes.length, ''));
+    final (kind, fileId) = tox.fileSendKinds.single;
+    expect(kind, Tox_File_Kind.TOX_FILE_KIND_AVATAR.value);
+    expect(fileId, blob.bytes);
+    sync.handleEvent(
+      ToxEventFileChunkRequest(
+        friendNumber: 0,
+        fileNumber: 0,
+        position: 0,
+        length: bytes.length,
+      ),
+    );
+    expect(tox.fileChunks.single.$4, bytes);
+
+    sync.handleEvent(
+      const ToxEventFileRecvControl(
+        friendNumber: 0,
+        fileNumber: 0,
+        control: Tox_File_Control.TOX_FILE_CONTROL_CANCEL,
+      ),
+    );
+    sync.handleEvent(
+      ToxEventFileChunkRequest(
+        friendNumber: 0,
+        fileNumber: 0,
+        position: 0,
+        length: bytes.length,
+      ),
+    );
+    expect(tox.fileChunks, hasLength(1));
   });
 
   test('ends the calls that were going on when it stopped', () async {

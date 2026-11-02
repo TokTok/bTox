@@ -29,6 +29,7 @@ const _idsPerStatement = 500;
 @DriftDatabase(
   tables: [
     AppSettings,
+    Avatars,
     CachedBootstrapNodes,
     ChatDrafts,
     DeletedChats,
@@ -364,6 +365,51 @@ final class Database extends _$Database {
   Stream<List<ChatRead>> watchReads(Id<Profiles> profileId) => (select(
     chatReads,
   )..where((r) => r.profileId.equals(profileId.value))).watch();
+
+  SimpleSelectStatement<$AvatarsTable, StoredAvatar> _avatar(
+    Id<Profiles> profileId,
+    BlobId blob,
+  ) => select(avatars)
+    ..where(
+      (a) => a.profileId.equals(profileId.value) & a.blobId.equalsValue(blob),
+    );
+
+  Future<Uint8List?> getAvatar(Id<Profiles> profileId, BlobId blob) =>
+      _avatar(profileId, blob).map((a) => a.bytes).getSingleOrNull();
+
+  Future<Set<BlobId>> avatarsHeld(Id<Profiles> profileId) async =>
+      (await (selectOnly(avatars)
+                ..addColumns([avatars.blobId])
+                ..where(avatars.profileId.equals(profileId.value)))
+              .map((row) => row.readWithConverter(avatars.blobId)!)
+              .get())
+          .toSet();
+
+  Future<void> deleteAvatars(Id<Profiles> profileId, Set<BlobId> blobs) =>
+      transaction(() async {
+        for (var i = 0; i < blobs.length; i += _idsPerStatement) {
+          final batch = blobs.skip(i).take(_idsPerStatement);
+          await (delete(avatars)..where(
+                (a) =>
+                    a.profileId.equals(profileId.value) &
+                    a.blobId.isInValues(batch),
+              ))
+              .go();
+        }
+      });
+
+  Stream<Uint8List?> watchAvatar(Id<Profiles> profileId, BlobId blob) =>
+      _avatar(profileId, blob).map((a) => a.bytes).watchSingleOrNull();
+
+  Future<void> setAvatar(
+    Id<Profiles> profileId,
+    BlobId blob,
+    Uint8List bytes,
+  ) async {
+    await into(avatars).insertOnConflictUpdate(
+      AvatarsCompanion.insert(profileId: profileId, blobId: blob, bytes: bytes),
+    );
+  }
 
   Future<StoredDraft?> getDraft(Id<Profiles> profileId, GraphId graph) =>
       (select(chatDrafts)..where(

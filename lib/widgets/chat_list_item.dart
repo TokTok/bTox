@@ -27,7 +27,7 @@ final class ChatListItem extends StatelessWidget {
     // A muted chat's unread messages show, but don't call for attention.
     final muted = chat.mute != null;
     return ListTile(
-      leading: ChatAvatar(bytes: chat.key, online: chat.online),
+      leading: ChatAvatar.of(chat, online: chat.online),
       title: Row(
         spacing: 8,
         children: [

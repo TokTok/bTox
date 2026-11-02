@@ -89,6 +89,18 @@
   "@profileTextFieldNick": {
     "description": "The text for the nickname field"
   },
+  "avatarChoose": "Izvēlēties attēlu",
+  "@avatarChoose": {
+    "description": "The button that picks a picture to make the account's avatar"
+  },
+  "avatarRemove": "Noņemt attēlu",
+  "@avatarRemove": {
+    "description": "The button that removes the account's avatar"
+  },
+  "avatarUnusable": "Šo attēlu nevar izmantot",
+  "@avatarUnusable": {
+    "description": "Shown when a picked picture can't be made the account's avatar"
+  },
   "applyChanges": "Lietot izmaiņas",
   "@applyChanges": {
     "description": "The text for the button to apply changes"
