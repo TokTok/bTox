@@ -36,6 +36,8 @@ jobs:
       flutter-version: "3.47.0"
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      ANDROID_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
 
   sync-conformance:
     name: Sync conformance cases

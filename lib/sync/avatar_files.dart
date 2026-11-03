@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:btox/api/toxcore/tox.dart';
@@ -7,6 +8,7 @@ import 'package:btox/logger.dart';
 import 'package:btox/models/crypto.dart';
 import 'package:btox/models/id.dart';
 import 'package:btox/models/persistence.dart';
+import 'package:convert/convert.dart' show hex;
 import 'package:crypto/crypto.dart' show sha256;
 
 const _logger = Logger(['AvatarFiles']);
@@ -64,7 +66,10 @@ final class AvatarFiles implements ToxFiles {
         Tox_File_Kind.TOX_FILE_KIND_AVATAR.value,
         bytes.length,
         blob?.bytes ?? Uint8List(32),
-        Uint8List(0),
+        // Some clients read an avatar without a name as none.
+        blob == null
+            ? Uint8List(0)
+            : utf8.encode('${hex.encode(blob.bytes)}.png'),
       );
       if (bytes.isNotEmpty) {
         _outgoing[(friendNumber, fileNumber)] = bytes;

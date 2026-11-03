@@ -90,7 +90,6 @@ final class FileTransfers implements ToxFiles {
     int size,
     String name,
   ) async {
-    // Avatars aren't supported yet.
     if (kind != Tox_File_Kind.TOX_FILE_KIND_DATA.value || !filesSupported) {
       decline(friendNumber, fileNumber);
       return;

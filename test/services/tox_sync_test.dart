@@ -19,6 +19,7 @@ import 'package:btox/sync/event.dart';
 import 'package:btox/sync/fact.dart';
 import 'package:btox/sync/setting.dart';
 import 'package:btox/sync/store.dart';
+import 'package:convert/convert.dart' show hex;
 import 'package:crypto/crypto.dart' show sha256;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -655,7 +656,11 @@ void main() {
     await _until(() => tox.friends.isNotEmpty);
     setOnline(0, true);
     await _until(() => tox.fileSends.isNotEmpty);
-    expect(tox.fileSends.single, (0, bytes.length, ''));
+    expect(tox.fileSends.single, (
+      0,
+      bytes.length,
+      '${hex.encode(blob.bytes)}.png',
+    ));
     final (kind, fileId) = tox.fileSendKinds.single;
     expect(kind, Tox_File_Kind.TOX_FILE_KIND_AVATAR.value);
     expect(fileId, blob.bytes);
