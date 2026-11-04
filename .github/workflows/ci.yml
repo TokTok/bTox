@@ -41,6 +41,7 @@ jobs:
 
   sync-conformance:
     name: Sync conformance cases
+    if: github.event_name != 'push'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -57,6 +58,7 @@ jobs:
 
   calls:
     name: Calls (${{ matrix.device }})
+    if: github.event_name != 'push'
     strategy:
       fail-fast: false
       matrix:
